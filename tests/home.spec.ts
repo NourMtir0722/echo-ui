@@ -283,10 +283,13 @@ const STOPS = [
  * it (snap.ts `frameFor`). First the page has to be hydrated and still: before
  * it is, the Puzzle's three sheets stand one under another (as without
  * JavaScript), and their folding away moves every stop under them, by a whole
- * screen and more in WebKit, which keeps no scroll anchor.
+ * screen and more in WebKit, which keeps no scroll anchor. The fold is waited
+ * for by its own mark (`data-enhanced`): on a busy machine the page could look
+ * still for a moment before it, and Pick was framed, then left 2,000px away.
  */
 async function frame(page: Page, id: string) {
   await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await expect(page.locator(".pz[data-enhanced]")).toBeAttached({ timeout: 15_000 });
   let last = -1;
   await expect
     .poll(
