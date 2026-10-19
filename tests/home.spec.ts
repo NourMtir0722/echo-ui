@@ -3,6 +3,7 @@ import { HOSTED_MCP_URL } from "../registry/src/agent/guidance";
 import { CHATGPT_LISTING_URL } from "../mcp/src/plugin-downloads";
 import { REPO_PUBLIC, REPO_URL } from "../apps/www/components/site/repo";
 import { axe } from "./axe";
+import { budgetPages } from "./helpers/budget";
 import { hydrated } from "./helpers/hydration";
 import { findHorizontalOverflow, formatOverflow } from "./helpers/layout";
 
@@ -641,7 +642,11 @@ test("the homepage opens on Sky until a colour is chosen, and one chosen anywher
 
 test("a reseeded homepage is still axe-clean, the hard colour included", { tag: "@mobile" }, async ({ page }) => {
   // Two presets, and a hard yellow by link, the way the plugin's link brings a colour: fixed up to AA.
-  for (const link of ["/generator?style=drafting-index", "/generator?accent=e0457b", "/generator?accent=f2e66b"]) {
+  const links = ["/generator?style=drafting-index", "/generator?accent=e0457b", "/generator?accent=f2e66b"];
+  // Each link is a generator page, the whole homepage and axe over all of it: about 4s on two cores, and
+  // more than twice that on a busy CI runner, where three of them outran the default 30s.
+  budgetPages(links.length, 15_000);
+  for (const link of links) {
     await page.goto(link);
     await expect(page.locator("html")).toHaveAttribute("data-seed-chosen", "");
     await page.goto("/");
