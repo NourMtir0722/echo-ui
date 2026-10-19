@@ -191,8 +191,8 @@ function buildAccentRamp(accent: OKLCH): EchoTheme["accentRamp"] {
   /*
    * The palest stop is a label on the two deepest (AlertDialog's destructive
    * confirm). The envelope is fixed in OKLCH lightness, and at one lightness a
-   * green is brighter than a violet, so on greens that label read 4.38:1
-   *. Lift the palest stop until it reads; a hue that already did
+   * green is brighter than a violet, so on greens that label read 4.38:1.
+   * Lift the palest stop until it reads; a hue that already did
    * keeps its stop exactly.
    */
   const palest = (): number => Math.min(contrastRatio(stops[0]!, stops[4]!), contrastRatio(stops[0]!, stops[5]!));
@@ -307,8 +307,8 @@ export interface EchoThemeResult {
 /*
  * Declared rather than taken from Node's types, so this file type-checks the
  * way a consumer's app compiles it — with no `@types/node` in scope. The three
- * components that carry the same declaration do so for the same reason
- *. It never reaches a consumer: the package ships its own `.d.ts`.
+ * components that carry the same declaration do so for the same reason.
+ * It never reaches a consumer: the package ships its own `.d.ts`.
  */
 declare const process: { env?: { NODE_ENV?: string } } | undefined;
 

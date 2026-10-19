@@ -236,8 +236,8 @@ export const CONFORMANCE = [
 /**
  * What the placeholder in Echo's snippets stands for. They import from
  * `@/echo`, which is no project's real path: the CLI's `docs` writes the
- * project's own in its place, but an answer over MCP has no project to read
- *. Both defaults `init` installs into are named.
+ * project's own in its place, but an answer over MCP has no project to read.
+ * Both defaults `init` installs into are named.
  */
 export const IMPORT_PLACEHOLDER =
   "Imports from `@/echo` stand for the folder Echo is installed in: write `@/components/echo` in a Next.js app (its `@/` alias), and `./components/echo` from a file in `src/` in a Vite app.";

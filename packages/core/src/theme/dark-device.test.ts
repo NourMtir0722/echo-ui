@@ -9,8 +9,8 @@
  *
  * Two changes since, on purpose (2026-09-29): a near-black body steps its caps
  * further, so the "dark chassis" seed's cap and rim moved; and lit
- * text is the glow lifted to read at APCA Lc 60, not the glow itself
- *. Every other pinned value is as it was.
+ * text is the glow lifted to read at APCA Lc 60, not the glow itself.
+ * Every other pinned value is as it was.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";

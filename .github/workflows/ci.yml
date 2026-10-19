@@ -201,8 +201,8 @@ jobs:
       - name: Touch targets (coarse pointer)
         run: pnpm exec playwright test --project=touch --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
-      # Pages loading many at once, timed last, when nothing else is running
-      #. `--no-deps`: the projects it waits for locally already ran.
+      # Pages loading many at once, timed last, when nothing else is running.
+      # `--no-deps`: the projects it waits for locally already ran.
       # Once, on the first runner: it times the site, not a share of the suite.
       - name: Load
         if: matrix.shard == 1

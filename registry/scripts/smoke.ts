@@ -178,8 +178,8 @@ async function checkIndex(target: SmokeTarget, problems: SmokeProblem[]): Promis
   }
   // A 200 is not a shape. Reading `core` off whatever came back used to throw
   // out of `coreRange` and end the run before npm-packages and site-routes were
-  // judged at all — a stack trace where the per-assertion report belongs
-  //. The field is checked here because here is where `add` reads it.
+  // judged at all — a stack trace where the per-assertion report belongs.
+  // The field is checked here because here is where `add` reads it.
   if (typeof index.core !== "string" || !/^\d+\.\d+\.\d+/.test(index.core)) {
     fail(`${url} declares core ${JSON.stringify(index.core)}, which is not a version; every \`add\` reads this field`);
     return { why: `not judged: ${url} declares no usable \`core\`, so there is no range to resolve` };

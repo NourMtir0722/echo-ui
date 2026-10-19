@@ -5,8 +5,8 @@
   // scripts, the tests, the agent layer. It carries `"types": ["node"]`,
   // because those things genuinely run in Node. Shipped component sources do
   // not, and compiling them under Node's globals is how `process.env.NODE_ENV`
-  // shipped in three components and broke a Vite app's `tsc && vite build`
-  //. Nothing in the repo noticed, because in the repo it was true.
+  // shipped in three components and broke a Vite app's `tsc && vite build`.
+  // Nothing in the repo noticed, because in the repo it was true.
   //
   // So: no `types` at all here. What a real app DOES give you is kept —
   // `src/globals.d.ts` declares `*.css`, which is what `next-env.d.ts` and

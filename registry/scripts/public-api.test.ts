@@ -47,8 +47,8 @@ function sources(): Source[] {
 /**
  * The local names a file binds to `@base-ui/react/*` imports.
  *
- * `import type { … }` and a per-specifier `{ type X }` are collected too
- *. Leaving them out meant the ONE import form whose only possible
+ * `import type { … }` and a per-specifier `{ type X }` are collected too.
+ * Leaving them out meant the ONE import form whose only possible
  * purpose is to put an upstream name in a type position was the one form this
  * never looked at — so the leak it exists to catch could be reintroduced by
  * writing it the way a modern codebase writes it.

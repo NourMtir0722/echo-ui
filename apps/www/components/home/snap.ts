@@ -292,8 +292,8 @@ export const LONGEST_FRAME = 50;
 /**
  * A clock that runs with the page's frames, a stalled frame counting as one
  * (LONGEST_FRAME): read it once a frame. A glide timed on it goes on after a
- * stall from where it was, instead of jumping by the whole stall at once
- *, and stillness timed on it is stillness the page was there to see.
+ * stall from where it was, instead of jumping by the whole stall at once,
+ * and stillness timed on it is stillness the page was there to see.
  */
 export function steadyClock(longest = LONGEST_FRAME): (now: number) => number {
   let at = 0;

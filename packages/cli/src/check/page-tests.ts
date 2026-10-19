@@ -99,8 +99,8 @@ interface Box {
  * light never ends, and the wait is never more than 3s. axe runs after this,
  * on the same settled page.
  *
- * A page that threw shows the dev server's error overlay instead of itself
- *: Next swaps in a document of its own and opens its error dialog,
+ * A page that threw shows the dev server's error overlay instead of itself:
+ * Next swaps in a document of its own and opens its error dialog,
  * Vite lays its overlay over what rendered. Then there's no page to test,
  * and what the overlay says comes back instead of findings.
  */

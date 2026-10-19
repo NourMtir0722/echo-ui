@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * The install line: a package-manager switcher over one copyable command
- *, lifted out of ComponentDoc so the homepage shows the same
+ * The install line: a package-manager switcher over one copyable command,
+ * lifted out of ComponentDoc so the homepage shows the same
  * control rather than a second, drifting copy of it.
  *
  * The tabs are labelled by the *runner* (`npx`, not `npm`) on purpose. Echo is

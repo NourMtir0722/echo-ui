@@ -42,8 +42,8 @@ export function contrastRatio(a: string, b: string): number {
  * The APCA lightness contrast a small label needs: Lc 60 is APCA's floor for
  * text people read, not just notice. The WCAG 2 ratio overrates bright,
  * saturated text on a dark ground: a lit blue on black passes at 5.3:1 and
- * reads at Lc 36, which is what a person's eyes caught on the travel test
- *. Echo holds both.
+ * reads at Lc 36, which is what a person's eyes caught on the travel test.
+ * Echo holds both.
  */
 export const APCA_SMALL_TEXT = 60;
 

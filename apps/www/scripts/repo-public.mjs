@@ -5,8 +5,8 @@
  * Every link to the repository (the GitHub key beside X, the footer, "Star
  * Echo on GitHub", "report a bug") waits on `REPO_PUBLIC` in
  * `components/site/repo.ts`. While the repository is private, GitHub answers
- * everyone but its owner with a 404, and the site once shipped six of those
- *. So with the switch on, the deploy asks GitHub for the repository
+ * everyone but its owner with a 404, and the site once shipped six of those.
+ * So with the switch on, the deploy asks GitHub for the repository
  * as a visitor would, and stops unless it's there.
  *
  * Only `deploy:site` runs this, before the build.

@@ -127,8 +127,8 @@ jobs:
 
       # The core gate (core-version.test.ts) wants npm to hold the workspace's
       # core, and the step above wants it not to yet: this run is the publish.
-      # ECHO_RELEASING, set for the whole run, lets exactly that one through
-      #. The deploy job runs only after the publish succeeds.
+      # ECHO_RELEASING, set for the whole run, lets exactly that one through.
+      # The deploy job runs only after the publish succeeds.
       - name: Test
         run: pnpm test
 

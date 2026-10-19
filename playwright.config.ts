@@ -33,8 +33,8 @@ const DEV_PORT = Number(process.env.ECHO_TEST_DEV_PORT ?? 3101);
 const LOAD_SPEC = /(^|[\\/])load\.spec\.ts$/;
 
 /**
- * Chromium, as every Chromium project gets it. In CI it starts without WebGL
- *: the runner has two cores and no GPU, so the homepage's 3D Echo
+ * Chromium, as every Chromium project gets it. In CI it starts without WebGL:
+ * the runner has two cores and no GPU, so the homepage's 3D Echo
  * was drawn in software and the page grew too slow for its tests. There the
  * homepage takes the drawing's path, and the 3D stage's tests skip; locally
  * they run.
