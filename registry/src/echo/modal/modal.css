@@ -1,0 +1,136 @@
+/**
+ * Modal. Base UI Dialog skinned as an Echo device
+ * panel: molded chassis surface behind convex glass. Colors compose
+ * var(--echo-*); the popup's transform/opacity is owned by GSAP (useGsapPresence),
+ * so this file sets NO transition on the popup — only on the backdrop.
+ */
+
+.echo-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--echo-z-overlay, 200);
+  background: color-mix(in oklab, var(--echo-well) 72%, transparent);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity var(--echo-duration-sweep) ease;
+}
+.echo-modal__backdrop[data-open] {
+  opacity: 1;
+}
+.echo-modal__backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+.echo-modal__popup {
+  position: fixed;
+  z-index: var(--echo-z-modal, 210);
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: min(92vw, 30rem);
+  padding: var(--echo-space-10);
+  border-radius: var(--echo-radius-2xl);
+  color: var(--echo-text);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+
+  background: linear-gradient(155deg, var(--echo-cap) 0%, var(--echo-surface) 46%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.08 * var(--echo-gloss, 1))),
+    inset 0 0 0 1px var(--echo-seam),
+    0 calc(40px + 50px * var(--air, 0)) calc(80px + 70px * var(--air, 0)) -24px
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+  /* GSAP owns transform + opacity; do not add a transition here. */
+  will-change: transform, opacity;
+}
+
+.echo-modal__popup[data-size="sm"] {
+  width: min(92vw, 22rem);
+}
+.echo-modal__popup[data-size="lg"] {
+  width: min(94vw, 42rem);
+}
+
+.echo-modal__popup:focus-visible {
+  outline: none;
+}
+
+.echo-modal__title {
+  margin: 0 0 var(--echo-space-3);
+  font-size: var(--echo-text-lg);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-tight, -0.01em);
+}
+
+.echo-modal__desc {
+  margin: 0 0 var(--echo-space-8);
+  color: var(--echo-text-dim);
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-body, 1.55);
+}
+
+.echo-modal__body {
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-body, 1.55);
+}
+
+.echo-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--echo-space-5);
+  margin-top: var(--echo-space-10);
+}
+
+.echo-modal__close {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: calc(28px * var(--echo-density, 1));
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  color: var(--echo-text-dim);
+  background: color-mix(in oklab, var(--echo-well) 60%, transparent);
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-none, 1);
+}
+@media (hover: hover) {
+  .echo-modal__close:hover {
+    color: var(--echo-text);
+  }
+}
+.echo-modal__close:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-modal__backdrop {
+    transition-duration: var(--echo-duration-tick);
+  }
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the other
+ * threshold: the 44px both platform guidelines use, which is about a
+ * fingertip rather than about conformance.
+ *
+ * Gated on `@media (pointer: coarse)` so the desktop rendering does not move
+ * — these are "passing AA but under the
+ * platform guideline", not broken. Pagination is first among them because
+ * people tap it repeatedly, which is exactly when a 30px target starts
+ * costing mis-taps.
+ */
+@media (pointer: coarse) {
+  .echo-modal__close {
+    width: 44px;
+    height: 44px;
+  }
+}

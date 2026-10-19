@@ -1,0 +1,827 @@
+/*
+ * The landing's own type and colour: the Swiss titles and the family
+ * gradients. Every colour is a variable, either an --echo-* role or a
+ * --family-* colour (family.ts), so a new seed relights all of it.
+ */
+
+/* --- the page ------------------------------------------------------------- */
+
+/*
+ * The page never pans sideways. Decoration travels past the window's
+ * edge on purpose (the paper flying from Make to Pick lands partly off it), and
+ * the window's edge is where it's cut: `clip`, not `hidden`, so the shell
+ * doesn't become a scroll container and the sticky bar stays sticky. It says so
+ * for the overflow sweep (tests/helpers/layout.ts), for itself only: its
+ * children measure as they are.
+ */
+.home-shell {
+  overflow-x: clip;
+  --echo-clip: decorative;
+}
+.home-shell > * {
+  --echo-clip: normal;
+}
+
+/* --- Swiss titles --------------------------------------------------------- */
+
+/*
+ * The hero's type, for every section: Red Hat Display 800 in capitals, set
+ * tight, across the width. The sentence sits under it on the right, justified
+ * like the hero's paragraph, with the small mono line on the left.
+ */
+.big-title {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(1rem, 2vw, 2rem);
+  row-gap: clamp(1.5rem, 3vw, 2.75rem);
+  min-width: 0;
+  margin-bottom: clamp(3rem, 6vw, 5.5rem);
+}
+.big-title__h {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  /* A rem floor, so the title still grows when text is enlarged (WCAG 1.4.4). */
+  font-size: clamp(2.6rem, 7.4vw, 7.25rem);
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  /* A word as wide as a phone at 200% text wraps inside itself, never widens the page. */
+  overflow-wrap: break-word;
+  color: var(--echo-text);
+}
+.big-title[data-size="hero"] .big-title__h {
+  font-size: clamp(3rem, 10.5vw, 11rem);
+  line-height: 0.86;
+}
+/* A part of a section with its own title ("Or a whole screen"): the same grid, a step smaller. */
+.big-title[data-size="sub"] {
+  margin-bottom: clamp(1.75rem, 3.5vw, 3rem);
+}
+.big-title[data-size="sub"] .big-title__h {
+  font-size: clamp(1.8rem, 3.6vw, 3.25rem);
+  line-height: 0.95;
+}
+.big-title__meta {
+  grid-column: 1 / span 5;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+}
+.big-title__kicker {
+  margin: 0;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+/* A count, where a count is information: set in the title's face, as big as a line of it. */
+.big-title__count {
+  margin: 0;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.6rem, 7.4vw, 7.25rem);
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+  color: var(--echo-text-dim);
+}
+.big-title__lede {
+  grid-column: 7 / -1;
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+  line-height: 1.55;
+  /* The hero's paragraph: justified, hyphenated, straight edges and even spaces. */
+  text-align: justify;
+  hyphens: auto;
+  color: var(--echo-text-dim);
+}
+.big-title__lede strong {
+  font-weight: inherit;
+  color: var(--echo-text);
+}
+.big-title[data-align="stack"] .big-title__lede {
+  grid-column: 1 / span 6;
+}
+/*
+ * The family through the letters. Each colour is at least 3:1 on its seed's
+ * dark ground (family.test.ts), which is AA for text this size.
+ */
+/* A title in two tones, Lovable's way: what it is, then what it gives, quieter. */
+.big-title__dim {
+  color: var(--echo-text-dim);
+}
+@media (max-width: 56.25rem) {
+  .big-title__meta,
+  .big-title__lede,
+  .big-title[data-align="stack"] .big-title__lede {
+    grid-column: 1 / -1;
+  }
+}
+/*
+ * A phone's measure is too short to justify: a short paragraph's spaces open into gaps ("The  same  parts,
+ * put  together"). Set ragged, as text this narrow is, without breaking words.
+ */
+@media (max-width: 40rem) {
+  .home-lit :is(.big-title__lede, .hero4__lede, .pz__panel-rest) {
+    text-align: start;
+    hyphens: manual;
+  }
+}
+
+/* --- hero ------------------------------------------------------------------ */
+
+/*
+ * One rounded card, the whole first screen, on the page's own ground with the
+ * seed's light pooled low. Its own nav across the top; the device upright
+ * over a faded grid, floating a little, with the giant DESIGN and SYSTEM
+ * right up against it; the promise and the way in bottom left. The heading is
+ * for screen readers: the words beside the device say it on the screen.
+ */
+.hero4 {
+  position: relative;
+  overflow: clip;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "nav nav"
+    ". ."
+    ". ."
+    "offer .";
+  row-gap: clamp(1rem, 2.5vh, 2rem);
+  min-height: max(40rem, calc(100svh - 1.5rem));
+  margin: 0.75rem;
+  padding: 0.9rem var(--hero-pad-x) clamp(1.5rem, 3vw, 2.25rem);
+  --hero-pad-x: clamp(1.25rem, 3vw, 2.5rem);
+  /*
+   * The device's width here: a little narrower than the brand's 372px, its
+   * screen the same height. The words and the paragraph make room for it from this.
+   */
+  --hero-device: 348px;
+  box-sizing: border-box;
+  /*
+   * The card's contour forms with the scroll (--hero-frame, light/HeroLight.tsx: 0 at the top of the
+   * page, 1 a third of a window down): plain at first, so its light floats free, then its border and
+   * its own ground (--echo-well) fade in. Its own stacking context, so its light lies on its ground.
+   */
+  isolation: isolate;
+  border: 1px solid color-mix(in oklab, var(--echo-text) calc(var(--hero-frame, 0) * 10%), transparent);
+  border-radius: clamp(1.25rem, 2.2vw, 2rem);
+  background: color-mix(in oklab, var(--echo-well) calc(var(--hero-frame, 0) * 100%), transparent);
+  color: var(--echo-text);
+}
+/*
+ * The hero's light: an arch of the seed's shades standing on the card's bottom edge, rising behind the
+ * device (light/HeroLight.tsx draws it). Until its shader has drawn, and where there's no WebGL, this CSS
+ * arch stands in, a shade deeper so the words over its flanks read at AA without a guard; then it fades
+ * out as the shader fades in. In daylight nothing glows, and a glow on a pale page is a smudge, so on a
+ * light device --site-aura is 0 and the device stands on its shadow alone.
+ *
+ * As the page opens it rises into place from just below the card's edge, its rim first and its core
+ * last: --hero-in, 0 to 1, is the shader's clock too (light/HeroLight.tsx), so whichever is showing,
+ * the light is at the same height. Then it follows the scroll a little, drifting down against the page
+ * (--hero-sink, HERO.follow).
+ */
+@property --hero-in {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@keyframes hero-light-rise {
+  from {
+    --hero-in: 0;
+  }
+  to {
+    --hero-in: 1;
+  }
+}
+.hero4::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  --in: var(--hero-in, 1);
+  /* Its foot under the edge: 1.4 of its 41% height when it starts up, and however far it has set. */
+  background: radial-gradient(
+    46% 41% at 50% calc(100% + var(--hero-sink, 0px) + (1 - var(--in)) * 57.4%),
+    color-mix(in oklch, var(--family-seed-light) calc(70% * var(--site-aura, 1)), transparent) 0%,
+    color-mix(in oklch, var(--family-seed) calc(90% * var(--site-aura, 1)), transparent) 30%,
+    color-mix(in oklch, var(--family-seed-deep) calc(80% * var(--site-aura, 1)), transparent) 55%,
+    color-mix(in oklch, var(--family-seed-deep) calc(35% * var(--site-aura, 1)), transparent) 78%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: hero-light-rise 2.2s cubic-bezier(0.45, 0, 0.1, 1) 0.15s backwards;
+  transition: opacity 0.8s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero4::before {
+    animation: none;
+  }
+}
+.hero4[data-lit]::before {
+  opacity: 0;
+}
+.hero4__light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.hero4__light-field {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.hero4[data-lit] .hero4__light-field {
+  opacity: calc(var(--site-aura, 1));
+}
+@media (forced-colors: active) {
+  .hero4::before,
+  .hero4__light {
+    display: none;
+  }
+}
+.hero4__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* The faded grid behind the device: seams that fade out from its middle. */
+.hero4__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--echo-text) 11%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--echo-text) 11%, transparent) 1px, transparent 1px);
+  background-size: 88px 88px;
+  background-position: center;
+  mask-image: radial-gradient(42% 52% at 50% 55%, black 20%, transparent 100%);
+}
+
+/* The nav, part of the card. */
+.hero4__nav {
+  grid-area: nav;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.hero4__brand {
+  grid-column: 1;
+  justify-self: start;
+  display: inline-flex;
+}
+.hero4__links {
+  grid-column: 2;
+  display: flex;
+  gap: 0.25rem;
+}
+.hero4__link {
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--echo-text-dim);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+.hero4__link:hover {
+  color: var(--echo-text);
+  background: color-mix(in oklab, var(--echo-text) 8%, transparent);
+}
+.hero4__link:focus-visible,
+.navtools a:focus-visible,
+.hero4__cmd:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+.hero4__support {
+  justify-self: end;
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* GitHub and X (NavTools.tsx), in the hero beside Support, and in the rail. */
+.navtools {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.navtools a {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--echo-text-dim);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.navtools a:hover {
+  color: var(--echo-text);
+  background: color-mix(in oklab, var(--echo-text) 12%, transparent);
+}
+
+/*
+ * The device, upright in the middle of the card so Echo on its screen is easy
+ * to see, floating a little at rest. The name stands right up against it on
+ * either side, anchored to the device so it stays close at any width, and
+ * tucked a little behind its edges.
+ */
+.hero4__device {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 48%;
+  width: min(var(--hero-device), 80vw);
+  translate: -50% -50%;
+  /*
+   * DESIGN and SYSTEM hang outside this box on purpose (the card clips them),
+   * so its overflow is declared rather than mistaken for a layout pushed open.
+   * Only this box's: what's inside it is measured as usual.
+   */
+  --echo-clip: decorative;
+}
+.hero4__device > * {
+  --echo-clip: none;
+}
+/* Narrower, not smaller: its screen keeps its height (brand.css). */
+.hero4__device .brand-device {
+  --device-w: var(--hero-device);
+}
+/* DESIGN against the device's left side, SYSTEM against its right, a little lower. */
+.hero4__word {
+  position: absolute;
+  z-index: -1;
+  /* The titles' face: Red Hat Display, heavy and tight. */
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(3.5rem, min(8.4vw, 14vw - 84px), 9rem);
+  font-weight: 800;
+  line-height: 0.78;
+  letter-spacing: -0.045em;
+  color: var(--echo-text);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.hero4__word--left {
+  right: calc(100% - 0.35rem);
+  top: 40%;
+}
+.hero4__word--right {
+  left: calc(100% - 0.35rem);
+  top: 56%;
+}
+/*
+ * The small words that make the big ones a sentence: "The" over DESIGN, flush
+ * with its left edge, and "your AI agent builds with." under SYSTEM, flush
+ * with its right edge, so it keeps clear of the device. The words' face at
+ * about a quarter of their size, anchored to the words as the words are to
+ * the device.
+ */
+.hero4__small {
+  position: absolute;
+  z-index: -1;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.25rem, calc(2.3vw - 2px), 2.475rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+  pointer-events: none;
+  user-select: none;
+}
+/* As wide as its keys, no wider: the paragraph above them ends where they do. */
+.hero4__offer {
+  grid-area: offer;
+  display: grid;
+  justify-items: start;
+  justify-self: start;
+  gap: 1.25rem;
+  align-self: end;
+}
+.hero4__lede,
+.hero4__ctas {
+  position: relative;
+  z-index: 2;
+}
+.hero4__lede {
+  /*
+   * The keys' width, not its own: at width 0 its text adds nothing to the block's width, and
+   * min-width fills what the keys make of it: it ends where the command does.
+   */
+  width: 0;
+  min-width: 100%;
+  margin: 0;
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+  line-height: 1.5;
+  /*
+   * Ragged, unlike the sections' longer sentences: two or three lines justified stretched the middle
+   * one into gaps ("and   checks   every"). No lone word on the last line.
+   */
+  text-align: start;
+  hyphens: manual;
+  text-wrap: pretty;
+}
+/* OpenAI's mark on the key that adds Echo in ChatGPT, the size of a key's icon. */
+.hero4__key-mark {
+  width: 1.15em;
+  height: 1.15em;
+}
+.hero4__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+/* The one command it takes: press to copy. */
+.hero4__cmd {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 3rem;
+  padding: 0 0.9rem 0 1.1rem;
+  border: 1px solid color-mix(in oklab, var(--echo-text) 16%, transparent);
+  border-radius: 0.9rem;
+  /* A frosted pane of its own on the hero's light, as Lovable's prompt box sits on its gradient: at 90% its
+     text reads at 6.7:1 over even the arch's palest core, so the light needn't be held round it. */
+  background: color-mix(in oklab, var(--echo-surface) 90%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--echo-text);
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.hero4__cmd:hover {
+  border-color: color-mix(in oklab, var(--echo-text) 30%, transparent);
+}
+.hero4__cmd code {
+  font: inherit;
+}
+.hero4__cmd-prompt {
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+}
+.hero4__cmd-icon {
+  display: grid;
+  color: var(--echo-text-dim);
+}
+/*
+ * DESIGN and SYSTEM fill the room beside the device exactly: DESIGN from the
+ * card's left edge (the paragraph's) to the device, SYSTEM from the device to
+ * the right edge (Support Echo's), tucked 0.35rem under it both sides. Sized
+ * from the card's own width (cqw), so margins, padding or a scrollbar can't
+ * throw it. SYSTEM is 3.82em wide in Red Hat Display 800 at -0.045em; DESIGN
+ * is 3.56em, so it's set a hair looser (-0.001em) to come out the same width.
+ */
+@media (min-width: 62rem) {
+  .hero4 {
+    container-type: inline-size;
+  }
+  .hero4__device {
+    /* The big words' size, which the small ones stand clear of. */
+    --hero-word: clamp(3.5rem, calc((100cqw - var(--hero-device) + 0.7rem) / 7.65), 18rem);
+  }
+  .hero4__word {
+    font-size: var(--hero-word);
+  }
+  /* Never under the device, and clear of it: the keys' width, or the room left of it less a gap if that's less. */
+  .hero4__lede {
+    min-width: min(100%, calc(50vw - var(--hero-device) / 2 - 5rem));
+  }
+  .hero4__word--left {
+    letter-spacing: -0.001em;
+  }
+  /*
+   * In the same room beside the device as the big words, and a quarter of their size, so the
+   * line under SYSTEM keeps the same distance from the device at every width (sized from the
+   * window, it crept up to the device as the room narrowed).
+   */
+  .hero4__small {
+    width: calc(50cqw - var(--hero-device) / 2 + 0.35rem);
+    font-size: calc(var(--hero-word) * 0.235);
+    text-wrap: balance;
+  }
+  .hero4__small--before {
+    right: calc(100% - 0.35rem);
+    bottom: calc(60% + 0.9rem);
+  }
+  /* As wide as SYSTEM (3.82em of it), so its right edge is SYSTEM's. */
+  .hero4__small--after {
+    left: calc(100% - 0.35rem);
+    width: calc(var(--hero-word) * 3.82);
+    top: calc(56% + var(--hero-word) * 0.82 + 0.9rem);
+    text-align: right;
+  }
+}
+
+/*
+ * The site's own top bar, on the homepage: out of the way while the card
+ * (which has its own nav) is on screen, and back once it has scrolled past.
+ * Hidden is `visibility: hidden`, so its links leave the tab order too.
+ */
+@media (min-width: 62rem) {
+  .home-shell > .echo-shell__rail {
+    position: fixed;
+    inset: 0 0 auto;
+    translate: 0 -100%;
+    visibility: hidden;
+    border-bottom-color: transparent;
+    transition:
+      translate 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0.35s;
+  }
+  :root[data-hero-passed] .home-shell > .echo-shell__rail {
+    translate: 0 0;
+    visibility: visible;
+    transition: translate 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-shell > .echo-shell__rail {
+    transition: none;
+  }
+}
+
+/*
+ * A narrow window: the bar keeps the wordmark and Menu (SiteMenu.tsx); the destinations, the page's keys
+ * and Support Echo are in the menu. In a row they scrolled sideways under a fade, the key out of sight.
+ */
+@media (max-width: 56.25rem) {
+  .home-shell > .echo-shell__rail .echo-topnav__link,
+  .home-shell > .echo-shell__rail .navtools,
+  .home-shell > .echo-shell__rail .echo-topnav__key {
+    display: none;
+  }
+  .home-shell > .echo-shell__rail .echo-shell__railnav {
+    gap: var(--echo-space-5);
+    mask-image: none;
+    padding-right: 0;
+  }
+}
+
+/* A phone: one column. The site's bar does the navigating; the device sits in the flow. */
+@media (max-width: 61.99rem) {
+  .home-shell > .echo-shell__rail {
+    border-bottom-color: transparent;
+  }
+  .hero4 {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "." "device" "offer";
+    min-height: 0;
+    margin: 0.5rem;
+  }
+  .hero4__nav {
+    display: none;
+  }
+  .hero4__device {
+    grid-area: device;
+    position: relative;
+    left: auto;
+    top: auto;
+    translate: none;
+    justify-self: center;
+    --hero-word: clamp(3.5rem, 19vw, 6rem);
+    /* Room for the words that hang over its top and foot, and the small lines past them. */
+    margin-block: calc(0.62 * var(--hero-word) + 2.6rem) calc(0.55 * var(--hero-word) + 2.6rem);
+  }
+  /* No room beside it: DESIGN stands behind the device's top, SYSTEM behind its foot. */
+  .hero4__word--left,
+  .hero4__word--right {
+    right: auto;
+    left: 50%;
+    translate: -50% 0;
+    font-size: var(--hero-word);
+  }
+  .hero4__word--left {
+    top: -0.62em;
+  }
+  .hero4__word--right {
+    top: auto;
+    bottom: -0.55em;
+  }
+  /* "The" just over DESIGN, the rest just under SYSTEM, centred as they are. */
+  .hero4__small {
+    left: 50%;
+    translate: -50% 0;
+    width: max-content;
+    max-width: calc(100vw - 3rem);
+    text-align: center;
+    font-size: clamp(1.1rem, 5.4vw, 1.6rem);
+  }
+  .hero4__small--before {
+    bottom: calc(100% + 0.62 * var(--hero-word) + 0.45rem);
+  }
+  .hero4__small--after {
+    top: calc(100% + 0.55 * var(--hero-word) + 0.45rem);
+  }
+}
+
+/* --- the device, turning (DeviceSpinner) ------------------------------------ */
+
+.spin {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  padding-block: 1rem;
+  cursor: grab;
+  /* A sideways drag turns it; up and down still scrolls the page. */
+  touch-action: pan-y;
+  user-select: none;
+}
+.spin[data-grabbing] {
+  cursor: grabbing;
+}
+/* What lifts when it floats: the device. Its shadow is outside it, on the ground. */
+.spin__lift {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  perspective: 1600px;
+}
+.spin__lift[data-float] {
+  animation: spin-float 6s ease-in-out infinite;
+}
+/* The shadow on the ground: DeviceSpinner narrows and slides it with the device's turn. */
+.spin__ground {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -1.75rem;
+  width: 64%;
+  height: 1.5rem;
+  pointer-events: none;
+  translate: none;
+  transform: translateX(-50%);
+}
+.spin__shadow {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 55%, transparent), transparent);
+  filter: blur(4px);
+}
+.spin__shadow[data-float] {
+  animation: spin-shadow 6s ease-in-out infinite;
+}
+@keyframes spin-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -12px;
+  }
+}
+@keyframes spin-shadow {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 0.86;
+    opacity: 0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin__lift[data-float],
+  .spin__shadow[data-float] {
+    animation: none;
+  }
+}
+.spin__obj {
+  position: relative;
+  /* A definite width: the device sizes itself as a share of it, so it can't shrink-wrap the device back. */
+  width: 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.spin__face {
+  position: relative;
+  transform: translateZ(0.5px);
+  backface-visibility: hidden;
+}
+.spin__face .brand-device {
+  /* Its own drop shadow would hang in the air when turned; the pool of light grounds it instead. */
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -3px 8px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 40.0%, transparent);
+}
+.spin__layer,
+.spin__back {
+  position: absolute;
+  inset: 0;
+  border-radius: 46px;
+}
+/* The body's edge: darker toward the back, as the light falls off round a molded side. */
+.spin__layer {
+  background: color-mix(in oklab, var(--echo-surface) calc(40% + 45% * var(--spin-shade)), var(--echo-shade-ink, black));
+}
+.spin__back {
+  display: grid;
+  justify-items: center;
+  align-content: space-between;
+  padding: 3.5rem 0;
+  box-sizing: border-box;
+  transform: translateZ(calc(-1 * var(--spin-depth) - 0.5px)) rotateY(180deg);
+  backface-visibility: hidden;
+  background: linear-gradient(155deg, var(--echo-cap) 0%, var(--echo-surface) 45%, color-mix(in oklab, var(--echo-surface) 70%, var(--echo-shade-ink, black)) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 40.0%, transparent);
+}
+.spin__plate {
+  font-family: var(--brand-font-display), ui-rounded, system-ui, sans-serif;
+  font-size: 2.4rem;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: color-mix(in oklab, var(--echo-text) 22%, transparent);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 -1px 0 color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+}
+.spin__screw {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in oklab, var(--echo-text) 45%, transparent), color-mix(in oklab, var(--echo-surface) 60%, var(--echo-shade-ink, black)));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 50.0%, transparent);
+}
+
+@media (max-width: 26.25rem) {
+  .spin__layer,
+  .spin__back {
+    border-radius: 38px;
+  }
+}
+
+
+/*
+ * A drawn look ([data-drawn], theme-boot.ts): the device turned over is drawn
+ * too, its edge solid ink, its back a paper plate outlined in the ink, and it
+ * casts no blurred shadow on the ground: a drawing has none.
+ */
+:root[data-drawn] .spin__shadow {
+  display: none;
+}
+:root[data-drawn] .spin__layer {
+  background: var(--echo-text);
+}
+:root[data-drawn] .spin__back {
+  background: var(--echo-surface);
+  box-shadow: inset 0 0 0 var(--echo-line-width) var(--echo-line);
+}
+:root[data-drawn] .spin__plate {
+  color: var(--echo-text);
+  text-shadow: none;
+}
+:root[data-drawn] .spin__screw {
+  background: var(--echo-surface);
+  box-shadow: inset 0 0 0 1.5px var(--echo-line);
+}
+
+/* In the site's rail the keys match its links' height: the rail scrolls sideways when it must, never up and down. */
+.echo-shell__railnav .navtools a {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+/* Under a finger, 44px, as the rail's links are (site-shell.css). */
+@media (pointer: coarse) {
+  .navtools a,
+  .echo-shell__railnav .navtools a {
+    width: 44px;
+    height: 44px;
+  }
+}

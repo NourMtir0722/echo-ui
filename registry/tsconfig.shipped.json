@@ -1,0 +1,26 @@
+{
+  // The files a user actually copies, compiled the way THEIR app compiles them.
+  //
+  // `tsconfig.json` next to this one type-checks the workspace: the build
+  // scripts, the tests, the agent layer. It carries `"types": ["node"]`,
+  // because those things genuinely run in Node. Shipped component sources do
+  // not, and compiling them under Node's globals is how `process.env.NODE_ENV`
+  // shipped in three components and broke a Vite app's `tsc && vite build`
+  //. Nothing in the repo noticed, because in the repo it was true.
+  //
+  // So: no `types` at all here. What a real app DOES give you is kept —
+  // `src/globals.d.ts` declares `*.css`, which is what `next-env.d.ts` and
+  // `vite/client` provide, so keeping it models the app rather than flattering
+  // the repo.
+  //
+  // `consumer-types.test.ts` checks the same property from the other side, by
+  // building a program in memory against both supported React majors. Two
+  // opinions on the thing that has already broken once is the right number;
+  // this is the one that runs in your editor.
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src/echo/**/*.ts", "src/echo/**/*.tsx", "src/globals.d.ts"],
+  "exclude": ["src/echo/**/*.test.ts", "src/echo/**/*.test.tsx", "src/echo/**/*.type-test.tsx"]
+}

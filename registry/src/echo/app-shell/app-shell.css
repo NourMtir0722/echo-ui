@@ -1,0 +1,308 @@
+/*
+ * AppShell. The app frame:
+ * a molded chassis rail lit from the key angle, a sticky sidebar, and the
+ * content between them. Composes var(--echo-*) only.
+ *
+ * The two metrics are custom properties rather than fixed values, because the
+ * sidebar's sticky offset MUST equal the rail's height — computing one from
+ * the other is what stops a redesign of the rail from silently leaving a
+ * 56px dead band at the top of every sidebar.
+ */
+.echo-shell {
+  --echo-shell-rail-h: 56px;
+  --echo-shell-side-w: 248px;
+}
+
+.echo-shell__skip {
+  position: absolute;
+  inset-inline-start: -9999px;
+  top: 0;
+  z-index: var(--echo-z-skip, 600);
+  padding: var(--echo-space-5) var(--echo-space-7);
+  border-radius: 0;
+  border-end-end-radius: var(--echo-radius-md);
+  background: var(--echo-cap);
+  color: var(--echo-text);
+  border: var(--echo-border-hairline, 1px) solid var(--echo-accent-glow);
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-xs);
+  text-decoration: none;
+}
+.echo-shell__skip:focus {
+  inset-inline-start: 0;
+}
+
+/* --- the rail: a chassis bar, lit from the key angle --------------------- */
+
+.echo-shell__rail {
+  position: sticky;
+  top: 0;
+  z-index: var(--echo-z-sticky, 100);
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-10);
+  /*
+   * The hairline below counts inside the height, so the rail is exactly --echo-shell-rail-h tall
+   * whatever the page's own box-sizing: everything placed by the variable (the sidebar's sticky top,
+   * its max height, a page's own offsets) meets it, never a pixel under it.
+   */
+  box-sizing: border-box;
+  height: var(--echo-shell-rail-h);
+  padding: 0 var(--echo-space-9);
+  background: color-mix(in srgb, var(--echo-surface) 92%, transparent);
+  backdrop-filter: blur(12px) saturate(1.08);
+  /* Bottom edge = the Divider's seam: dark groove, faint light lip. */
+  border-bottom: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--echo-cap-highlight) 32%, transparent),
+    0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));
+}
+
+.echo-shell__brand {
+  /*
+   * Deliberately NOT shrinkable. This is a wrapper around the
+   * wordmark rather than a text node, so `text-overflow` never applies to it —
+   * adding `min-width: 0` here only let it shrink below its own content and
+   * clip the logo. A product name is not long content.
+   */
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+  white-space: nowrap;
+}
+
+.echo-shell__railnav {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-1);
+  margin-inline-start: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.echo-shell__railnav::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- the body: sidebar + content ---------------------------------------- */
+
+.echo-shell:not([data-bare]) {
+  display: grid;
+  grid-template-columns: var(--echo-shell-side-w) minmax(0, 1fr);
+  align-items: start;
+}
+
+/*
+ * The rail spans both columns. Without this it lands in the sidebar column and
+ * the content starts beside it.
+ */
+.echo-shell__rail {
+  grid-column: 1 / -1;
+}
+
+.echo-shell[data-bare] {
+  display: block;
+}
+
+.echo-shell__side {
+  position: sticky;
+  top: var(--echo-shell-rail-h);
+  /*
+   * border-box, or the padding below lands ON TOP of the max-height: the
+   * column measured 664 + 24 + 64 = 752px in a 664px space, so its last 88px
+   * hung below the window — the bottom of the list could not be seen or
+   * scrolled to without scrolling the page instead.
+   */
+  box-sizing: border-box;
+  max-height: calc(100dvh - var(--echo-shell-rail-h));
+  overflow-y: auto;
+  padding: var(--echo-space-10) var(--echo-space-7) var(--echo-space-12);
+  /* The Divider's seam, stood on end: a dark groove with a faint light lip,
+     the same rule Table rows and the rail's bottom edge draw. */
+  border-inline-end: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+  box-shadow: 1px 0 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));
+  scrollbar-width: thin;
+  scrollbar-color: var(--echo-cap) transparent;
+}
+
+/* Its own sidebar only: a shell embedded inside a bare one keeps its sidebar. */
+.echo-shell[data-bare] > .echo-shell__side {
+  display: none;
+}
+
+.echo-shell__content {
+  min-width: 0;
+}
+
+/*
+ * Focus is scrolled CLEAR of the rail, not under it (WCAG 2.4.11 Focus Not
+ * Obscured).
+ *
+ * Tabbing backwards up a long page scrolls the newly focused element to the top
+ * of the scrollport — which is behind a rail that is `position: sticky; top: 0`.
+ * `scroll-margin` is how an element asks for room above itself when something
+ * scrolls it into view, and the room it needs is exactly the rail's height, so
+ * it is read from the same custom property the sidebar's offset comes from.
+ * The three cannot drift apart, which is the reason the metrics are properties
+ * at all (see the note at the top of this file).
+ *
+ * WHY IT IS HERE AND NOT `scroll-padding` ON `:root`. That is the canonical
+ * fix and it was tried and looked like a WebKit limitation. It is not:
+ * `--echo-shell-rail-h` is declared on `.echo-shell`, so on the root element
+ * the `var()` is out of scope, the `calc()` is invalid at computed-value time,
+ * and the whole declaration silently computes to `auto` — on every engine, with
+ * no error anywhere. Declared inside the subtree that owns the property, it
+ * resolves, and a consumer who retunes `--echo-shell-rail-h` moves this with it.
+ *
+ * `__content` and not the whole shell: the sidebar is its own scrollport
+ * starting BELOW the rail, so nothing in it can land underneath. The content
+ * element carries it too, because the skip link scrolls to `<main>` itself.
+ */
+.echo-shell__content,
+.echo-shell__content :is(a[href], button, input, select, textarea, summary, [tabindex]) {
+  scroll-margin-block-start: calc(var(--echo-shell-rail-h) + var(--echo-space-4));
+}
+
+/*
+ * Below this width the sidebar column is gone entirely — NOT collapsed to a
+ * scrolling block above the content, which pushes every screen down by half a
+ * phone and makes the nav something you scroll past to read anything. The
+ * consumer puts the same list in a Sheet behind a toggle in the rail; that is
+ * what echo-sheet is for.
+ */
+@media (max-width: 900px) {
+  .echo-shell:not([data-bare]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .echo-shell__side {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .echo-shell__rail {
+    gap: var(--echo-space-5);
+    padding: 0 var(--echo-space-6);
+  }
+}
+
+/*
+ * Coarse-pointer targets. The skip link measured
+ * 138x36: past 2.5.8's 24px, under the 44px platform guideline. Touch only,
+ * so the desktop rendering does not move.
+ */
+@media (pointer: coarse) {
+  .echo-shell__skip {
+    min-height: 44px;
+  }
+}
+
+/*
+ * Default link skin for the rail and the sidebar (2026-09-18).
+ *
+ * The docs site's frame IS AppShell, and its links were the best-looking nav
+ * in the library — but that look lived in the site's stylesheet, so a
+ * consumer installing AppShell got bare, underlined links. It ships here now.
+ * Every selector is wrapped in :where(), so it has zero specificity: any class
+ * you put on your own links wins without a fight.
+ *
+ * The current page is marked the way every "you are here" is in the library:
+ * the label goes to full text colour and a lit rail sits beside it (under it,
+ * in the rail). Never accent-coloured text — accent on the chassis is under AA.
+ */
+/*
+ * The rail nav fills the rail's height so the lit rail can sit ON the bar's
+ * bottom edge, exactly where Tabs puts its indicator. It used to be a boxed
+ * pill with a short underline floating inside it — a third "you are here"
+ * mark that matched neither Tabs nor the sidebar (2026-09-18).
+ */
+.echo-shell__railnav {
+  align-self: stretch;
+}
+
+:where(.echo-shell__railnav) :where(a) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 var(--echo-space-5);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  font-weight: var(--echo-weight-semibold, 600);
+  color: var(--echo-text-dim);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--echo-duration-swap) ease;
+}
+
+@media (hover: hover) {
+  :where(.echo-shell__railnav) :where(a:hover) {
+    color: var(--echo-text);
+  }
+}
+
+:where(.echo-shell__railnav) :where(a[aria-current="page"]) {
+  color: var(--echo-text);
+}
+
+/*
+ * The lit rail. Emissive, so it is the bright accent with a glow — the same
+ * mark as the sidebar's bar and Tabs' indicator. A 2px rule is non-text
+ * (1.4.11, 3:1), so the "accent text is under AA" limit does not apply.
+ *
+ * Not on a key: a HardwareButton link's `::after` is its hit area,
+ * and this rule shrank it to 2px and painted it as a line across the cap. A
+ * key in the rail says where you are by its own press, not the rail's mark.
+ */
+:where(.echo-shell__railnav) :where(a[aria-current="page"]:not(.echo-hw__cap))::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: var(--echo-space-5);
+  inset-inline-end: var(--echo-space-5);
+  bottom: -1px;
+  height: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));
+}
+
+/* Sidebar links: the docs site's own sidebar, which is the reference. */
+:where(.echo-shell__side) :where(a) {
+  position: relative;
+  display: block;
+  padding: var(--echo-space-3) var(--echo-space-5);
+  border-radius: var(--echo-radius-md);
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  :where(.echo-shell__side) :where(a:hover) {
+    color: var(--echo-text);
+    background: color-mix(in srgb, var(--echo-cap) 30%, transparent);
+  }
+}
+
+:where(.echo-shell__side) :where(a[aria-current="page"]) {
+  color: var(--echo-text);
+  background: color-mix(in srgb, var(--echo-cap) 38%, transparent);
+}
+
+:where(.echo-shell__side) :where(a[aria-current="page"])::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: var(--echo-space-3);
+  bottom: var(--echo-space-3);
+  width: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));
+}
+
+:where(.echo-shell__railnav, .echo-shell__side) :where(a:focus-visible) {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}

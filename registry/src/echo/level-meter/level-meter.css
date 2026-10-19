@@ -1,0 +1,56 @@
+/**
+ * LevelMeter. LED cells in a recessed strip, lit from the bottom (or the
+ * start) in the primary plastic; the held peak is a lit cell above the rest.
+ */
+.echo-level-meter {
+  display: inline-grid;
+  justify-items: center;
+  gap: var(--echo-space-3);
+}
+.echo-level-meter__strip {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--echo-space-1);
+  padding: var(--echo-space-2);
+  border-radius: var(--echo-radius-sm);
+  background: var(--echo-lcd);
+  box-shadow: var(--echo-shadow-groove, inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent));
+}
+.echo-level-meter[data-orientation="horizontal"] .echo-level-meter__strip {
+  flex-direction: row;
+}
+.echo-level-meter__cell {
+  width: 14px;
+  height: 5px;
+  border-radius: var(--echo-radius-xs);
+  background: color-mix(in oklab, var(--echo-lcd) 78%, var(--echo-cap));
+}
+.echo-level-meter[data-orientation="horizontal"] .echo-level-meter__cell {
+  width: 5px;
+  height: 14px;
+}
+.echo-level-meter__cell:is([data-on], [data-peak]) {
+  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.35 * var(--echo-gloss, 1)));
+}
+.echo-level-meter__label {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+@media (forced-colors: active) {
+  .echo-level-meter__strip {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-level-meter__cell {
+    background: Canvas;
+    border: var(--echo-border-hairline, 1px) solid GrayText;
+  }
+  .echo-level-meter__cell:is([data-on], [data-peak]) {
+    background: Highlight;
+    border-color: Highlight;
+  }
+}

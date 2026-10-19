@@ -1,0 +1,93 @@
+name: Release matrix
+
+# The question this answers is the only one that matters before a
+# release: does `npx echo-ui-cli init && add` work in somebody else's project?
+#
+# Each job builds a real app, installs Echo from the packed tarballs (the
+# artefacts `npm publish` would send), adds EVERY item in one call, then
+# type-checks and builds. Cross-item problems — a missing dependency, a name
+# collision — only show up when everything is installed together.
+#
+# Before that, every row checks what `init` writes for agents: the Echo block,
+# the check hook and the skill exist; `npx echo-ui-cli which button` runs; the
+# hook command `init` wrote runs through bash, as Claude Code runs it (on
+# Windows too); and `agent off` gives CLAUDE.md, AGENTS.md and .claude/ back
+# exactly as they were.
+#
+# It runs on demand and before a release, not on every push: each job installs
+# a framework from scratch.
+
+# Reads the repository and nothing else: it installs into a temp directory.
+permissions:
+  contents: read
+
+# No concurrency group on purpose. A matrix run that is cancelled halfway
+# answers nothing, and the whole question is whether every row passes.
+
+on:
+  workflow_dispatch:
+  # Called by release.yml, so a release asks this question rather than
+  # trusting that somebody asked it last week.
+  workflow_call:
+  pull_request:
+    types: [labeled]
+  schedule:
+    # Monday morning, so a break in a dependency is found by us, not by a user.
+    - cron: "0 6 * * 1"
+
+jobs:
+  matrix:
+    # On a PR, only when it's labelled `release-matrix`.
+    if: github.event_name != 'pull_request' || github.event.label.name == 'release-matrix'
+    name: ${{ matrix.framework }} × ${{ matrix.pm }} × React ${{ matrix.react }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # A row installs a framework from scratch; Windows is the slowest and
+    # has run in about fifteen minutes.
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The support baseline, one row at a time.
+          - { os: ubuntu-latest, framework: next, pm: npm, react: "19" }
+          - { os: ubuntu-latest, framework: next, pm: pnpm, react: "19" }
+          - { os: ubuntu-latest, framework: next, pm: bun, react: "19" }
+          - { os: ubuntu-latest, framework: vite, pm: npm, react: "19" }
+          - { os: ubuntu-latest, framework: vite, pm: pnpm, react: "19" }
+          - { os: ubuntu-latest, framework: vite, pm: bun, react: "19" }
+          # React 18 is supported until a major.
+          - { os: ubuntu-latest, framework: next, pm: npm, react: "18" }
+          # An app that already has Tailwind: Echo has to coexist, not collide.
+          - { os: ubuntu-latest, framework: next, pm: pnpm, react: "19", tailwind: true }
+          # The two operating systems where paths and line endings differ.
+          - { os: windows-latest, framework: next, pm: npm, react: "19" }
+          - { os: macos-latest, framework: next, pm: npm, react: "19" }
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - if: matrix.pm == 'bun'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The matrix installs from the built /e/, so the registry has to exist.
+      - name: Build the registry
+        run: pnpm build:registry
+
+      - name: Install Echo into a fresh app and build it
+        run: >
+          node scripts/matrix/install-app.mjs
+          --framework ${{ matrix.framework }}
+          --pm ${{ matrix.pm }}
+          --react ${{ matrix.react }}
+          ${{ matrix.tailwind && '--tailwind' || '' }}

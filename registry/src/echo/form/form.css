@@ -1,0 +1,84 @@
+/**
+ * Form. A column of fields; on a failed submit, a summary at the top in the
+ * danger Banner's material: a square pip (the danger shape), the count, and
+ * a link per problem.
+ */
+.echo-form {
+  display: grid;
+  gap: var(--echo-space-9);
+  min-width: 0;
+}
+.echo-form__summary {
+  display: flex;
+  gap: var(--echo-space-6);
+  padding: var(--echo-space-8);
+  border-radius: var(--echo-radius-lg);
+  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset var(--echo-border-heavy, 4px) 0 0 var(--echo-accent-glow),
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.2 * var(--echo-gloss, 1))),
+    0 10px 24px -12px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+  outline: none;
+}
+.echo-form__summary:dir(rtl) {
+  box-shadow:
+    inset calc(-1 * var(--echo-border-heavy, 4px)) 0 0 var(--echo-accent-glow),
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.2 * var(--echo-gloss, 1))),
+    0 10px 24px -12px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-form__summary:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+/* The danger shape: a square pip, lit. */
+.echo-form__led {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: var(--echo-space-2);
+  border-radius: var(--echo-radius-xs);
+  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));
+}
+.echo-form__summary-body {
+  display: grid;
+  gap: var(--echo-space-4);
+  min-width: 0;
+}
+.echo-form__summary-title {
+  margin: 0;
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold, 600);
+  color: var(--echo-text);
+}
+.echo-form__summary-list {
+  display: grid;
+  gap: var(--echo-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.echo-form__summary-link {
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text);
+  text-decoration-line: underline;
+  /* Drawn, the underline is the ink. */
+  text-decoration-color: var(--echo-drawn-ink, var(--echo-accent));
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+.echo-form__summary-link:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+  border-radius: var(--echo-radius-xs);
+}
+@media (forced-colors: active) {
+  .echo-form__summary {
+    border: var(--echo-border-thick, 2px) solid CanvasText;
+  }
+  .echo-form__led {
+    background: CanvasText;
+  }
+  .echo-form__summary-link {
+    color: LinkText;
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "name": "otp-field",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "OTP field",
+  "description": "The one-time code a sign-in asks for, as a row of lit digit windows — the Field's recessed well cut into six screens, in the LCD voice. Built on Base UI's OTP Field: a pasted code fills the row, arrow keys and Backspace walk it, and the phone can offer the code from an SMS. Composes var(--echo-*).",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "gsap": "^3.13.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "size"
+  ],
+  "files": [
+    {
+      "path": "otp-field/otp-field.css",
+      "sha256": "151adb141a18f708d720d61905295a6782a50c75e5cc750946458b463ffc1f0c",
+      "content": "/**\n * OtpField. Field's recessed well, cut into one window per digit,\n * in the LCD voice: the code is something the device is reporting, and each\n * character lands in its own lit screen.\n */\n.echo-otp {\n  /* One size scale (sm/md/lg): each digit's window is the control height. */\n  --ctl-h: var(--echo-control-default);\n  --ctl-font: var(--echo-text-xl);\n  --ctl-radius: var(--echo-radius-lg);\n  --otp-slot: 3rem;\n  display: flex;\n  flex-direction: column;\n  gap: var(--echo-space-4);\n}\n.echo-otp[data-size=\"sm\"] {\n  --ctl-h: var(--echo-control-compact);\n  --ctl-font: var(--echo-text-lg);\n  --ctl-radius: var(--echo-radius-md);\n  --otp-slot: 2.25rem;\n}\n.echo-otp[data-size=\"lg\"] {\n  --ctl-h: var(--echo-control-large);\n  --ctl-font: var(--echo-text-2xl);\n  --ctl-radius: var(--echo-radius-xl);\n  --otp-slot: 3.75rem;\n}\n\n.echo-otp__label {\n  overflow-wrap: anywhere;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n.echo-otp__slots {\n  display: flex;\n  gap: var(--echo-space-4);\n  /* The row gives way on a narrow screen rather than setting the width. */\n  min-width: 0;\n  max-width: 100%;\n}\n\n.echo-otp__slot {\n  box-sizing: border-box;\n  /* One screen per digit: never narrower than a finger, never wider than it\n     needs, and the row shares what room there is. */\n  flex: 1 1 0;\n  min-width: 0;\n  max-width: var(--otp-slot);\n  height: var(--ctl-h);\n  padding: 0;\n  border: 0;\n  border-radius: var(--ctl-radius);\n  text-align: center;\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--ctl-font);\n  font-variant-numeric: tabular-nums;\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n  caret-color: var(--echo-accent-glow);\n  text-shadow: 0 0 10px color-mix(in oklab, var(--echo-lcd-glow) 50%, transparent);\n  background: var(--echo-drawn-hollow, linear-gradient(\n    160deg,\n    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),\n    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))\n  ));\n  box-shadow:\n    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  outline: none;\n  transition: box-shadow var(--echo-duration-swap) ease;\n}\n\n/* The lit edge marks the slot you're typing into, like the Field's well.\n   useWellMotion sinks the window you're on (--well-depth deepens its inner\n   shadow) and moves it; nothing here sets a transform. */\n.echo-otp__slot:focus-visible {\n  /* Drawn only in forced colors, which drops the lit inner edge. */\n  outline: var(--echo-border-thick, 2px) solid transparent;\n  outline-offset: -2px;\n  box-shadow:\n    /* The ring first, so the well's top shadow doesn't darken it. */\n    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),\n    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);\n}\n\n.echo-otp[data-disabled] {\n  opacity: 0.45;\n}\n.echo-otp[data-disabled] .echo-otp__slot {\n  cursor: not-allowed;\n}\n\n.echo-otp[data-invalid] .echo-otp__slot {\n  box-shadow:\n    inset 0 0 0 var(--echo-border-hairline, 1px) var(--echo-primary-cap-mid),\n    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n.echo-otp__description,\n.echo-otp__error {\n  margin: 0;\n  font-size: var(--echo-text-xs);\n  line-height: var(--echo-leading-snug, 1.4);\n  overflow-wrap: anywhere;\n}\n.echo-otp__description {\n  color: var(--echo-text-dim);\n}\n.echo-otp__error {\n  display: flex;\n  gap: var(--echo-space-3);\n  align-items: baseline;\n  color: var(--echo-text);\n}\n/* The danger shape, as Banner and Field draw it: words plus a square pip. */\n.echo-otp__error::before {\n  content: \"\";\n  flex-shrink: 0;\n  width: 8px;\n  height: 8px;\n  border-radius: var(--echo-radius-xs);\n  background: var(--echo-primary-cap-mid);\n  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-otp__slot {\n    transition: none;\n  }\n}\n\n/*\n * Forced colors drops the wells' gradients and shadows, which is the whole\n * edge of each window. System colors only, so focus still shows.\n */\n@media (forced-colors: active) {\n  .echo-otp__slot {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-otp__error::before {\n    forced-color-adjust: none;\n    background: CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "otp-field/otp-field.tsx",
+      "sha256": "5558f19eda8647e280ea8fb9202a7c8c4b2200a02b5ff69550c762fe767fb4e0",
+      "content": "\"use client\";\n\n/**\n * OtpField. The one-time code a sign-in\n * screen asks for, as a row of lit digit windows — Field's recessed well cut\n * into six screens, in the LCD voice, because a code is something the device\n * reports back at you.\n *\n * On Base UI's OTP Field, so the parts nobody sees are right: a pasted code\n * fills the row, arrow keys and Backspace walk it, `autocomplete=\"one-time-code\"`\n * lets the phone offer the SMS code, and the whole row is one labelled group.\n */\nimport { forwardRef, useEffect, useRef } from \"react\";\nimport type { ReactNode } from \"react\";\nimport gsap from \"gsap\";\nimport { attachWellMotion, timing, useReducedMotionRef } from \"echo-ui-core/tactile\";\nimport type { EchoTextInterop } from \"echo-ui-core/types\";\nimport { Field as BaseField } from \"@base-ui/react/field\";\nimport { OTPField as BaseOtp } from \"@base-ui/react/otp-field\";\nimport { useControlSize, type ControlSize } from \"../size\";\nimport \"./otp-field.css\";\n\ninterface OtpFieldOwnProps extends EchoTextInterop {\n  /** How many digits. Default 6. */\n  length?: number;\n  value?: string;\n  defaultValue?: string;\n  onValueChange?: (value: string) => void;\n  /** Fired when the last slot is filled — where a sign-in screen submits. */\n  onComplete?: (value: string) => void;\n  /** Hide the characters, for a code that is a secret rather than a one-time one. */\n  mask?: boolean;\n  /**\n   * Height on the control scale: `sm` 32px, `md` 44px (default), `lg` 60px,\n   * the same as a Field or HardwareButton of that size. Defaults to the\n   * nearest SizeProvider's size.\n   */\n  size?: ControlSize;\n  /** Help text under the row, linked to the group. */\n  description?: ReactNode;\n  /** What's wrong, in words. While it's set the group is invalid and the message shows. */\n  error?: string;\n}\n\n/**\n * A field has to have a name. A visible `label` is\n * the one to reach for; `aria-label` or `aria-labelledby` are for a field whose\n * label is elsewhere on screen. Leaving all three out is a type error.\n */\ntype FieldName =\n  | { label: string; \"aria-label\"?: string; \"aria-labelledby\"?: string }\n  | { \"aria-label\": string; label?: string; \"aria-labelledby\"?: string }\n  | { \"aria-labelledby\": string; label?: string; \"aria-label\"?: string };\n\nexport type OtpFieldProps = OtpFieldOwnProps & FieldName;\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`.\n *\n * The ref lands on the FIRST slot. A one-time code is one value spread over\n * several inputs, and the first is the one `shouldFocusError` should land on\n * — focusing the last slot would put the caret past the digits the user\n * still has to fix.\n */\nexport const OtpField = forwardRef<HTMLInputElement, OtpFieldProps>(function OtpField(\n  {\n    label,\n    length = 6,\n    value,\n    defaultValue,\n    onValueChange,\n    onComplete,\n    disabled,\n    size: ownSize,\n    required,\n    name,\n    mask,\n    description,\n    error,\n    id,\n    autoFocus,\n    onBlur,\n    onFocus,\n    onKeyDown,\n    autoComplete,\n    \"aria-label\": ariaLabel,\n    \"aria-labelledby\": ariaLabelledby,\n  },\n  ref,\n) {\n  const reduced = useReducedMotionRef();\n  const size = useControlSize(ownSize);\n  const slots = useRef<HTMLDivElement | null>(null);\n  const cells = () => [...(slots.current?.querySelectorAll<HTMLElement>(\".echo-otp__slot\") ?? [])];\n\n  /* Each window is a well (useWellMotion): the one you're on sinks, so the\n     press travels along the row with you, and each digit lands as a strike. */\n  useEffect(() => {\n    const detach = cells().map(attachWellMotion);\n    return () => detach.forEach((d) => d());\n  }, [length]);\n\n  /* The whole code in: a ripple runs along the row. */\n  const completed = () => {\n    if (reduced.current) return;\n    gsap.fromTo(\n      cells(),\n      // yPercent, not y: y is the well's own sink, and the two add up.\n      { yPercent: 0 },\n      { keyframes: [{ yPercent: -8, duration: 0.12, ease: \"power2.out\" }, { yPercent: 0, ...timing(\"rebound\") }], stagger: 0.05 },\n    );\n  };\n  return (\n    <BaseField.Root className=\"echo-otp\" data-size={size} disabled={disabled} invalid={error ? true : undefined}>\n      {label && <BaseField.Label className=\"echo-otp__label\">{label}</BaseField.Label>}\n      <BaseOtp.Root\n        ref={slots}\n        className=\"echo-otp__slots\"\n        length={length}\n        name={name}\n        value={value}\n        defaultValue={defaultValue}\n        required={required}\n        disabled={disabled}\n        mask={mask}\n        onValueChange={onValueChange}\n        onValueComplete={(next) => {\n          completed();\n          onComplete?.(next);\n        }}\n        aria-label={label ? undefined : ariaLabel}\n        aria-labelledby={label ? undefined : ariaLabelledby}\n      >\n        {Array.from({ length }, (_, i) => (\n          <BaseOtp.Input\n            key={i}\n            className=\"echo-otp__slot\"\n            ref={i === 0 ? ref : undefined}\n            {...(i === 0 && id ? { id } : {})}\n            {...(i === 0 && autoFocus ? { autoFocus } : {})}\n            /*\n             * Spread only when set. Base UI gives every window its own\n             * `autocomplete=\"one-time-code\"` and its own key handling, and\n             * passing an explicit `undefined` overrides them — which is how\n             * the phone stopped offering the code it had just received.\n             */\n            {...(i === 0 && autoComplete ? { autoComplete } : {})}\n            {...(onBlur ? { onBlur } : {})}\n            {...(onFocus ? { onFocus } : {})}\n            {...(onKeyDown ? { onKeyDown } : {})}\n          />\n        ))}\n      </BaseOtp.Root>\n      {description != null && <BaseField.Description className=\"echo-otp__description\">{description}</BaseField.Description>}\n      {error && (\n        <BaseField.Error className=\"echo-otp__error\" match>\n          {error}\n        </BaseField.Error>\n      )}\n    </BaseField.Root>\n  );\n});\n"
+    },
+    {
+      "path": "otp-field/index.ts",
+      "sha256": "ef7af809e282fcada10eaa87f9659abaea20c5d0be8e347ae66491b33d66e220",
+      "content": "export { OtpField } from \"./otp-field\";\nexport type { OtpFieldProps } from \"./otp-field\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**One `size` on everything with a height.** `Field`, `Select`, `NumberField`, `OtpField` and `Segmented` take `size=\"sm\" | \"md\" | \"lg\"` (32, 44 or 60px), matching `HardwareButton`, and all of them read a `SizeProvider` around them. `md` is exactly what they were. `Avatar` gains `xs` (inline with a line of text) and `xl` (a profile header)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`echo-otp-field`** — the one-time code a sign-in asks for, as a row of lit digit windows. A pasted code fills the row, arrow keys and Backspace walk it, and `autocomplete=\"one-time-code\"` lets a phone offer the code it just received."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+/*
+ * The road's cable and its jacks (RoadCable.tsx): loaded with them, once the
+ * section has measured itself, so none of it stands between a visitor and
+ * the hero. Every colour is an --echo-* role, so the
+ * road relights with the seed, and draws itself in ink on a drawn device.
+ */
+
+.hiw__road {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.hiw__road path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The cable: a soft shadow, its edge, its jacket and a line of shine along it. */
+.hiw__road-lip {
+  stroke: color-mix(in oklab, var(--echo-cast-ink, black) 40%, transparent);
+  stroke-width: 22;
+  transform: translate(0, 5px);
+  filter: blur(3px);
+  opacity: var(--echo-shade, 1);
+}
+/* The jacket is the caps' own plastic, a step lighter than the page, so the cable reads on it. */
+.hiw__road-edge {
+  stroke: var(--echo-seam);
+  stroke-width: 18;
+}
+.hiw__road-bed {
+  stroke: var(--echo-cap);
+  stroke-width: 13;
+}
+.hiw__road-shine {
+  stroke: rgb(255 255 255 / calc(0.24 * var(--echo-gloss, 1)));
+  stroke-width: 3;
+}
+
+/* A jack at each stop: lit once Echo has reached it. */
+.hiw-station {
+  position: absolute;
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--echo-seam) 0 30%, var(--echo-cap-shadow) 31% 44%, var(--echo-cap) 45% 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),
+    0 3px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(50% * var(--echo-shade, 1)), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  transition: box-shadow 0.3s;
+}
+.hiw-station[data-lit] {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),
+    0 0 0 3px var(--echo-accent-ink, var(--echo-accent)),
+    0 0 20px 3px color-mix(in oklab, var(--echo-accent-glow) calc(55% * var(--echo-gloss, 1)), transparent);
+}
+
+/*
+ * A drawn look ([data-drawn], theme-boot.ts): the cable is drawn hollow in the
+ * ink, with no shadow or shine; a jack is an ink ring, and fills with ink once
+ * Echo has reached it.
+ */
+:root[data-drawn] .hiw__road-lip,
+:root[data-drawn] .hiw__road-shine {
+  display: none;
+}
+:root[data-drawn] .hiw__road-edge {
+  stroke: var(--echo-line);
+  stroke-width: 14;
+}
+:root[data-drawn] .hiw__road-bed {
+  stroke: var(--echo-surface);
+  stroke-width: 9;
+}
+:root[data-drawn] .hiw-station {
+  background: var(--echo-surface);
+  box-shadow:
+    inset 0 0 0 var(--echo-line-width) var(--echo-line),
+    inset 0 0 0 10px var(--echo-surface),
+    inset 0 0 0 calc(10px + var(--echo-line-width)) var(--echo-line);
+}
+:root[data-drawn] .hiw-station[data-lit] {
+  background: var(--echo-text);
+  box-shadow: inset 0 0 0 10px var(--echo-text);
+}

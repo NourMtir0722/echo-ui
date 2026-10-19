@@ -1,0 +1,76 @@
+import { FontRoles, TextStyles, TypeScale, TypeTokens } from "@/components/guides/live";
+
+# Typeset
+
+Echo's type is a set of **roles**, not a font. A component asks for "the machine voice" or "the
+screen face", and the theme decides which typeface that is. Change the faces in one place and every
+component follows.
+
+## The four roles
+
+<FontRoles />
+
+The specimens use this site's typefaces; the last column is what a fresh install uses. Those
+defaults are system fonts, so nothing needs loading until you choose your own.
+
+## Choosing your faces
+
+Fonts are part of the seed, so they are set where the colours are:
+
+```tsx
+const { css } = createEchoTheme({
+  accent: "#3D8EF0",
+  fontSans: "'Inter', system-ui, sans-serif",
+  fontMachine: "'Inter', system-ui, sans-serif",
+  fontMono: "'JetBrains Mono', ui-monospace, monospace",
+});
+```
+
+Loading the font files is up to you (`next/font`, a `<link>`, self-hosting). Keep a system fallback
+at the end of every stack.
+
+## When to use which
+
+- **Machine** for anything a device would print on its panel: button labels, section legends, units.
+  Short, often uppercase, letter-spaced.
+- **Sans** for sentences: descriptions, help text, messages.
+- **Mono** for anything a person might compare character by character: code, IDs, timestamps, values
+  in a table.
+- **LCD** only inside a screen: readouts, the LcdChip, chart values. It is tabular, so numbers do not
+  jump as they change.
+
+One size is for one line only: **`display`** (the sans, bold and tight, at the scale's `3xl` step, 40px) is
+the one large line a screen carries, like a headline or an entry's index number. A screen has at most
+one; every other heading is `heading`.
+
+## The scale
+
+<TypeScale />
+
+Component CSS takes every font size from this scale. It is in `rem`, so it follows the reader's
+browser text size.
+
+Weights, line heights and letter-spacing have scales too:
+
+<TypeTokens />
+
+## Text styles
+
+A text style bundles a face, size, weight, line height and tracking under the job it does. Use one
+by name instead of picking five values:
+
+<TextStyles />
+
+`letter-spacing` and `text-transform` aren't part of the CSS `font` shorthand, so each style comes
+as three tokens:
+
+```css
+.panel-label {
+  font: var(--echo-type-machine-label);
+  letter-spacing: var(--echo-type-machine-label-tracking);
+  text-transform: var(--echo-type-machine-label-case);
+}
+```
+
+The machine label is Echo's voice: small, uppercase and spaced out, like the legend printed on a
+panel. Keep it for labels of two or three words. A sentence in spaced capitals is hard to read.

@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "name": "form",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Form",
+  "description": "A form that fails well. Give it errors (field name → message) and pass the same message to each field's error. When a submit comes back with errors, a summary opens at the top: how many things need fixing, each a link that takes focus to its field, and the summary takes focus so it's heard first. A native form (noValidate: you validate in onSubmit), whose values arrive as an object.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {},
+  "items": [],
+  "files": [
+    {
+      "path": "form/form.tsx",
+      "sha256": "faa8cd5c88e2fe1c74412a5b849a8dd6f9c9b278049f0ad0d427d9feb4967ed2",
+      "content": "\"use client\";\n\n/**\n * Form. A form that fails well. Give it `errors` (field name → message,\n * from your validation or your server) and pass the same message to each\n * field's own `error`, so it shows under the field. When a submit comes\n * back with errors, the Form puts a summary at the top, in the danger Banner:\n * how many things need fixing, each one a link that takes focus straight to\n * its field. Focus moves to the summary, so a screen reader hears it first\n * and a keyboard is one Tab from the first problem.\n *\n * A native form (`noValidate`: you validate, the browser doesn't), whose\n * `onSubmit` gets the values as an object. Not Base UI's Form: it refuses to\n * submit while any field is marked invalid, and a field stays marked while\n * its `error` is set, so the corrected form could never be sent to clear it.\n */\nimport { useEffect, useId, useRef, type ReactNode } from \"react\";\nimport \"./form.css\";\n\nexport interface FormProps {\n  children: ReactNode;\n  /** Called with the form's values by field name (a name used more than once gives an array). */\n  onSubmit?: (values: Record<string, FormDataEntryValue | FormDataEntryValue[]>) => void;\n  /** Field name → what's wrong. Empty or absent: nothing is. */\n  errors?: Record<string, string | undefined>;\n  /** Show the summary. Set it true after a submit that came back with errors; false once they're fixed. */\n  showSummary?: boolean;\n  /** The summary's heading. Default \"There's a problem\" / \"There are N problems\". */\n  summaryTitle?: string;\n  /** Names the form, for a screen reader's list of landmarks (a form with a name is one). */\n  \"aria-label\"?: string;\n}\n\nexport function Form({ children, onSubmit, errors = {}, showSummary = false, summaryTitle, ...name }: FormProps) {\n  const listed = Object.entries(errors).filter((e): e is [string, string] => !!e[1]);\n  const summary = useRef<HTMLDivElement>(null);\n  const titleId = useId();\n  const form = useRef<HTMLFormElement>(null);\n  const open = showSummary && listed.length > 0;\n\n  // Each time the summary opens, it takes focus: said first, one Tab from the first problem.\n  useEffect(() => {\n    if (open) summary.current?.focus();\n  }, [open, listed.length]);\n\n  const title = summaryTitle ?? (listed.length === 1 ? \"There's a problem\" : `There are ${listed.length} problems`);\n  const go = (field: string) => {\n    const el = form.current?.querySelector<HTMLElement>(`[name=\"${CSS.escape(field)}\"]`);\n    // A named hidden input stands in for some controls; focus what the person sees.\n    const target = el && el.getAttribute(\"type\") === \"hidden\" ? el.parentElement?.querySelector<HTMLElement>(\"input:not([type=hidden]), button, [tabindex]\") : el;\n    target?.focus();\n    target?.scrollIntoView({ block: \"center\", behavior: \"smooth\" });\n  };\n\n  return (\n    <form\n      ref={form}\n      className=\"echo-form\"\n      noValidate\n      onSubmit={(e) => {\n        e.preventDefault();\n        const data = new FormData(e.currentTarget);\n        const values: Record<string, FormDataEntryValue | FormDataEntryValue[]> = {};\n        for (const key of new Set(data.keys())) {\n          const all = data.getAll(key);\n          values[key] = all.length > 1 ? all : all[0]!;\n        }\n        onSubmit?.(values);\n      }}\n      {...name}\n    >\n      {open ? (\n        <div ref={summary} className=\"echo-form__summary\" role=\"alert\" tabIndex={-1} aria-labelledby={titleId}>\n          <span className=\"echo-form__led\" aria-hidden=\"true\" />\n          <div className=\"echo-form__summary-body\">\n            <p id={titleId} className=\"echo-form__summary-title\">\n              {title}\n            </p>\n            <ul className=\"echo-form__summary-list\">\n              {listed.map(([field, message]) => (\n                <li key={field}>\n                  <a\n                    href={`#${field}`}\n                    className=\"echo-form__summary-link\"\n                    onClick={(e) => {\n                      e.preventDefault();\n                      go(field);\n                    }}\n                  >\n                    {message}\n                  </a>\n                </li>\n              ))}\n            </ul>\n          </div>\n        </div>\n      ) : null}\n      {children}\n    </form>\n  );\n}\n"
+    },
+    {
+      "path": "form/form.css",
+      "sha256": "2be2fbe374ce2e933bda412f6fbfa081e988613b11ba740be6206524a7e5b7bc",
+      "content": "/**\n * Form. A column of fields; on a failed submit, a summary at the top in the\n * danger Banner's material: a square pip (the danger shape), the count, and\n * a link per problem.\n */\n.echo-form {\n  display: grid;\n  gap: var(--echo-space-9);\n  min-width: 0;\n}\n.echo-form__summary {\n  display: flex;\n  gap: var(--echo-space-6);\n  padding: var(--echo-space-8);\n  border-radius: var(--echo-radius-lg);\n  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);\n  box-shadow:\n    inset var(--echo-border-heavy, 4px) 0 0 var(--echo-accent-glow),\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.2 * var(--echo-gloss, 1))),\n    0 10px 24px -12px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);\n  outline: none;\n}\n.echo-form__summary:dir(rtl) {\n  box-shadow:\n    inset calc(-1 * var(--echo-border-heavy, 4px)) 0 0 var(--echo-accent-glow),\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.2 * var(--echo-gloss, 1))),\n    0 10px 24px -12px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-form__summary:focus-visible {\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 2px;\n}\n/* The danger shape: a square pip, lit. */\n.echo-form__led {\n  flex: none;\n  width: 9px;\n  height: 9px;\n  margin-top: var(--echo-space-2);\n  border-radius: var(--echo-radius-xs);\n  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));\n}\n.echo-form__summary-body {\n  display: grid;\n  gap: var(--echo-space-4);\n  min-width: 0;\n}\n.echo-form__summary-title {\n  margin: 0;\n  font-size: var(--echo-text-md);\n  font-weight: var(--echo-weight-semibold, 600);\n  color: var(--echo-text);\n}\n.echo-form__summary-list {\n  display: grid;\n  gap: var(--echo-space-2);\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n.echo-form__summary-link {\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text);\n  text-decoration-line: underline;\n  text-decoration-color: var(--echo-accent);\n  text-decoration-thickness: 1.5px;\n  text-underline-offset: 3px;\n}\n.echo-form__summary-link:focus-visible {\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 2px;\n  border-radius: var(--echo-radius-xs);\n}\n@media (forced-colors: active) {\n  .echo-form__summary {\n    border: var(--echo-border-thick, 2px) solid CanvasText;\n  }\n  .echo-form__led {\n    background: CanvasText;\n  }\n  .echo-form__summary-link {\n    color: LinkText;\n  }\n}\n"
+    },
+    {
+      "path": "form/index.ts",
+      "sha256": "110d89ef57457befb2f729fc9c7532b31064f5c98753919fbdbf30e6ae3e9341",
+      "content": "export { Form } from \"./form\";\nexport type { FormProps } from \"./form\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Choosing: `Combobox`, `TagsInput`, `ChoiceCards`, `CheckboxGroup`, `Fieldset`, `Form` and `HoldButton`.** - **`Combobox`**: a Select you can type into. `multiple` keeps choices as tags that bud out of the text line; `creatable` offers to add what you typed. Built on Base UI Combobox. - **`TagsInput`**: free-form tags in Field's well (Enter or a comma adds, Backspace takes the last back, a paste becomes several), with `normalize` to clean or refuse each one. - **`ChoiceCards`**: options that need more than a word, as cards; the chosen one lights a rail and drops its pip. One choice is a radio group, `multiple` a group of checkboxes. - **`CheckboxGroup`**: a named set of checkboxes with an optional parent that shows a dash when only some are on. - **`Fieldset`**: a named group of fields with a legend. - **`Form`**: fails well. Pass `errors` to it and to each field; after a failed submit a summary at the top takes focus, counts the problems and links each to its field. - **`HoldButton`**: confirm by holding; the cap fills while pressed and drains if let go. A press that can't hold (assistive tech) arms it and a second press confirms."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

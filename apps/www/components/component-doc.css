@@ -1,0 +1,461 @@
+/*
+ * Component doc page. Only --echo-* roles: the page is a
+ * demo of the theme it documents. No new separators — sections are divided by
+ * space and their machine-voice headings, and the only rules are the ones the
+ * code bar and the Tabs baseline already carry.
+ */
+.doc {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+
+.doc__title {
+  /* A name like useGsapPresence is one word wider than a 320px column. */
+  overflow-wrap: anywhere;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 4px;
+}
+
+.doc__about {
+  color: var(--echo-text-dim);
+  line-height: 1.55;
+  max-width: 640px;
+}
+
+/* The designer-facing line. The label is a machine tag; the line is prose. */
+.doc__feel {
+  max-width: 640px;
+  margin: 10px 0 0;
+  line-height: 1.55;
+  color: var(--echo-text);
+}
+.doc__feel-label {
+  margin-right: 8px;
+  font-family: var(--echo-font-machine);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.doc__section {
+  margin-top: 32px;
+}
+
+.doc__h2 {
+  font-family: var(--echo-font-machine);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--echo-text-dim);
+  margin: 0 0 12px;
+}
+.doc__h2--accent {
+  color: var(--site-link, var(--echo-accent));
+}
+
+/* Tabs list on the left, "every state →" on the right, on one baseline. */
+.doc__tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.doc__showcase {
+  padding-bottom: 10px;
+  font-family: var(--echo-font-machine);
+  font-size: 12px;
+  color: var(--site-link, var(--echo-accent));
+}
+
+/* The Tabs skin pads a panel for content pages; here the well is the content. */
+.doc .doc__panel {
+  padding: 12px 0 0;
+}
+
+.doc__preview {
+  padding: 28px;
+  border-radius: 18px;
+  background: var(--echo-surface);
+  border: 1px solid var(--echo-seam);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--echo-cap-highlight) 26%, transparent);
+}
+
+.doc__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 20px;
+}
+.doc__actions-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+}
+
+/* ---------------------------------------------------------------- prose --- */
+
+/*
+ * Page prose only. The live preview is the component as it ships, so none of
+ * the page's code or link styling may reach into it — the first version of
+ * these rules recoloured AppShell's and Breadcrumb's own links there.
+ */
+.doc code:not(.doc__preview *) {
+  font-family: var(--echo-font-mono);
+  color: var(--echo-text);
+}
+/* The mono face runs large beside Red Hat Text; bring inline code to its x-height. */
+.doc :not(pre) > code:not(.doc__preview *) {
+  font-size: 0.88em;
+}
+.doc a:not(.doc__preview *) {
+  color: var(--site-link, var(--echo-accent));
+}
+
+/*
+ * The fact card: a term column in the machine voice, the fact beside it, one
+ * seam between rows (the separator rule), no box around it.
+ */
+.doc-facts {
+  margin: 0;
+  max-width: 760px;
+}
+.doc-facts__row {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 11rem) 1fr;
+  gap: var(--echo-space-6);
+  padding: var(--echo-space-5) 0;
+  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+.doc-facts__row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.doc-facts dt {
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-xs);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  padding-top: 2px;
+}
+.doc-facts dd {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--echo-text);
+}
+.doc-facts__aside {
+  color: var(--echo-text-dim);
+  font-size: 13px;
+}
+.doc-facts__list {
+  margin: 0;
+  padding-inline-start: 1.1em;
+}
+.doc-facts__list li + li {
+  margin-top: var(--echo-space-2);
+}
+@media (max-width: 560px) {
+  .doc-facts__row {
+    grid-template-columns: 1fr;
+    gap: var(--echo-space-2);
+  }
+}
+
+.doc-note {
+  color: var(--echo-text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 8px 0 4px;
+  max-width: 640px;
+}
+
+/*
+ * The conformance note sits under the component's own a11y lines, set into
+ * the chassis so it reads as a stamp on the part rather than more prose about
+ * it. One seam above it, per the separator rule — no box, no second border.
+ */
+.doc-conformance {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--echo-seam);
+}
+
+.doc-conformance .doc-list {
+  font-size: 13px;
+  color: var(--echo-text-dim);
+}
+
+.doc-conformance .doc-list code {
+  color: var(--echo-text);
+}
+
+.doc-muted {
+  color: var(--echo-text-dim);
+  font-size: 13px;
+}
+
+.doc-list {
+  color: var(--echo-text-dim);
+  line-height: 1.7;
+  padding-left: 18px;
+  margin: 0;
+}
+
+.doc-example + .doc-example {
+  margin-top: 22px;
+}
+.doc-example__title {
+  margin: 0;
+  font-family: var(--echo-font-machine);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+.doc-example__about {
+  color: var(--echo-text-dim);
+  margin: 4px 0 8px;
+  font-size: 14px;
+}
+
+.doc-facts {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.doc-facts__row {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 12px;
+  line-height: 1.55;
+}
+.doc-facts dt {
+  font-family: var(--echo-font-machine);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  padding-top: 2px;
+}
+.doc-facts dd {
+  margin: 0;
+  color: var(--echo-text);
+}
+/* Breakpoints in rem, so a reader's larger text reaches them too (WCAG 1.4.4). */
+@media (max-width: 32.5rem) {
+  .doc-facts__row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+.doc-changelog {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.doc-changelog__meta {
+  display: block;
+  font-family: var(--echo-font-machine);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.doc-changelog__text {
+  /*
+   * A changelog entry is prose about code, so it carries identifiers
+   * like `BaseSwitch.Root.ChangeEventDetails` — one word wider than a 320px
+   * column, and nothing here broke them. Same rule and same reason as
+   * `.doc__title` above.
+   */
+  overflow-wrap: anywhere;
+  display: block;
+  margin-top: 2px;
+  line-height: 1.6;
+  color: var(--echo-text-dim);
+}
+.doc-changelog__text strong {
+  color: var(--echo-text);
+}
+
+/* ----------------------------------------------------------------- code --- */
+
+.doc-code {
+  border: 1px solid var(--echo-seam);
+  border-radius: 12px;
+  background: var(--echo-lcd);
+  overflow: hidden;
+}
+.doc-code + .doc-code {
+  margin-top: 12px;
+}
+.doc-code__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 6px 4px 12px;
+  border-bottom: 1px solid var(--echo-seam);
+  background: var(--echo-surface);
+}
+.doc-code__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--echo-font-mono);
+  font-size: 11.5px;
+  color: var(--echo-text-dim);
+}
+/* Same cap as the install box's copy button. */
+.doc-code__copy {
+  margin-left: auto;
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--echo-cap) 60%, transparent);
+  background: var(--echo-cap);
+  color: var(--echo-text);
+  font-family: var(--echo-font-mono);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.doc-code__copy:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+.doc-code__pre {
+  margin: 0;
+  padding: 14px;
+  max-height: 480px;
+  overflow: auto;
+  color: var(--echo-text);
+  font-family: var(--echo-font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/*
+ * Syntax colours (highlight.ts). The screen is always dark and only text on
+ * it is guaranteed, so every token colour is light enough to clear AA on it:
+ * the fixed hues sit at OKLCH lightness 0.8 or above. The keyword is the
+ * seed, lifted to at least that lightness, so the code belongs to the page
+ * whatever colour it's in; a browser without relative colours shows it in
+ * the text colour. Inside code, colour is the job, which is why this is the
+ * one place a page shows more than one hue. Set at the root, so an inline
+ * command outside a block (the homepage's install lines) colours the same.
+ */
+:root {
+  --sh-keyword: var(--echo-text);
+  --sh-keyword: var(--site-sh-keyword, oklch(from var(--echo-accent) max(l, 0.8) max(c, 0.09) h));
+  --sh-string: var(--site-sh-string, oklch(0.84 0.1 160));
+  --sh-class: var(--site-sh-class, oklch(0.83 0.09 230));
+  --sh-entity: var(--site-sh-entity, oklch(0.83 0.09 230));
+  --sh-property: var(--site-sh-property, oklch(0.86 0.09 75));
+  --sh-identifier: var(--echo-text);
+  --sh-jsxliterals: var(--echo-text);
+  --sh-sign: var(--site-sh-sign, oklch(0.8 0.02 280));
+  --sh-comment: var(--site-sh-comment, oklch(0.8 0.02 280));
+}
+.doc-code__code {
+  font: inherit;
+}
+.doc-code__code .sh__line {
+  display: inline;
+}
+.sh__token--keyword { color: var(--sh-keyword); }
+.sh__token--string { color: var(--sh-string); }
+.sh__token--class { color: var(--sh-class); }
+.sh__token--entity { color: var(--sh-entity); }
+.sh__token--property { color: var(--sh-property); }
+.sh__token--identifier { color: var(--sh-identifier); }
+.sh__token--jsxliterals { color: var(--sh-jsxliterals); }
+.sh__token--sign { color: var(--sh-sign); }
+.sh__token--comment {
+  color: var(--sh-comment);
+  font-style: italic;
+}
+
+/* The part tree: a code well without a bar, since there is nothing to copy. */
+.doc-tree {
+  margin: 0;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--echo-lcd);
+  color: var(--echo-text);
+  font-family: var(--echo-font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+.doc-steps {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--echo-text-dim);
+}
+.doc-steps > li + li {
+  margin-top: 18px;
+}
+.doc-steps p {
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+.doc-deps {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+
+/* -------------------------------------------------------------- props --- */
+
+.doc-prop__name {
+  font-size: 13px;
+}
+.doc-prop__type {
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.doc code.doc-prop__type:not(.doc__preview *) {
+  color: var(--echo-text-dim);
+}
+/*
+ * The accent as a 1ch mark, never as running text: accent on --echo-surface is
+ * 3.70:1, under AA for body copy but fine for a decorative glyph whose meaning
+ * is carried by the adjacent visually-hidden "required".
+ */
+.doc-prop__required {
+  color: var(--site-link, var(--echo-accent));
+  font-family: var(--echo-font-mono);
+}
+.doc-prop__about {
+  display: block;
+  margin-top: 3px;
+  max-width: 44ch;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+  white-space: normal;
+}
+.doc-prop__dim {
+  color: var(--echo-text-dim);
+}
+
+.doc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

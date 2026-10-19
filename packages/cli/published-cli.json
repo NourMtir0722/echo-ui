@@ -1,0 +1,19 @@
+{
+  "$schema-note": "What npm actually holds for echo-ui-cli: the commands of its latest version. Bumped at each publish; see packages/core/published-core.md, Releasing.",
+  "version": "0.3.2",
+  "verified": "2026-10-19",
+  "how": "npx -y echo-ui-cli@<version> --help, and its \"Which command?\" line",
+  "commands": [
+    "init",
+    "which",
+    "docs",
+    "check",
+    "test",
+    "style",
+    "agent",
+    "add",
+    "list",
+    "diff",
+    "update"
+  ]
+}

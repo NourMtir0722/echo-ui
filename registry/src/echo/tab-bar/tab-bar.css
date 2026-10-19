@@ -1,0 +1,276 @@
+/**
+ * TabBar. A dock: a molded slab floating clear of the screen's edges, a
+ * recessed track along it, and one raised cap seated in the track under the
+ * destination you're on. Every destination has an LED socket; the current
+ * one's is lit, and its icon with it. Nothing else is lit.
+ */
+.echo-tab-bar {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--echo-space-4) var(--echo-space-6) calc(var(--echo-space-5) + env(safe-area-inset-bottom, 0px));
+}
+.echo-tab-bar[data-fixed] {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--echo-z-sticky, 100);
+  /* Only the dock takes the pointer; the margin around it is the screen's. */
+  pointer-events: none;
+}
+.echo-tab-bar[data-fixed] .echo-tab-bar__dock {
+  pointer-events: auto;
+}
+
+/* The slab: chassis plastic, lit along its top edge by the key light. */
+.echo-tab-bar__dock {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 34rem;
+  margin-inline: auto;
+  /* Concentric with the track inside it: its radius plus the slab's lip. */
+  --dock-radius: calc(var(--echo-radius-3xl) + var(--echo-space-3));
+  padding: var(--echo-space-3);
+  border-radius: var(--dock-radius);
+  background: linear-gradient(
+    170deg,
+    var(--echo-cap-highlight) 0%,
+    var(--echo-cap) 16%,
+    var(--echo-surface) 58%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.16 * var(--echo-gloss, 1))),
+    inset 0 -2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 1px var(--echo-seam),
+    0 18px 36px -14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent),
+    0 4px 10px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/* The track the cap sits in: a long recess, darker than the slab. */
+.echo-tab-bar__track {
+  position: relative;
+  padding: var(--echo-space-2);
+  border-radius: var(--echo-radius-3xl);
+  background: linear-gradient(
+    170deg,
+    color-mix(in oklab, var(--echo-well) 75%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  );
+  box-shadow:
+    inset 0 3px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-tab-bar__list {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--echo-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * The cap. tab-bar.tsx writes its box from the current link's offsets and
+ * moves it on a spring; its shape is clipped to the drop while it travels.
+ * A drop shadow rather than a box shadow, so the shadow follows the drop.
+ */
+.echo-tab-bar__cap {
+  position: absolute;
+  z-index: var(--echo-z-base, 0);
+  visibility: hidden;
+  pointer-events: none;
+  filter: drop-shadow(
+      0 calc(2px + 5px * var(--lift, 0)) calc(3px + 5px * var(--lift, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent)
+    )
+    drop-shadow(0 1px 0 color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent));
+  will-change: transform, left, width;
+}
+.echo-tab-bar__shape {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--echo-radius-2xl);
+  background:
+    radial-gradient(120% 90% at 30% 0%, rgb(255 255 255 / calc(0.1 * var(--echo-gloss, 1))), transparent 60%),
+    linear-gradient(
+      180deg,
+      var(--echo-cap-highlight) 0%,
+      var(--echo-cap) 38%,
+      var(--echo-cap) 64%,
+      var(--echo-cap-shadow) 100%
+    );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.32 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+/* In flight, the key light's highlight rolls across the drop. */
+.echo-tab-bar__shape::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at var(--sheen, 50%) 0%,
+    rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),
+    transparent 65%
+  );
+  opacity: var(--roll, 0);
+}
+.echo-tab-bar__track[data-cap] .echo-tab-bar__cap {
+  visibility: visible;
+}
+
+.echo-tab-bar__link {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--echo-space-2);
+  min-height: 56px;
+  padding: var(--echo-space-5) var(--echo-space-2) var(--echo-space-4);
+  border-radius: var(--echo-radius-2xl);
+  text-decoration: none;
+  color: var(--echo-text-dim);
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--echo-duration-tick) var(--echo-ease-tick);
+}
+/* Before the cap is placed (no JavaScript yet), the current one draws its own. */
+.echo-tab-bar__track:not([data-cap]) .echo-tab-bar__link[aria-current="page"] {
+  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 40%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.32 * var(--echo-gloss, 1))),
+    0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+}
+/* Once it is, each label is lit by how much of the cap is under it (--on). */
+.echo-tab-bar__track[data-cap] .echo-tab-bar__link {
+  color: color-mix(in oklab, var(--echo-text) calc(100% * var(--on, 0)), var(--echo-text-dim));
+}
+.echo-tab-bar__link[aria-current="page"] {
+  color: var(--echo-text);
+}
+@media (hover: hover) {
+  .echo-tab-bar__link:not([aria-current="page"]):hover {
+    background: color-mix(in oklab, var(--echo-text) 5%, transparent);
+  }
+}
+.echo-tab-bar__link:active .echo-tab-bar__icon,
+.echo-tab-bar__link:active .echo-tab-bar__label {
+  transform: translateY(1px);
+}
+.echo-tab-bar__link:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: -2px;
+}
+
+.echo-tab-bar__icon {
+  position: relative;
+  display: inline-flex;
+  width: var(--echo-icon-lg, 20px);
+  height: var(--echo-icon-lg, 20px);
+  transition: color var(--echo-duration-swap) var(--echo-ease-swap);
+}
+.echo-tab-bar__icon > svg {
+  width: var(--echo-icon-lg, 20px);
+  height: var(--echo-icon-lg, 20px);
+}
+.echo-tab-bar__link[aria-current="page"] .echo-tab-bar__icon {
+  color: var(--echo-accent-glow);
+  filter: drop-shadow(0 0 5px color-mix(in oklch, var(--echo-accent-glow) 55%, transparent));
+}
+.echo-tab-bar__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: uppercase;
+}
+
+/* Every key has its LED socket; a dead one is a dark slot, the lit one glows. */
+.echo-tab-bar__led {
+  position: absolute;
+  top: var(--echo-space-3);
+  left: 50%;
+  width: 12px;
+  height: 3px;
+  translate: -50% 0;
+  border-radius: var(--echo-radius-full);
+  background: color-mix(in oklab, var(--echo-well) 70%, var(--echo-shade-ink, black));
+  box-shadow:
+    inset 0 1px 1px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent),
+    0 1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  transition:
+    background var(--echo-duration-swap) var(--echo-ease-swap),
+    box-shadow var(--echo-duration-swap) var(--echo-ease-swap);
+}
+.echo-tab-bar__link[aria-current="page"] .echo-tab-bar__led {
+  background: var(--echo-accent-glow);
+  box-shadow:
+    0 0 6px color-mix(in oklch, var(--echo-accent-glow) 80%, transparent),
+    0 0 12px color-mix(in oklch, var(--echo-accent-glow) 40%, transparent);
+}
+
+/* On the link, at the icon's top corner, so it never pokes past a box. */
+.echo-tab-bar__badge {
+  position: absolute;
+  top: var(--echo-space-3);
+  inset-inline-start: calc(50% + var(--echo-space-2));
+  min-width: 14px;
+  box-sizing: border-box;
+  padding: 0 var(--echo-space-2);
+  border-radius: var(--echo-radius-full);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  line-height: var(--echo-leading-snug, 1.4);
+  text-align: center;
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.35 * var(--echo-gloss, 1))),
+    0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-tab-bar__sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-tab-bar__link,
+  .echo-tab-bar__icon,
+  .echo-tab-bar__led {
+    transition: none;
+  }
+  .echo-tab-bar__link:active .echo-tab-bar__icon,
+  .echo-tab-bar__link:active .echo-tab-bar__label {
+    transform: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-tab-bar__cap {
+    display: none;
+  }
+  .echo-tab-bar__dock {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-tab-bar__link[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .echo-tab-bar__led {
+    display: none;
+  }
+}

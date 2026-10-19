@@ -1,0 +1,48 @@
+/**
+ * ThrowStack. Echo Panels stacked in one cell, each a little lower and
+ * smaller than the one above; the top one can be grabbed and thrown.
+ */
+.echo-throw-stack {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding-block-end: var(--echo-space-11);
+  touch-action: pan-y;
+}
+
+.echo-throw-stack__card {
+  grid-area: 1 / 1;
+  inline-size: min(100%, 16rem);
+  min-block-size: 8.5rem;
+  user-select: none;
+  will-change: translate, rotate, scale;
+}
+.echo-throw-stack__card[data-top] {
+  cursor: grab;
+  touch-action: none;
+}
+.echo-throw-stack__card[data-top]:active {
+  cursor: grabbing;
+}
+.echo-throw-stack__card:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)),
+    0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+.echo-throw-stack__live {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  .echo-throw-stack__card {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+}

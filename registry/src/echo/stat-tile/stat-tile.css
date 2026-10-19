@@ -1,0 +1,118 @@
+/**
+ * StatTile. A recessed LCD readout: glowing value over
+ * a machine label, seated in a dark well. Composes var(--echo-*).
+ */
+.echo-stat-tile {
+  display: inline-grid;
+  gap: var(--echo-space-2);
+  /*
+   * `min-width: 96px` plus 36px of padding is a 132px floor, and the
+   * console puts six of these in one row. At 1440 that row has 682px to give
+   * — 105px a tile — so each tile overflowed its own track and the grid
+   * reported 709 > 682 at the width the screen was designed for.
+   *
+   * The floor goes and the padding becomes fluid. In a grid the tile is
+   * stretched by its track anyway, so the floor was only ever doing work
+   * standalone, where the 26px value already sets a sensible width.
+   */
+  min-width: 0;
+  max-width: 100%;
+  /* The cap counts the padding too. */
+  box-sizing: border-box;
+  padding: 14px clamp(10px, 1.4vw, 18px);
+  border-radius: var(--echo-radius-lg);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow:
+    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-stat-tile__value {
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  /* A readout that cannot shrink is a readout that clips its own container. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-2xl);
+  font-weight: var(--echo-weight-bold, 700);
+  line-height: var(--echo-leading-none, 1);
+  /* Unlit by default in the cascade, lit by [data-glow] — so a tile that is
+     not the subject reads as cream on the screen, like LcdChip's glow={false}. */
+  color: var(--echo-text);
+}
+
+.echo-stat-tile[data-glow] .echo-stat-tile__value {
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+  text-shadow: 0 0 10px color-mix(in oklab, var(--echo-lcd-glow) 50%, transparent);
+}
+
+.echo-stat-tile__unit {
+  margin-inline-start: var(--echo-space-1);
+  font-size: var(--echo-text-md);
+  color: var(--echo-text-dim);
+  text-shadow: none;
+}
+
+.echo-stat-tile__label {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  /* The label is the widest part of a narrow tile; let it fold. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-semibold, 600);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+/* roll: the digits in between are drawn (aria-hidden); the value is said
+   once, by this. Tabular, so a rolling digit never changes the width. */
+.echo-stat-tile__value[data-roll] {
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+}
+.echo-stat-tile__said {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * Power on (useBootOnView). "off" is set only on a tile that starts out of
+ * view, so nothing on screen at load ever blinks; "on" plays the boot once.
+ * The steps are the screen's: an LCD does not fade.
+ */
+.echo-stat-tile[data-boot="off"] .echo-stat-tile__value {
+  opacity: 0;
+}
+.echo-stat-tile[data-boot="on"] .echo-stat-tile__value {
+  animation: echo-stat-boot var(--echo-duration-flood) steps(1, end) var(--echo-duration-pop) both;
+}
+@keyframes echo-stat-boot {
+  0% { opacity: 0; }
+  18% { opacity: 0.8; }
+  30% { opacity: 0.1; }
+  46% { opacity: 1; }
+  58% { opacity: 0.35; }
+  74%, 100% { opacity: 1; }
+}
+/* A new value ticks over: a short flicker in steps, not a fade. */
+.echo-stat-tile__value[data-tick] {
+  animation: echo-stat-tick var(--echo-duration-sweep) steps(1, end) both;
+}
+@keyframes echo-stat-tick {
+  0% { opacity: 0.25; }
+  30% { opacity: 1; }
+  55% { opacity: 0.55; }
+  75%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-stat-tile[data-boot] .echo-stat-tile__value,
+  .echo-stat-tile__value[data-tick] {
+    opacity: 1;
+    animation: none;
+  }
+}

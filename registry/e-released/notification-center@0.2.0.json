@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "name": "notification-center",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "NotificationCenter",
+  "description": "An inbox of what happened: a bell key with the unread count, opening a panel of notifications as Items, newest first, each with an LED lit while unread. Opening one marks it read; \"Mark all read\" clears them. Where a toast goes after it's gone.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {},
+  "items": [
+    "hardware-button",
+    "popover",
+    "count-badge",
+    "item"
+  ],
+  "files": [
+    {
+      "path": "notification-center/notification-center.tsx",
+      "sha256": "cbe6dfdbcb583f772f47e753cf1c530df26142ab794bd5fcc92e5af21f3b0685",
+      "content": "\"use client\";\n\n/**\n * NotificationCenter. An inbox of what happened: a bell key with the unread\n * count on it, opening a panel of notifications, newest first. Unread ones\n * carry a lit LED; opening one marks it read; \"Mark all read\" clears them.\n * It's where a toast goes after it has gone: a person who missed it finds it\n * here.\n *\n * The bell is a real button named with the count (\"Notifications, 3\n * unread\"); the panel is a Popover with a heading and a list of Items.\n */\nimport type { ReactNode } from \"react\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Popover } from \"../popover\";\nimport { CountBadge } from \"../count-badge\";\nimport { Item } from \"../item\";\nimport \"./notification-center.css\";\n\nexport interface Notification {\n  id: string;\n  title: string;\n  body?: ReactNode;\n  /** When, as you want it shown: \"2m\", \"Mon\". */\n  time?: string;\n  read?: boolean;\n  /** Where opening it goes. */\n  href?: string;\n}\n\nexport interface NotificationCenterProps {\n  notifications: Notification[];\n  /** Called when one is opened. Mark it read here. */\n  onOpen?: (id: string) => void;\n  /** Called by \"Mark all read\". */\n  onReadAll?: () => void;\n  /** What an empty inbox says. Default \"Nothing new.\" */\n  emptyText?: ReactNode;\n}\n\nconst Bell = () => (\n  <svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.7\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    <path d=\"M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8zM6.5 14h3\" />\n  </svg>\n);\n\nexport function NotificationCenter({ notifications, onOpen, onReadAll, emptyText = \"Nothing new.\" }: NotificationCenterProps) {\n  const unread = notifications.filter((n) => !n.read).length;\n  const name = unread ? `Notifications, ${unread} unread` : \"Notifications\";\n  return (\n    <span className=\"echo-notifications\">\n      <Popover\n        side=\"bottom\"\n        align=\"end\"\n        title=\"Notifications\"\n        trigger={<HardwareButton iconOnly aria-label={name} icon={<Bell />} />}\n      >\n        <div className=\"echo-notifications__panel\">\n          <div className=\"echo-notifications__head\">\n            <span className=\"echo-notifications__count\">{unread ? `${unread} unread` : \"All read\"}</span>\n            {unread && onReadAll ? (\n              <HardwareButton size=\"sm\" variant=\"ghost\" onClick={onReadAll}>\n                Mark all read\n              </HardwareButton>\n            ) : null}\n          </div>\n          {notifications.length ? (\n            <ul className=\"echo-notifications__list\">\n              {notifications.map((n) => (\n                <Item\n                  key={n.id}\n                  as=\"li\"\n                  size=\"sm\"\n                  media={<span className=\"echo-notifications__led\" data-unread={n.read ? undefined : \"\"} aria-hidden=\"true\" />}\n                  title={\n                    <>\n                      {n.title}\n                      {n.read ? null : <span className=\"echo-notifications__sr\"> (unread)</span>}\n                    </>\n                  }\n                  description={n.body}\n                  trailing={n.time}\n                  {...(n.href ? { href: n.href } : {})}\n                  onClick={() => onOpen?.(n.id)}\n                />\n              ))}\n            </ul>\n          ) : (\n            <p className=\"echo-notifications__empty\">{emptyText}</p>\n          )}\n        </div>\n      </Popover>\n      {unread ? (\n        <span className=\"echo-notifications__badge\" aria-hidden=\"true\">\n          <CountBadge count={unread} label=\"unread\" />\n        </span>\n      ) : null}\n    </span>\n  );\n}\n"
+    },
+    {
+      "path": "notification-center/notification-center.css",
+      "sha256": "a641700aeaf26636b7bbc18ba68e7a057deb5c970c0ab0de1398abb51b16684e",
+      "content": "/**\n * NotificationCenter. The bell cap with its count pinned to the corner; the\n * panel a short list of Items, each with an LED lit while unread.\n */\n.echo-notifications {\n  position: relative;\n  display: inline-flex;\n}\n/* Over the bell's top corner: above it, never past its side (that would push\n   a narrow row open). */\n.echo-notifications__badge {\n  position: absolute;\n  top: calc(-1 * var(--echo-space-4));\n  inset-inline-end: 0;\n  pointer-events: none;\n}\n.echo-notifications__panel {\n  display: grid;\n  gap: var(--echo-space-4);\n  width: min(22rem, calc(100vw - 2rem));\n}\n.echo-notifications__head {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n}\n.echo-notifications__count {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n.echo-notifications__list {\n  max-height: min(24rem, 60vh);\n  margin: 0;\n  padding: 0;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  list-style: none;\n}\n.echo-notifications__led {\n  display: block;\n  width: 8px;\n  height: 8px;\n  border-radius: var(--echo-radius-full);\n  background: color-mix(in oklab, var(--echo-cap) 70%, var(--echo-text-dim));\n}\n.echo-notifications__led[data-unread] {\n  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));\n  box-shadow: 0 0 6px color-mix(in oklch, var(--echo-accent-glow) 60%, transparent);\n}\n.echo-notifications__sr {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n.echo-notifications__empty {\n  margin: 0;\n  padding: var(--echo-space-8) 0;\n  text-align: center;\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n@media (forced-colors: active) {\n  .echo-notifications__led[data-unread] {\n    background: Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "notification-center/index.ts",
+      "sha256": "6420732260d30a1100efe1f3bc4fbd8da90830c68c6eba853eeaf74c1238a2e7",
+      "content": "export { NotificationCenter } from \"./notification-center\";\nexport type { NotificationCenterProps, Notification } from \"./notification-center\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**App navigation: `SideNav`, `TabBar` and `NotificationCenter`.** - **`SideNav`**: an app's sidebar from data: named groups, icons, count badges and nested sections that fold. The current page carries a rail that travels to it; `collapsed` shrinks it to icons, each with its name as a tip. `renderLink` hands the links to your router. - **`TabBar`**: the bottom bar of a phone app, three to five destinations with icons, a count badge and a pip under the current one. `fixed` pins it to the bottom, clear of the home indicator. - **`NotificationCenter`**: a bell with an unread count that opens a list of notifications, unread ones marked, with \"Mark all read\" and an empty state."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

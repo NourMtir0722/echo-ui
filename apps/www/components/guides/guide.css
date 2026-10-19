@@ -1,0 +1,210 @@
+/*
+ * Guide pages. They sit in the component pages' frame
+ * (component-doc.css); this adds what long-form prose needs.
+ */
+.guide p,
+.guide li {
+  color: var(--echo-text-dim);
+  line-height: 1.65;
+  max-width: 660px;
+}
+.guide p strong,
+.guide li strong {
+  color: var(--echo-text);
+}
+.guide ul,
+.guide ol {
+  padding-left: 20px;
+}
+/* Sections get their space from the heading, not from wrappers MDX does not emit. */
+.guide .guide__h2 {
+  margin-top: 40px;
+}
+.guide__h3 {
+  margin: 26px 0 6px;
+  font-family: var(--echo-font-machine);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+.guide .doc-code {
+  margin: 12px 0;
+}
+.guide blockquote {
+  margin: 16px 0;
+  padding: 2px 0 2px 16px;
+  box-shadow: inset 2px 0 0 var(--echo-accent);
+}
+
+.guide__table {
+  margin: 14px 0;
+  overflow-x: auto;
+}
+.guide__table table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+}
+.guide__table th {
+  text-align: left;
+  font-family: var(--echo-font-machine);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  padding: 8px 12px 8px 0;
+}
+.guide__table td {
+  vertical-align: top;
+  padding: 9px 12px 9px 0;
+  color: var(--echo-text-dim);
+  line-height: 1.55;
+  /* The Divider's seam: a dark groove over a faint light lip (one rule, site-wide). */
+  box-shadow:
+    inset 0 1px 0 var(--echo-seam),
+    inset 0 2px 0 color-mix(in srgb, var(--echo-cap-highlight) 10%, transparent);
+}
+.guide__table td:first-child {
+  white-space: nowrap;
+  color: var(--echo-text);
+}
+
+/* Cards for the Introduction's three paths and similar link sets. */
+.guide-cards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  margin: 14px 0;
+}
+.guide-card {
+  display: block;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--echo-seam);
+  background: var(--echo-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--echo-cap-highlight) 24%, transparent);
+  text-decoration: none;
+}
+.guide .guide-card {
+  color: var(--echo-text-dim);
+}
+.guide-card__title {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--echo-font-machine);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+.guide-card__blurb {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.guide-card ul {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+}
+.guide-card li {
+  line-height: 1.7;
+}
+
+/* Live token specimens: a swatch that reads the current seed's role. */
+.guide-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  vertical-align: middle;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--echo-text) 18%, transparent);
+}
+
+.guide__pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 56px;
+}
+.guide .guide__pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  /* Two border-box halves: padding and border count inside the half, not on top. */
+  box-sizing: border-box;
+  flex: 0 1 calc(50% - 6px);
+  min-width: 0;
+  border-radius: 12px;
+  border: 1px solid var(--echo-seam);
+  color: var(--echo-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+.guide .guide__pager-link--next {
+  margin-left: auto;
+  text-align: right;
+}
+.guide__pager-dir {
+  font-family: var(--echo-font-machine);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+/* The Components index: one ruled row per item. */
+.guide-group__overview {
+  margin: -4px 0 8px;
+  font-size: 13px;
+}
+.guide-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.guide .guide-index li {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 14px;
+  max-width: none;
+  padding: 9px 0;
+  box-shadow:
+    inset 0 1px 0 var(--echo-seam),
+    inset 0 2px 0 color-mix(in srgb, var(--echo-cap-highlight) 10%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.guide-index a {
+  font-weight: 600;
+}
+/* Breakpoints in rem, so a reader's larger text reaches them too (WCAG 1.4.4). */
+@media (max-width: 35rem) {
+  .guide .guide-index li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* Below this, a table scrolls in its own box instead of crushing its columns. */
+.guide__table table {
+  min-width: 34rem;
+}
+
+/*
+ * Links on a card sit on --echo-surface, where the accent measures 3.70:1 —
+ * under AA for text. Full text colour, underlined, is what marks them there.
+ */
+.guide .guide-card a {
+  color: var(--echo-text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--echo-accent) 70%, transparent);
+  text-underline-offset: 3px;
+}
+
+/* A URL or a path in inline code has no spaces to break at; let it break anywhere rather than widen the page. */
+.guide :not(pre) > code {
+  overflow-wrap: anywhere;
+}

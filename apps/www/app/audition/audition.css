@@ -1,0 +1,169 @@
+/*
+ * The sound audition bench. Ruled rows, not cards: a recipe is one line of a
+ * mixing desk — play, name, four faders, actions — and nine grey cards made
+ * it read as nine unrelated widgets.
+ */
+.aud-master {
+  display: grid;
+  gap: var(--echo-space-7);
+}
+
+.aud-master__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-8) var(--echo-space-11);
+  padding: var(--echo-space-8) var(--echo-space-1);
+  border-top: 1px solid var(--echo-seam);
+  border-bottom: 1px solid var(--echo-seam);
+}
+
+.aud-master__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-6);
+  font-size: var(--echo-text-md);
+  color: var(--echo-text);
+  cursor: pointer;
+}
+
+.aud-param--master {
+  flex: 1 1 18rem;
+  max-width: 28rem;
+}
+
+.aud-list {
+  /* The rows lay out by the list's width, not the window's: beside the docs
+     sidebar a 1024px window leaves them 696px. */
+  container-type: inline-size;
+  margin: var(--echo-space-7) 0 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--echo-seam);
+}
+
+.aud-row {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "id params actions"
+    "id json json";
+  align-items: center;
+  gap: var(--echo-space-6) clamp(1rem, 3vw, 2.5rem);
+  padding: var(--echo-space-10) var(--echo-space-1);
+  border-top: 1px solid var(--echo-seam);
+}
+
+.aud-row__id {
+  grid-area: id;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-6);
+  align-self: start;
+  min-width: 0;
+}
+
+.aud-row__name {
+  display: grid;
+  gap: var(--echo-space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-md);
+  font-weight: 700;
+  color: var(--echo-text);
+}
+
+.aud-row__wave {
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-2xs);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--echo-text-dim);
+}
+
+/* Four faders, two by two. */
+.aud-row__params {
+  grid-area: params;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--echo-space-5) var(--echo-space-10);
+  min-width: 0;
+}
+
+.aud-param {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) 5.25rem;
+  align-items: center;
+  gap: var(--echo-space-5);
+  min-width: 0;
+}
+
+.aud-param__name {
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.aud-param__arp {
+  grid-column: 2 / -1;
+  font-family: var(--echo-font-mono);
+  font-size: var(--echo-text-xs);
+  color: var(--echo-text);
+}
+
+/* The Slider caps itself at 260px for standalone use; on the desk a fader
+   fills its column so the value sits right against it. */
+.aud-param > .echo-slider {
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+}
+
+.aud-row__actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--echo-space-4);
+  align-self: start;
+}
+
+.aud-row__actions .tool-status {
+  flex-basis: 100%;
+  text-align: right;
+}
+
+.aud-row__json {
+  grid-area: json;
+  display: block;
+  font-family: var(--echo-font-mono);
+  font-size: var(--echo-text-2xs);
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Breakpoints in rem, so a reader's larger text reaches them too (WCAG 1.4.4),
+ * and on the list's width. Side by side, the name, the faders and the actions
+ * need about 58rem before a fader's track is too short to set by hand.
+ */
+@container (max-width: 58rem) {
+  .aud-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "id actions"
+      "params params"
+      "json json";
+  }
+}
+
+@container (max-width: 38.75rem) {
+  .aud-row__params {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

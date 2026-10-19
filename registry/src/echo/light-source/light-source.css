@@ -1,0 +1,49 @@
+/**
+ * LightSource. The light itself is a soft glow under the pointer; what it
+ * does to the caps is HardwareButton's own light offset (--hw-light-x/-y,
+ * where its drop shadow falls) and a shine on the face toward the light.
+ */
+.echo-light-source {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Placed (inline, translate) from the pointer's physical position. */
+.echo-light-source__bulb {
+  position: absolute;
+  inline-size: 200px;
+  block-size: 200px;
+  border-radius: var(--echo-radius-full);
+  pointer-events: none;
+  z-index: var(--echo-z-base, 0);
+  background: radial-gradient(circle, rgb(255 255 255 / calc(0.18 * var(--echo-gloss, 1))), transparent 65%);
+  opacity: 0;
+  transition: opacity var(--echo-duration-glide) ease;
+}
+.echo-light-source__bulb[data-lit] {
+  opacity: 1;
+}
+
+/* The shine: on the face of each cap, on the side toward the light. */
+.echo-light-source .echo-hw__cap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-base, 0);
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--hw-sheen-x, 35%) var(--hw-sheen-y, 25%),
+    rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))),
+    transparent 60%
+  );
+  /* Faint far from the light, bright near it. */
+  opacity: calc(0.15 + 0.85 * var(--hw-sheen, 0));
+}
+
+@media (forced-colors: active) {
+  .echo-light-source__bulb,
+  .echo-light-source .echo-hw__cap::before {
+    display: none;
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "name": "save-button",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "SaveButton",
+  "description": "The button becomes its own progress, then its own answer: Save narrows into a busy cap while your save runs, widens into a lit Saved, and flows back. One HardwareButton changing shape in a Morph — no dots swapped in, no width jump.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "hardware-button",
+    "morph"
+  ],
+  "files": [
+    {
+      "path": "save-button/save-button.css",
+      "sha256": "2945e18ed17a588185a74664da8b9ea96e70466e420243c80d7451bb34c8fdff",
+      "content": "/*\n * \"Saved\" is the answer, not an action: disabled, so it's announced as\n * unavailable and can't be pressed twice, but lit at full strength.\n */\n.echo-save-button .echo-hw__cap[data-variant=\"primary\"]:disabled {\n  opacity: 1;\n}\n"
+    },
+    {
+      "path": "save-button/save-button.tsx",
+      "sha256": "5c3ee32c12e7ed5c15b9bfb5d9a33bd4ff5450fbdd6c3ede4fd7c968c454875d",
+      "content": "\"use client\";\n\n/**\n * SaveButton. The button becomes its own progress, then its own answer:\n * \"Save\" narrows into a busy cap while `onSave` runs, widens into a lit\n * \"Saved\", and flows back. One HardwareButton in a Morph, so every step is\n * the same cap changing shape — no dots swapped in, no width jump.\n *\n * `onSave` may return a promise; the cap stays busy until it settles. If it\n * rejects, the button comes straight back and says so.\n */\nimport { useEffect, useRef, useState } from \"react\";\nimport type { MorphFeelName } from \"echo-ui-core/tactile\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Morph } from \"../morph\";\nimport \"./save-button.css\";\n\nexport interface SaveButtonProps {\n  /** Runs on press. Return a promise to hold the busy state until it settles. */\n  onSave: () => Promise<unknown> | void;\n  /** The idle label. */\n  children?: string;\n  /** Said while saving, and the busy cap's name. */\n  savingLabel?: string;\n  savedLabel?: string;\n  /** Said if `onSave` rejects. */\n  errorLabel?: string;\n  /** How long \"Saved\" stays, ms. */\n  savedFor?: number;\n  disabled?: boolean;\n  feel?: MorphFeelName;\n  size?: \"sm\" | \"md\" | \"lg\";\n  align?: \"center\" | \"start\" | \"end\";\n  className?: string;\n}\n\nconst Disk = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.6\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    <path d=\"M3 2.5h8l2.5 2.5v8.5h-10.5z\" />\n    <path d=\"M5.5 2.5v3.5h5v-3.5M5 13.5v-4h6v4\" />\n  </svg>\n);\nconst Check = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    <path d=\"M3 8.5l3.2 3.2L13 4.8\" />\n  </svg>\n);\n\ntype Phase = \"idle\" | \"saving\" | \"saved\";\n\nexport function SaveButton({\n  onSave,\n  children = \"Save\",\n  savingLabel = \"Saving\",\n  savedLabel = \"Saved\",\n  errorLabel = \"Couldn't save\",\n  savedFor = 1800,\n  disabled,\n  feel,\n  size,\n  align,\n  className,\n}: SaveButtonProps) {\n  const [phase, setPhase] = useState<Phase>(\"idle\");\n  const [status, setStatus] = useState(\"\");\n  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);\n  const alive = useRef(true);\n  useEffect(() => {\n    // Set on mount, not only at creation: React may mount it twice.\n    alive.current = true;\n    return () => {\n      alive.current = false;\n      clearTimeout(timer.current);\n    };\n  }, []);\n\n  const save = async () => {\n    if (phase !== \"idle\") return;\n    clearTimeout(timer.current);\n    setPhase(\"saving\");\n    setStatus(savingLabel);\n    try {\n      await onSave();\n    } catch {\n      if (!alive.current) return;\n      setPhase(\"idle\");\n      setStatus(errorLabel);\n      return;\n    }\n    if (!alive.current) return;\n    setPhase(\"saved\");\n    setStatus(savedLabel);\n    timer.current = setTimeout(() => setPhase(\"idle\"), savedFor);\n  };\n\n  return (\n    <Morph feel={feel} align={align} className={[\"echo-save-button\", className].filter(Boolean).join(\" \")} status={status}>\n      {phase === \"saving\" ? (\n        <HardwareButton data-morph=\"save\" size={size} icon={<Disk />} iconOnly aria-label={savingLabel} loading />\n      ) : phase === \"saved\" ? (\n        <HardwareButton data-morph=\"save\" variant=\"primary\" size={size} icon={<Check />} disabled>\n          {savedLabel}\n        </HardwareButton>\n      ) : (\n        <HardwareButton data-morph=\"save\" size={size} icon={<Disk />} disabled={disabled} onClick={() => void save()}>\n          {children}\n        </HardwareButton>\n      )}\n    </Morph>\n  );\n}\n"
+    },
+    {
+      "path": "save-button/index.ts",
+      "sha256": "94211c308232f09f6c5cd5bdc5645226963bdedf09d2a5e69eb4566d45e96406",
+      "content": "export { SaveButton } from \"./save-button\";\nexport type { SaveButtonProps } from \"./save-button\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Six more that change shape as you use them, all on `Morph`.** `SaveButton` narrows into its own progress while your save runs, widens into a lit \"Saved\" and flows back. `Timer` opens into durations; the others run into the one you pick, which drains as the time runs and rings. `Stopwatch` buds a Lap button from Start, and every lap is a drop that lands in the lap count. `VoiceNote` records from the microphone: your voice swells the Stop button, and the take becomes a note that fills as it plays. `AddToBag` sends a drop from the button into the count beside it. `useBudOff` is that drop on its own, from any element into any other. `Morph` now keeps a button's identity across states when it has the same `data-morph` name, and draws filled caps as levels."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

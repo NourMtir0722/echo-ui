@@ -1,0 +1,73 @@
+/**
+ * Morph. At rest it is your buttons in a row and nothing else. While the
+ * shape changes, the drawn body sits over the row and the real buttons wait
+ * under it, invisible but focusable; when it lands they come back and the
+ * body fades off them.
+ */
+
+.echo-morph {
+  position: relative;
+  display: inline-grid;
+  justify-items: center;
+  max-width: 100%;
+  vertical-align: middle;
+}
+.echo-morph[data-align="start"] {
+  justify-items: start;
+}
+.echo-morph[data-align="end"] {
+  justify-items: end;
+}
+
+.echo-morph__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.echo-morph[data-align="start"] .echo-morph__row {
+  justify-content: flex-start;
+}
+.echo-morph[data-align="end"] .echo-morph__row {
+  justify-content: flex-end;
+}
+
+.echo-morph[data-moving] .echo-morph__row .echo-hw {
+  opacity: 0;
+}
+
+/* Placed (inline) from the caps' measured boxes, which are physical. */
+.echo-morph__body {
+  position: absolute;
+  z-index: var(--echo-z-raised, 1);
+  pointer-events: none;
+}
+.echo-morph__body[data-landing] {
+  animation: echo-morph-land var(--echo-duration-tick) ease-out forwards;
+}
+@keyframes echo-morph-land {
+  to {
+    opacity: 0;
+  }
+}
+
+.echo-morph__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Forced colors drops the painted body; the real buttons are already system buttons. */
+@media (forced-colors: active) {
+  .echo-morph__body {
+    display: none;
+  }
+  .echo-morph[data-moving] .echo-morph__row .echo-hw {
+    opacity: 1;
+  }
+}

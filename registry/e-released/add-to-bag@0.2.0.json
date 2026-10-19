@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "name": "add-to-bag",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "AddToBag",
+  "description": "Press it and a drop buds out of the button and lands in the count beside it, which swells and goes up — the eye follows the thing you added to where it went. A HardwareButton and a CountBadge, joined by useBudOff.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "hardware-button",
+    "count-badge",
+    "bud-off"
+  ],
+  "files": [
+    {
+      "path": "add-to-bag/add-to-bag.css",
+      "sha256": "8e78b3396e74895e0634cd1521537cad2b5427ff2b17309e1986f97e783f3530",
+      "content": ".echo-add-to-bag {\n  display: inline-flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: var(--echo-space-10);\n  max-width: 100%;\n}\n/* The drop lands here and it swells; its own box, so the badge's transform is untouched. */\n.echo-add-to-bag__count {\n  display: inline-flex;\n}\n"
+    },
+    {
+      "path": "add-to-bag/add-to-bag.tsx",
+      "sha256": "8078e8eedaa36dc9fb558e2829a6b0e7a869cad7d42c08f243491a2f56f2f1b8",
+      "content": "\"use client\";\n\n/**\n * AddToBag. Press it and a drop buds out of the button and lands in the\n * count beside it, which swells and goes up — the eye follows the thing you\n * added to where it went.\n *\n * `onAdd` runs at once (the item is added when you press); the count the\n * badge shows catches up when the drop lands. A HardwareButton and a\n * CountBadge, joined by useBudOff.\n */\nimport { useRef, useState, type ReactNode } from \"react\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { CountBadge } from \"../count-badge\";\nimport { useBudOff } from \"../bud-off\";\nimport \"./add-to-bag.css\";\n\nexport interface AddToBagProps {\n  /** How many are in the bag. */\n  count: number;\n  /** Add one. The badge shows it when the drop lands. */\n  onAdd: () => void;\n  /** The button's label. */\n  children?: ReactNode;\n  /** What the count is of, for the badge's name: \"3 in bag\". */\n  countLabel?: string;\n  icon?: ReactNode;\n  disabled?: boolean;\n  size?: \"sm\" | \"md\" | \"lg\";\n  className?: string;\n}\n\nconst Plus = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" aria-hidden>\n    <path d=\"M8 3v10M3 8h10\" />\n  </svg>\n);\n\nexport function AddToBag({\n  count,\n  onAdd,\n  children = \"Add to bag\",\n  countLabel = \"in bag\",\n  icon = <Plus />,\n  disabled,\n  size,\n  className,\n}: AddToBagProps) {\n  const budOff = useBudOff();\n  const button = useRef<HTMLButtonElement>(null);\n  const badge = useRef<HTMLSpanElement>(null);\n  // Drops still in the air: the badge doesn't count them yet.\n  const [flying, setFlying] = useState(0);\n  const shown = Math.max(0, count - flying);\n\n  const add = () => {\n    onAdd();\n    const from = button.current;\n    const to = badge.current;\n    if (!from || !to) return;\n    setFlying((n) => n + 1);\n    budOff(from, to, { onArrive: () => setFlying((n) => Math.max(0, n - 1)) });\n  };\n\n  return (\n    <span className={[\"echo-add-to-bag\", className].filter(Boolean).join(\" \")}>\n      <HardwareButton ref={button} size={size} icon={icon} disabled={disabled} onClick={add}>\n        {children}\n      </HardwareButton>\n      <span ref={badge} className=\"echo-add-to-bag__count\">\n        <CountBadge count={shown} label={countLabel} showZero />\n      </span>\n    </span>\n  );\n}\n"
+    },
+    {
+      "path": "add-to-bag/index.ts",
+      "sha256": "35e761895e1908a0a0b5b2cc2550d9b1fdc4908ab954ef525f48ec5c3d87f90d",
+      "content": "export { AddToBag } from \"./add-to-bag\";\nexport type { AddToBagProps } from \"./add-to-bag\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Six more that change shape as you use them, all on `Morph`.** `SaveButton` narrows into its own progress while your save runs, widens into a lit \"Saved\" and flows back. `Timer` opens into durations; the others run into the one you pick, which drains as the time runs and rings. `Stopwatch` buds a Lap button from Start, and every lap is a drop that lands in the lap count. `VoiceNote` records from the microphone: your voice swells the Stop button, and the take becomes a note that fills as it plays. `AddToBag` sends a drop from the button into the count beside it. `useBudOff` is that drop on its own, from any element into any other. `Morph` now keeps a button's identity across states when it has the same `data-morph` name, and draws filled caps as levels."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+/*
+ * PullToRefresh. The scroller is the region; the content slides down under
+ * the finger and a molded key rises in the gap above it. Tokens only.
+ */
+.echo-ptr {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* The pull replaces the browser's own bounce and pull-to-reload here. */
+  overscroll-behavior-y: contain;
+}
+
+.echo-ptr__content {
+  position: relative;
+  will-change: translate;
+}
+
+.echo-ptr[data-phase="pulling"],
+.echo-ptr[data-phase="armed"] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* --- the key in the gap ------------------------------------------------------ */
+
+.echo-ptr__indicator {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: var(--echo-z-base, 0);
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-3);
+  padding-top: var(--echo-space-5);
+  pointer-events: none;
+}
+
+.echo-ptr__key {
+  --ptr-progress: 0;
+  --ptr-y: 0px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--echo-text-dim);
+  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 70%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 50%, transparent),
+    0 6px 14px -6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+  /* Rises with the pull and grows into view; never squashed. */
+  opacity: var(--ptr-progress);
+  scale: calc(0.6 + 0.4 * var(--ptr-progress));
+  translate: 0 calc(min(var(--ptr-y), 64px) * 0.25 - 8px);
+}
+
+.echo-ptr__arrow {
+  /* A quarter-turn short of flipped while pulling; flips when armed. */
+  rotate: calc(var(--ptr-progress) * 150deg);
+  transition: rotate var(--echo-duration-tick) ease;
+}
+
+.echo-ptr[data-phase="armed"] .echo-ptr__key,
+.echo-ptr[data-phase="refreshing"] .echo-ptr__key {
+  color: var(--echo-accent-glow);
+  opacity: 1;
+  scale: 1;
+}
+
+.echo-ptr[data-phase="armed"] .echo-ptr__arrow {
+  rotate: 180deg;
+}
+
+.echo-ptr__hint {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  opacity: var(--ptr-progress, 0);
+}
+
+.echo-ptr[data-phase="idle"] .echo-ptr__hint,
+.echo-ptr[data-phase="done"] .echo-ptr__hint {
+  opacity: 0;
+}
+
+.echo-ptr[data-phase="armed"] .echo-ptr__hint,
+.echo-ptr[data-phase="refreshing"] .echo-ptr__hint {
+  opacity: 1;
+}
+
+/* The content sits over the key; at rest the key is invisible anyway. */
+.echo-ptr__content {
+  z-index: var(--echo-z-raised, 1);
+}
+
+/* --- the non-gesture way ----------------------------------------------------- */
+
+.echo-ptr__button,
+.echo-ptr__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focused, the Refresh button shows itself at the top of the list. */
+.echo-ptr__button:focus-visible {
+  z-index: var(--echo-z-top, 2);
+  top: var(--echo-space-4);
+  left: 50%;
+  translate: -50% 0;
+  width: auto;
+  height: auto;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 var(--echo-space-8);
+  overflow: visible;
+  clip-path: none;
+  border-radius: var(--echo-radius-full);
+  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 70%);
+  color: var(--echo-text);
+  font: inherit;
+  font-size: var(--echo-text-sm);
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-ptr__arrow {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .echo-ptr__key {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+}

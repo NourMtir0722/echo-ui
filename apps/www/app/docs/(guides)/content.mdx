@@ -1,0 +1,70 @@
+import { ItemCount, StartPaths } from "@/components/guides/live";
+
+# Introduction
+
+**Tactile components you can feel. The design system that keeps your AI on-brand.** Echo UI is a
+tactile design system for React. It's one design system, not a bundle of components: every part is
+made from the same material and follows the same rules, from molded caps in recessed
+wells to emissive LCD readouts and real press travel. One colour themes all of them, and they
+press, sound and move the same way. Motion and sound are token families of their own, next to
+colour and type, so a button does not just look pressed, it moves and it clicks. And none of that is paid for in access: every component is keyboard-complete,
+named for a screen reader, works in forced colors and under reduced motion, and holds WCAG 2.2 AA
+on every seed you give it.
+
+Your style goes on top. Your mood boards become styles, each product wears the one that fits it
+(its colours, type, corners and finish), and your AI agent builds in it. The feel stays Echo's.
+
+## The workflow
+
+1. **Your mood boards become styles.** Echo's Design Eye reads them into your own private library.
+2. **A new app picks its style.** `init` sets the project up, and Style Fit picks the style that fits.
+3. **Your agent builds the screen.** It asks Echo which component does each job, then copies it in,
+   in your style. One setting later, like "rounder", is one line: `style set`.
+4. **When it slips, Echo hands it back.** A check runs on every file your agent saves, and when it
+   says it's done, Echo's tests (design and axe) run on the pages it changed until they pass.
+5. **Next product, next style.** The same components and the same feel, in another look.
+
+[The workflow](/docs/workflow) follows one builder through all five, with every command.
+
+## How it works
+
+Echo is a **registry, not an npm package.** `npx echo-ui-cli` copies each component's source into
+your project, and from then on it is yours: read it, change it, delete what you do not need. There
+is no Echo runtime to upgrade and no black box to work around — only `echo-ui-core`, the grammar
+the components import for theme, sound and motion.
+
+The registry has <ItemCount />, and every one of them takes its colours from a single seed.
+
+## Start here
+
+Start from what you came to do.
+
+<StartPaths />
+
+## What makes it different
+
+- **One seed, every colour.** You choose an accent, a chassis and a paper colour. Every surface,
+  cap, well, glow and text colour is derived from them in OKLCH, and every text colour is checked
+  against WCAG AA on each background it appears on. See [Theming](/docs/theming).
+- **Your look on top.** A style from your own mood boards sets the colours, type, radius, finish
+  and density, on a dark device or a light one, and its rules go in `DESIGN.md` for your agent.
+  See [Styles](/docs/styles).
+- **Sound without audio files.** Sounds are short synth recipes played through WebAudio. They respect
+  mute, a blurred tab and reduced motion. See [Motion & sound](/docs/motion-and-sound).
+- **Behaviour from Base UI.** Dialogs, menus, tabs and selects wrap [Base UI](https://base-ui.com), so
+  focus, keyboard and ARIA are handled by a maintained library; Echo adds the material and the feel.
+- **Accessible before it is pretty.** WCAG 2.2 AA is the floor, not the goal: a control without a
+  name does not compile, and every component is tested for focus, target size, forced colours and
+  reflow. Every component page ends with what was tested and what is still open.
+- **An agent that stays on your style.** `init` tells Claude Code, Codex or Cursor it's in an Echo
+  project, gives it a way to ask which component does each job, and runs a check on every file it
+  saves. Tools without a terminal get the same docs as `llms.txt`, `catalog.json` and an
+  [MCP server](/docs/mcp). See [For AI agents](/docs/ai) and [The workflow](/docs/workflow).
+
+## Tools
+
+- [Theme generator](/generator) — one colour in, the whole device relights.
+- [Sound audition](/audition) — hear every sound token, and tune a recipe's pitch, length, volume and
+  bend.
+- [Tactile bench](/tactile) — one button wired with `useTactile`: press it with a pointer, then with
+  the keyboard, and it feels the same.

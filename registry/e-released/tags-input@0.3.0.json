@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "name": "tags-input",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "TagsInput",
+  "description": "Free-form tags typed into Field's well: addresses, keywords, labels. Enter or a comma turns the text into a tag that buds into the well; Backspace in an empty input takes the last back; a paste with commas becomes several. For a fixed list to choose from, use Combobox with multiple.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "size",
+    "tag",
+    "combobox"
+  ],
+  "files": [
+    {
+      "path": "tags-input/tags-input.tsx",
+      "sha256": "89aae870b0d8871e9f243df6bf09b063f259321bdce256f92929de12dfb5d60d",
+      "content": "\"use client\";\n\n/**\n * TagsInput. Free-form tags typed into Field's well: email addresses,\n * keywords, labels. Type and press Enter (or a comma) and the text buds into\n * a tag; Backspace in an empty input takes the last one back; a paste with\n * commas or new lines becomes several at once. Each tag has its own ×.\n *\n * For a fixed list to choose from, use Combobox with `multiple`. This is for\n * values nobody could list in advance.\n *\n * The input is named by the visible label; the tags are a named list, each\n * remove button says what it removes, and additions and removals are\n * announced politely.\n */\nimport {\n  forwardRef,\n  useId,\n  useRef,\n  useState,\n  type ClipboardEvent,\n  type KeyboardEvent,\n  type MutableRefObject,\n} from \"react\";\nimport type { EchoTextInterop } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { useControlSize, type ControlSize } from \"../size\";\nimport \"../tag/tag.css\";\nimport \"../combobox/combobox.css\";\nimport \"./tags-input.css\";\n\ninterface TagsInputOwnProps extends EchoTextInterop {\n  /** The visible label and the input's accessible name. */\n  label: string;\n  value?: string[];\n  defaultValue?: string[];\n  onValueChange?: (value: string[]) => void;\n  /** Turn typed text into a tag, or reject it (return null): trim, lower-case, validate. */\n  normalize?: (text: string) => string | null;\n  /** The most tags it takes. */\n  max?: number;\n  size?: ControlSize;\n}\n\nexport type TagsInputProps = TagsInputOwnProps;\n\nconst Cross = () => (\n  <svg viewBox=\"0 0 12 12\" aria-hidden>\n    <path d=\"M3 3l6 6M9 3l-6 6\" stroke=\"currentColor\" strokeWidth=\"1.8\" strokeLinecap=\"round\" />\n  </svg>\n);\n\n/** `forwardRef` — see the note on `Field`. The ref lands on the input. */\nexport const TagsInput = forwardRef<HTMLInputElement, TagsInputProps>(function TagsInput(\n  { label, value, defaultValue = [], onValueChange, normalize = (t) => t.trim() || null, max, placeholder, size: ownSize, id, name, disabled, onKeyDown, onBlur, ...interop },\n  ref,\n) {\n  const size = useControlSize(ownSize);\n  const autoId = useId();\n  const inputId = id ?? autoId;\n  const sound = useSoundOptional();\n  const [inner, setInner] = useState<string[]>(defaultValue);\n  const tags = value ?? inner;\n  const [text, setText] = useState(\"\");\n  const [said, setSaid] = useState(\"\");\n  const input = useRef<HTMLInputElement | null>(null);\n\n  const set = (next: string[]) => {\n    if (value === undefined) setInner(next);\n    onValueChange?.(next);\n  };\n  const add = (raw: string[]) => {\n    const fresh: string[] = [];\n    for (const r of raw) {\n      const t = normalize(r);\n      if (t && !tags.includes(t) && !fresh.includes(t) && (max === undefined || tags.length + fresh.length < max)) fresh.push(t);\n    }\n    if (!fresh.length) return false;\n    set([...tags, ...fresh]);\n    sound?.play(\"tap\");\n    setSaid(`Added ${fresh.join(\", \")}`);\n    return true;\n  };\n  const remove = (t: string) => {\n    set(tags.filter((x) => x !== t));\n    setSaid(`Removed ${t}`);\n    input.current?.focus();\n  };\n\n  const keys = (e: KeyboardEvent<HTMLInputElement>) => {\n    onKeyDown?.(e);\n    if (e.defaultPrevented) return;\n    if ((e.key === \"Enter\" || e.key === \",\") && text.trim()) {\n      e.preventDefault();\n      if (add([text])) setText(\"\");\n    } else if (e.key === \"Backspace\" && text === \"\" && tags.length) {\n      e.preventDefault();\n      remove(tags[tags.length - 1]!);\n    }\n  };\n  const paste = (e: ClipboardEvent<HTMLInputElement>) => {\n    const pasted = e.clipboardData.getData(\"text\");\n    if (!/[,\\n]/.test(pasted)) return;\n    e.preventDefault();\n    add(pasted.split(/[,\\n]+/));\n  };\n\n  return (\n    <div className=\"echo-combobox echo-tags-input\" data-size={size} data-multiple=\"\">\n      <label className=\"echo-combobox__label\" htmlFor={inputId}>\n        {label}\n      </label>\n      <div className=\"echo-combobox__well\" onPointerDown={(e) => e.target === e.currentTarget && (e.preventDefault(), input.current?.focus())}>\n        <div className=\"echo-combobox__chips\">\n          {tags.length ? (\n            <ul className=\"echo-tags-input__list\" aria-label={`${label}, added`}>\n              {tags.map((t) => (\n                <li key={t} className=\"echo-tag echo-combobox__chip\">\n                  <span className=\"echo-tag__label\">{t}</span>\n                  <button type=\"button\" className=\"echo-tag__remove\" aria-label={`Remove ${t}`} disabled={disabled} onClick={() => remove(t)}>\n                    <Cross />\n                  </button>\n                </li>\n              ))}\n            </ul>\n          ) : null}\n          <input\n            ref={(node) => {\n              input.current = node;\n              if (typeof ref === \"function\") ref(node);\n              else if (ref) (ref as MutableRefObject<HTMLInputElement | null>).current = node;\n            }}\n            {...interop}\n            id={inputId}\n            className=\"echo-combobox__input\"\n            value={text}\n            placeholder={tags.length ? undefined : placeholder}\n            disabled={disabled}\n            onChange={(e) => setText(e.target.value)}\n            onKeyDown={keys}\n            onPaste={paste}\n            onBlur={(e) => {\n              // Whatever was left typed becomes a tag when you move on.\n              if (text.trim() && add([text])) setText(\"\");\n              onBlur?.(e);\n            }}\n            aria-describedby={`${inputId}-hint`}\n          />\n        </div>\n      </div>\n      <span id={`${inputId}-hint`} className=\"echo-tags-input__hint\">\n        Enter or comma adds; Backspace removes the last.\n      </span>\n      {name ? tags.map((t) => <input key={t} type=\"hidden\" name={name} value={t} />) : null}\n      <span className=\"echo-tags-input__live\" aria-live=\"polite\">\n        {said}\n      </span>\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "tags-input/tags-input.css",
+      "sha256": "5fe7f01fad565bfcd501c0b42d5cd0943f15c7be6f44845318afe02b9f7df32a",
+      "content": "/**\n * TagsInput. Combobox's label and well (combobox.css) with Tag's tags;\n * the tags are a real list.\n */\n.echo-tags-input__list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--echo-space-2);\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n.echo-tags-input__hint {\n  font-size: var(--echo-text-xs);\n  color: var(--echo-text-dim);\n}\n.echo-tags-input__live {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n"
+    },
+    {
+      "path": "tags-input/index.ts",
+      "sha256": "b5388b75af2b77d7bbc22d8b76d5f2ca790d46990442ed31558e55996d9baade",
+      "content": "export { TagsInput } from \"./tags-input\";\nexport type { TagsInputProps } from \"./tags-input\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Choosing: `Combobox`, `TagsInput`, `ChoiceCards`, `CheckboxGroup`, `Fieldset`, `Form` and `HoldButton`.** - **`Combobox`**: a Select you can type into. `multiple` keeps choices as tags that bud out of the text line; `creatable` offers to add what you typed. Built on Base UI Combobox. - **`TagsInput`**: free-form tags in Field's well (Enter or a comma adds, Backspace takes the last back, a paste becomes several), with `normalize` to clean or refuse each one. - **`ChoiceCards`**: options that need more than a word, as cards; the chosen one lights a rail and drops its pip. One choice is a radio group, `multiple` a group of checkboxes. - **`CheckboxGroup`**: a named set of checkboxes with an optional parent that shows a dash when only some are on. - **`Fieldset`**: a named group of fields with a legend. - **`Form`**: fails well. Pass `errors` to it and to each field; after a failed submit a summary at the top takes focus, counts the problems and links each to its field. - **`HoldButton`**: confirm by holding; the cap fills while pressed and drains if let go. A press that can't hold (assistive tech) arms it and a second press confirms."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

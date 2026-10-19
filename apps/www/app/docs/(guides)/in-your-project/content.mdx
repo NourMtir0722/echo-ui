@@ -1,0 +1,39 @@
+import { InitLine, PreRelease } from "@/components/guides/live";
+import { Footprint } from "@/components/guides/footprint";
+
+# What Echo puts in your project
+
+<PreRelease />
+
+<InitLine />
+
+`init` writes everything below, and prints one line naming each thing it added. It never edits your
+source code. Two things go into files of yours: the Echo block, between `<!-- echo-ui:start -->` and
+`<!-- echo-ui:end -->` in `CLAUDE.md` or `AGENTS.md`, and two hook entries in `.claude/settings.json`
+(the check and the Stop gate).
+Nothing outside those is touched. It all happens on its own, and none of it is hidden: each one is
+a file you can open, and each one comes back out.
+
+<Footprint />
+
+## Taking it out
+
+What Echo wrote for agents comes out with one command:
+
+```sh
+npx echo-ui-cli agent off
+```
+
+It takes the block out of `CLAUDE.md` and `AGENTS.md`, the two hook entries out of
+`.claude/settings.json`, and deletes the skills. A file it added to is left exactly as it was before
+`init`, and deleted only if Echo created it and nothing else was put in it since. `agent on` puts
+it all back.
+
+To take Echo out altogether, run `agent off`, delete the Echo folder, `echo.json` and
+`echo-lock.json`, and remove the two packages with your package manager.
+
+## Leaving some of it out
+
+`init --skip-agent` writes Echo's own files and leaves the block, `DESIGN.md`, the hooks and the
+skills out. A
+settings file that isn't valid JSON is never touched: `init` says so and prints the entry to paste.

@@ -1,0 +1,113 @@
+/**
+ * Avatar. A disc sunk into the chassis: the image
+ * sits in a well, initials are engraved into the plastic. Composes
+ * var(--echo-*).
+ */
+.echo-avatar {
+  /* Not overflow:hidden — the presence LED sits ON the rim, half outside.
+     The image clips itself to the disc instead. */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/*
+ * The disc is in rem, like the type it holds: identical at a default
+ * text size, and it grows with the reader's instead of clipping the initials.
+ */
+/* xs: inline with a line of text, a mention or a byline. */
+.echo-avatar[data-size="xs"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: var(--echo-text-3xs);
+}
+.echo-avatar[data-size="sm"] {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: var(--echo-text-3xs);
+}
+
+.echo-avatar[data-size="md"] {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: var(--echo-text-xs);
+}
+
+.echo-avatar[data-size="lg"] {
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: var(--echo-text-lg);
+}
+/* xl: a profile header. */
+.echo-avatar[data-size="xl"] {
+  width: 5rem;
+  height: 5rem;
+  font-size: var(--echo-text-2xl);
+}
+
+.echo-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
+}
+
+/* Engraved, not printed: dark ink with a light lower bevel. */
+.echo-avatar__initials {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wide, 0.06em);
+  line-height: var(--echo-leading-none, 1);
+  color: var(--echo-text-dim);
+  text-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--echo-gloss, 1)));
+}
+
+/*
+ * The presence LED (2026-09-18). A socket drilled into the rim at the key
+ * light's far corner: empty when idle, lit accent when live — StatusDot's
+ * fill-vs-hollow rule, so the state survives greyscale and every CVD. The
+ * chassis-coloured ring seats it in the plastic rather than floating it on top.
+ */
+.echo-avatar__led {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  width: 26%;
+  height: 26%;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-well);
+  border: var(--echo-border-fine, 1.5px) solid color-mix(in oklab, var(--echo-text-dim) 72%, transparent);
+  box-shadow:
+    0 0 0 2px var(--echo-surface),
+    inset 0 1px 1.5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* The LED lights and goes dark over a moment, like StatusDot's. */
+  transition:
+    background-color var(--echo-duration-tick) ease-out,
+    border-color var(--echo-duration-tick) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-avatar__led {
+    transition: none;
+  }
+}
+
+.echo-avatar[data-status="live"] .echo-avatar__led {
+  background: var(--echo-accent-glow);
+  border-color: var(--echo-accent-glow);
+  box-shadow:
+    0 0 0 2px var(--echo-surface),
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));
+}

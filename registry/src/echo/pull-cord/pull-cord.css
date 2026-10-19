@@ -1,0 +1,100 @@
+/**
+ * PullCord. A real Switch at the top is the fitting the cord hangs from; the
+ * cord is drawn, and the cap on its end is a handle in the neutral cap's
+ * material, lit when on. `--echo-pull-on` runs 0–1 on a spring for whatever
+ * it lights.
+ */
+.echo-pull-cord {
+  --echo-pull-on: 0;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  inline-size: min(var(--echo-pull-width), 100%);
+}
+.echo-pull-cord__mount {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: flex;
+  justify-content: center;
+}
+.echo-pull-cord__stage {
+  position: relative;
+  align-self: stretch;
+  block-size: var(--echo-pull-height);
+  touch-action: none;
+}
+
+.echo-pull-cord__lit {
+  position: absolute;
+  inset: 0;
+}
+
+.echo-pull-cord__cord {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  /* The markup carries the width the cord would like to swing in, and the
+     script narrows it after hydration; until then that attribute pushed a
+     narrow screen sideways. The box is the cord's room, before and after. */
+  inline-size: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.echo-pull-cord__rope {
+  fill: none;
+  stroke: var(--echo-text-dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The cap on the end: placed (inline, translate) from the cord's own
+   coordinates. A handle for the hand; the Switch is the control. */
+.echo-pull-cord__bead {
+  position: absolute;
+  display: block;
+  inline-size: 22px;
+  block-size: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-full);
+  cursor: grab;
+  touch-action: none;
+  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 45%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 3px 0 var(--echo-line-width, 0px) var(--echo-seam),
+    0 6px 10px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-pull-cord__bead:active {
+  cursor: grabbing;
+}
+.echo-pull-cord[data-on] .echo-pull-cord__bead {
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    0 3px 0 var(--echo-accent-6),
+    0 6px 14px color-mix(in oklch, var(--echo-accent-4) 40%, transparent);
+}
+.echo-pull-cord[data-disabled] .echo-pull-cord__bead {
+  cursor: default;
+  opacity: 0.45;
+}
+
+@media (forced-colors: active) {
+  .echo-pull-cord__rope {
+    stroke: CanvasText;
+  }
+  .echo-pull-cord__bead {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-pull-cord[data-on] .echo-pull-cord__bead {
+    background: Highlight;
+  }
+}

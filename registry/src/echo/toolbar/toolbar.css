@@ -1,0 +1,70 @@
+/**
+ * ButtonGroup and Toolbar. One long well; the caps inside give up their own
+ * wells and sit side by side on its floor. The group is the control height:
+ * each HardwareButton's cap is already the height less a well.
+ */
+.echo-button-group,
+.echo-toolbar__group {
+  --tb-well: var(--echo-space-2, 4px);
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: var(--tb-well);
+  gap: var(--tb-well);
+  border-radius: var(--echo-radius-lg);
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+.echo-button-group[data-size="sm"],
+.echo-toolbar[data-size="sm"] .echo-toolbar__group {
+  --tb-well: var(--echo-space-1, 2px);
+}
+/* Inside the shared well, a button's own well is only its cap's footprint. */
+:is(.echo-button-group, .echo-toolbar__group) .echo-hw__well {
+  padding: 0;
+  box-shadow: none;
+}
+/* A Toggle or ToggleGroup in a group gives up its own well too. */
+:is(.echo-button-group, .echo-toolbar__group) :is(.echo-toggle, .echo-toggle-group) {
+  padding: 0;
+  box-shadow: none;
+  height: calc(var(--ctl-h) - 2 * var(--tb-well));
+}
+
+.echo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-4);
+  min-width: 0;
+}
+.echo-toolbar[data-orientation="vertical"] {
+  flex-direction: column;
+  align-items: stretch;
+}
+.echo-toolbar__separator {
+  align-self: stretch;
+  width: var(--echo-border-hairline, 1px);
+  margin-block: var(--echo-space-2);
+  background: var(--echo-seam);
+  box-shadow: 1px 0 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1)));
+}
+.echo-toolbar[data-orientation="vertical"] .echo-toolbar__separator {
+  width: auto;
+  height: var(--echo-border-hairline, 1px);
+  margin-block: 0;
+  margin-inline: var(--echo-space-2);
+}
+@media (forced-colors: active) {
+  .echo-button-group,
+  .echo-toolbar__group {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-toolbar__separator {
+    background: CanvasText;
+  }
+}

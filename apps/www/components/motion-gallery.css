@@ -1,0 +1,223 @@
+/*
+ * The Motion gallery. Tokens only, like every surface of the site: the page
+ * whose subject is the material can't be made of hexes.
+ */
+.echo-motion {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 2rem) 6rem;
+}
+
+.echo-motion__head {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+.echo-motion__eyebrow,
+.echo-motion__kindname {
+  margin: 0;
+  font-family: var(--echo-font-machine);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-motion__title {
+  margin: 0;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--echo-text);
+}
+.echo-motion__lede,
+.echo-motion__kindnote {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--echo-text-dim);
+}
+
+.echo-motion__kind {
+  margin-top: 40px;
+}
+.echo-motion__kindnote {
+  margin: 6px 0 16px;
+  font-size: 14px;
+}
+
+.echo-motion__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: 14px;
+}
+.echo-motion__card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-radius: var(--echo-radius-2xl, 18px);
+  background: var(--echo-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--echo-text) 8%, transparent);
+  /* A drawn device outlines the card in its ink, over the stage the inset ring sits under; molded, the line is 0px. */
+  outline: var(--echo-line-width, 0px) solid var(--echo-line, transparent);
+  outline-offset: calc(-1 * var(--echo-line-width, 0px));
+  overflow: hidden;
+}
+.echo-motion__stage {
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  padding: 16px;
+  background: var(--echo-well);
+  box-shadow: inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.45 * var(--echo-shade, 1) * 100%), transparent);
+  border-bottom: var(--echo-line-width, 0px) solid var(--echo-line, transparent);
+  overflow: hidden;
+}
+.echo-motion__meta {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+.echo-motion__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.echo-motion__name a {
+  color: var(--echo-text);
+  text-decoration: none;
+}
+.echo-motion__name a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.echo-motion__name a:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.echo-motion__what {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+}
+.echo-motion__cmd {
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--echo-font-mono);
+  font-size: 12px;
+  color: var(--echo-text-dim);
+  background: var(--echo-well);
+  white-space: nowrap;
+}
+.echo-motion__what a {
+  color: var(--echo-text);
+  text-underline-offset: 3px;
+}
+.echo-motion__what a:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Where the motion lives: the components, each linked. */
+.echo-motion__lives {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+}
+.echo-motion__lives a {
+  color: var(--echo-text);
+  text-decoration-color: var(--echo-accent);
+  text-underline-offset: 3px;
+}
+.echo-motion__lives a:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.echo-motion__tag {
+  display: inline-block;
+  margin-inline-end: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-family: var(--echo-font-machine);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+  background: color-mix(in oklab, var(--echo-cap) 70%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+/* Demo scenery: the lamp the pull cord lights, drawn from the theme's roles. */
+.echo-motion__cord {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.echo-motion__lamp {
+  position: absolute;
+  inset-block-start: 38%;
+  inset-inline-start: 18%;
+  inline-size: 52px;
+  block-size: 52px;
+  border-radius: var(--echo-radius-full);
+  background: radial-gradient(
+    circle at 38% 32%,
+    color-mix(in oklab, white calc(15% + var(--echo-pull-on) * 55%), var(--echo-cap)),
+    color-mix(in oklab, var(--echo-primary-cap-mid) calc(var(--echo-pull-on) * 100%), var(--echo-cap-shadow))
+  );
+  box-shadow:
+    0 0 calc(var(--echo-pull-on) * 56px) calc(var(--echo-pull-on) * 10px)
+      color-mix(in oklab, var(--echo-primary-cap-mid) 70%, transparent),
+    inset 0 -4px 8px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.35 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-motion__caption {
+  font-family: var(--echo-font-machine);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+/* A phone's keypad: three columns, packed together in the middle of however wide the preview is. */
+.echo-motion__keypad {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: center;
+  gap: clamp(6px, 1vw, 10px);
+  padding: clamp(0px, 1vw, 12px);
+}
+.echo-motion__keypad b {
+  font-size: 15px;
+}
+.echo-motion__daycard {
+  display: grid;
+  gap: 18px;
+  color: var(--echo-text);
+}
+.echo-motion__daycard strong {
+  font-family: var(--echo-font-machine);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.echo-motion__daycard span {
+  font-size: 17px;
+}
+.echo-motion__ripple {
+  inline-size: 100%;
+  min-block-size: 190px;
+}

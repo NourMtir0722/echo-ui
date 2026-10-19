@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "name": "loader",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Loader",
+  "description": "Three accent LEDs breathing in sequence — the device thinking. role=status; reduced motion holds the dots steady. Consumes var(--echo-*).",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "loader/loader.css",
+      "sha256": "2c2629d5e126b84857104357d6521aa4af591b1e57b9155c0eae32a09ecffa92",
+      "content": "/**\n * Loader. Three LEDs in the library's one lit accent, breathing in\n * sequence — the breath is opacity and scale, not a halo. Composes\n * var(--echo-*); reduced motion holds the dots steady.\n */\n.echo-loader {\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-4);\n}\n\n.echo-loader__dot {\n  width: var(--echo-loader-dot, 9px);\n  height: var(--echo-loader-dot, 9px);\n  border-radius: 50%;\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));\n  animation: echo-loader-pulse 1s infinite ease-in-out;\n}\n\n.echo-loader__dot:nth-child(2) {\n  animation-delay: 0.16s;\n}\n\n.echo-loader__dot:nth-child(3) {\n  animation-delay: 0.32s;\n}\n\n@keyframes echo-loader-pulse {\n  0%,\n  100% {\n    opacity: 1;\n    transform: scale(1);\n  }\n  50% {\n    opacity: 0.35;\n    transform: scale(0.8);\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-loader__dot {\n    animation: none;\n    opacity: 0.7;\n  }\n}\n"
+    },
+    {
+      "path": "loader/loader.tsx",
+      "sha256": "9444d91e31c97203c619c96b0a7f3d39c6af41100c8454619c25a8dc68c05f04",
+      "content": "/**\n * Loader — three accent LEDs breathing in sequence.\n * Announces as a live status region; reduced motion holds the dots steady.\n */\nimport type { CSSProperties, HTMLAttributes } from \"react\";\nimport \"./loader.css\";\n\nexport interface LoaderProps extends HTMLAttributes<HTMLDivElement> {\n  /** Dot diameter in px. */\n  dot?: number;\n  /** Accessible status text. Default \"Loading\". */\n  label?: string;\n}\n\nexport function Loader({ dot = 9, label = \"Loading\", className, style, ...rest }: LoaderProps) {\n  return (\n    <div\n      className={[\"echo-loader\", className].filter(Boolean).join(\" \")}\n      role=\"status\"\n      aria-label={label}\n      style={{ \"--echo-loader-dot\": `${dot}px`, ...style } as CSSProperties}\n      {...rest}\n    >\n      <div className=\"echo-loader__dot\" />\n      <div className=\"echo-loader__dot\" />\n      <div className=\"echo-loader__dot\" />\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "loader/index.ts",
+      "sha256": "da2fa68988001f925122630c2b2ec9f9da87f63c01c1d584acbb0132071174f2",
+      "content": "export { Loader } from \"./loader\";\nexport type { LoaderProps } from \"./loader\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+/**
+ * Magnetic. A row of buttons with room to lean; the one being pulled comes
+ * forward and its label takes a little of the accent.
+ */
+.echo-magnetic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--echo-space-9);
+  padding: var(--echo-space-9);
+}
+.echo-magnetic .echo-hw {
+  position: relative;
+  will-change: translate, scale;
+}
+.echo-magnetic .echo-hw__cap {
+  color: color-mix(in oklch, var(--echo-text), var(--echo-accent-glow) calc(var(--echo-magnetic-pull, 0) * 60%));
+}

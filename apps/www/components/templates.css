@@ -1,0 +1,102 @@
+/*
+ * The templates surface. Tokens only — a page whose subject is
+ * "these screens are made of the material" cannot itself be made of hexes.
+ */
+.echo-tpl {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 2rem) 6rem;
+}
+
+.echo-tpl__head {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 34px;
+}
+
+.echo-tpl__eyebrow {
+  margin: 0;
+  font-family: var(--echo-font-machine);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-tpl__title {
+  margin: 0;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--echo-text);
+}
+
+.echo-tpl__proves {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--echo-text-dim);
+}
+
+.echo-tpl__label {
+  margin: 34px 0 8px;
+  font-family: var(--echo-font-machine);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-tpl__note {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--echo-text-dim);
+}
+
+/*
+ * The stage. A template is a whole screen, so it gets a frame that reads as a
+ * device bezel rather than being dropped inline where it would look like part
+ * of the docs page.
+ */
+.echo-tpl__stage {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--echo-seam);
+  background: var(--echo-well);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 20%, transparent);
+}
+
+/*
+ * A screen that owns a full app frame needs a viewport-ish height to read.
+ *
+ * `height` is now `min-height`. A fixed height plus `overflow: auto`
+ * is what turned the stage into a scroll window that its own content could be
+ * centred outside of — the mechanism behind auth's dead void. `min-height`
+ * gives the frame its shape while letting a taller screen simply be taller,
+ * which is what `fullBleed` says on the tin.
+ */
+.echo-tpl__stage[data-full] {
+  min-height: min(78vh, 760px);
+}
+
+/* --- the index ----------------------------------------------------------- */
+
+.echo-tpl a:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/*
+ * WCAG 2.2 2.5.8 — a standalone link is a 24px target.
+ *
+ * `min-height` on an inline-flex box rather than a pseudo-element: these are
+ * block links in their own layout slot, so growing the box costs nothing
+ * visually and, unlike an absolutely positioned pad, adds no scrollable
+ * overflow. The text size is untouched.
+ */

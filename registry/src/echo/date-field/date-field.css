@@ -1,0 +1,140 @@
+/**
+ * DateField's wheels. The frame is Field's (field.css): the well, its lit
+ * edge, the label, the help and the error. These are the parts where Field
+ * has its input: each wheel a row of small flaps of the neutral cap's
+ * plastic split by a seam, as SplitFlap's are. A place no digit has reached
+ * yet is an empty slot with the wheel's letter in it (DD, MM, YYYY). The
+ * wheel that has focus is lit from under, the way a key's legend is.
+ */
+.echo-date-field {
+  /*
+   * A flap is a little over half the control's height, or taller when the
+   * reader's text is bigger, and two-thirds as wide as it is tall: a digit
+   * always fits its flap.
+   */
+  --flap-h: max(calc(var(--ctl-h) * 0.58), calc(var(--ctl-font) * 1.45));
+  --flap-w: calc(var(--flap-h) * 0.7);
+}
+
+.echo-date-field__well {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+  box-sizing: border-box;
+  min-block-size: var(--ctl-h);
+  cursor: text;
+}
+
+.echo-date-field__date {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: inline-flex;
+  /* A column too narrow for the whole date wraps between wheels, never inside one. */
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-2);
+  flex: 1;
+  min-width: 0;
+  padding-block: var(--echo-space-2);
+}
+
+.echo-date-field__part {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-2);
+}
+
+.echo-date-field__wheel {
+  position: relative;
+  display: inline-flex;
+  gap: var(--echo-space-1);
+  padding: var(--echo-space-1);
+  border-radius: var(--echo-radius-sm);
+  outline: none;
+  perspective: 160px;
+  cursor: default;
+  /* Numbers run left to right in every script, Arabic's included. */
+  direction: ltr;
+  unicode-bidi: isolate;
+  /* contentEditable, for a phone's keyboard; the flaps are the caret. */
+  caret-color: transparent;
+}
+/* Lit from under while it has focus: which wheel the keys go to. */
+.echo-date-field__wheel::after {
+  content: "";
+  position: absolute;
+  inset-inline: var(--echo-space-1);
+  inset-block-end: calc(-1 * var(--echo-space-1));
+  block-size: var(--echo-border-thick, 2px);
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  opacity: 0;
+  transition: opacity var(--echo-duration-swap) ease;
+}
+.echo-date-field__wheel:focus::after {
+  opacity: 1;
+}
+.echo-field[data-disabled] .echo-date-field__wheel {
+  cursor: not-allowed;
+}
+
+.echo-date-field__flap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--flap-w);
+  block-size: var(--flap-h);
+  border-radius: var(--echo-radius-xs);
+  /* The seam the flap turns on, under the digit rather than through it. */
+  background:
+    linear-gradient(var(--echo-seam), var(--echo-seam)) center / 100% var(--echo-border-hairline, 1px) no-repeat,
+    linear-gradient(180deg, var(--echo-cap-highlight), var(--echo-cap) 50%, var(--echo-cap-shadow));
+  box-shadow: var(
+    --echo-shadow-chip,
+    inset 0 1px 0 rgb(255 255 255 / calc(0.15 * var(--echo-gloss, 1))),
+    0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  color: var(--echo-text);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ctl-font);
+  font-weight: var(--echo-weight-bold, 700);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--echo-leading-none, 1);
+  backface-visibility: hidden;
+  user-select: none;
+}
+/* No digit here yet: an empty slot in the well, its letter in the well's dim text. */
+.echo-date-field__flap[data-blank] {
+  background: transparent;
+  box-shadow: none;
+  outline: var(--echo-border-hairline, 1px) solid color-mix(in oklab, var(--echo-text-dim) 30%, transparent);
+  outline-offset: calc(-1 * var(--echo-border-hairline, 1px));
+  color: var(--echo-text-dim);
+  font-weight: var(--echo-weight-regular, 400);
+}
+
+.echo-date-field__separator {
+  color: var(--echo-text-dim);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ctl-font);
+}
+
+/*
+ * Forced colours drop the plastic and the lit bar. Each flap keeps an edge,
+ * and the wheel with focus is ringed in the system's own highlight.
+ */
+@media (forced-colors: active) {
+  .echo-date-field__flap {
+    outline: var(--echo-border-hairline, 1px) solid CanvasText;
+    outline-offset: calc(-1 * var(--echo-border-hairline, 1px));
+  }
+  .echo-date-field__wheel:focus {
+    outline: var(--echo-border-thick, 2px) solid Highlight;
+  }
+  .echo-date-field__wheel::after {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+}

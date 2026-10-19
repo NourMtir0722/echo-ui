@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "name": "patch-bay",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "PatchBay",
+  "description": "Connecting things to things, the way a studio patches its gear: sockets down one side for what you have, sockets down the other for where it goes, and a cable between each connected pair. For mapping an import's columns to fields, routing events to channels, inputs to outputs. Each source has a Select that says where it goes, and that's the real control; the cables draw what the Selects say, and with a pointer you can drag one from socket to socket.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "select",
+    "status-dot"
+  ],
+  "files": [
+    {
+      "path": "patch-bay/patch-bay.tsx",
+      "sha256": "1048b270d2e77248cbbddcd50b876b0c6a60dbb64d09696a8adf88c1af99340f",
+      "content": "\"use client\";\n\n/**\n * PatchBay. Connecting things to things, the way a studio patches its\n * gear: sockets down one side for what you have, sockets down the other for\n * where it goes, and a cable between each pair that's connected. Mapping the\n * columns of an import to fields, routing events to channels, inputs to\n * outputs.\n *\n * Each source row has a Select that says where it goes, and that's the real\n * control: keys, screen readers and forms all use it. The cables draw what\n * the Selects say. With a pointer you can also drag a cable from a source's\n * socket to a target's; a new cable drops into place and sways once. On a\n * narrow screen the cables and the target column go, and the Selects stay.\n */\nimport { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { createSpring, useReducedMotionRef, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { Select } from \"../select\";\nimport { StatusDot } from \"../status-dot\";\nimport { cablePath, restingSag, type Point } from \"./cable\";\nimport \"./patch-bay.css\";\n\nexport interface PatchBayEnd {\n  value: string;\n  label: string;\n}\n\n/** Where each source goes: its target's value, or null for nowhere. */\nexport type PatchBayValue = Readonly<Record<string, string | null>>;\n\nexport interface PatchBayProps extends EchoInterop {\n  /** What's being connected: the group's accessible name (\"Import columns\"). */\n  label: string;\n  /** What you have: the left column. */\n  sources: readonly PatchBayEnd[];\n  /** Where it can go: the right column. */\n  targets: readonly PatchBayEnd[];\n  /** Headings over the two columns. */\n  sourcesLabel?: string;\n  targetsLabel?: string;\n  /** Where each source goes (controlled). */\n  value?: PatchBayValue;\n  defaultValue?: PatchBayValue;\n  onValueChange?: (value: Record<string, string | null>) => void;\n}\n\nconst NOWHERE = \"__nowhere__\";\nconst SWAY = { duration: 0.9, bounce: 0.45 };\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on\n * the group.\n */\nexport const PatchBay = forwardRef<HTMLDivElement, PatchBayProps>(function PatchBay(\n  { label, sources, targets, sourcesLabel = \"From\", targetsLabel = \"To\", value, defaultValue, onValueChange, disabled, name, ...interop },\n  ref,\n) {\n  const [inner, setInner] = useState<PatchBayValue>(defaultValue ?? {});\n  const links = value ?? inner;\n  const sound = useSoundOptional();\n  const reduced = useReducedMotionRef();\n  const root = useRef<HTMLDivElement | null>(null);\n  const svg = useRef<SVGSVGElement>(null);\n  const sags = useRef(new Map<string, Spring>());\n  const [pulling, setPulling] = useState<{ from: string; to: Point } | null>(null);\n\n  const connect = useCallback(\n    (source: string, target: string | null) => {\n      if (links[source] === target) return;\n      const next = { ...links, [source]: target };\n      if (value === undefined) setInner(next);\n      onValueChange?.(next);\n      sound?.play(target ? \"select\" : \"tap\");\n    },\n    [links, value, onValueChange, sound],\n  );\n\n  /** Where a socket is, in the bay's own coordinates. */\n  const socket = useCallback((kind: \"source\" | \"target\", id: string): Point | null => {\n    const r = root.current;\n    const el = r?.querySelector<HTMLElement>(`[data-${kind}=\"${CSS.escape(id)}\"]`);\n    if (!r || !el || !el.offsetParent) return null;\n    const a = r.getBoundingClientRect();\n    const b = el.getBoundingClientRect();\n    return { x: b.left + b.width / 2 - a.left, y: b.top + b.height / 2 - a.top };\n  }, []);\n\n  /** Draw every cable at its sockets, each hanging by its spring. */\n  const draw = useCallback(() => {\n    const s = svg.current;\n    if (!s) return;\n    for (const path of s.querySelectorAll<SVGPathElement>(\"path[data-link]\")) {\n      const [from, to] = [path.dataset.from!, path.dataset.to!];\n      const a = socket(\"source\", from);\n      const b = socket(\"target\", to);\n      if (!a || !b) {\n        path.removeAttribute(\"d\");\n        continue;\n      }\n      const sag = sags.current.get(from)?.value ?? restingSag(a, b);\n      path.setAttribute(\"d\", cablePath(a, b, sag));\n    }\n  }, [socket]);\n\n  // A cable that's new drops in: taut, then sagging to rest with a sway.\n  useLayoutEffect(() => {\n    for (const [source, target] of Object.entries(links)) {\n      const spring = sags.current.get(source);\n      const a = target ? socket(\"source\", source) : null;\n      const b = target ? socket(\"target\", target) : null;\n      if (!target || !a || !b) {\n        spring?.stop();\n        sags.current.delete(source);\n        continue;\n      }\n      const rest = restingSag(a, b);\n      if (spring) {\n        // Heading somewhere else, or stopped short of rest: send it there.\n        const off = Math.abs(spring.target - rest) >= 0.5 || (!spring.moving && Math.abs(spring.value - rest) >= 0.5);\n        if (off) spring.to(rest);\n        continue;\n      }\n      const next = createSpring(reduced.current ? rest : 0, SWAY, () => draw());\n      sags.current.set(source, next);\n      if (!reduced.current) next.to(rest);\n    }\n    draw();\n  });\n\n  // Keep the cables on their sockets when the bay changes size.\n  useEffect(() => {\n    const r = root.current;\n    if (!r) return;\n    const resized = new ResizeObserver(() => draw());\n    resized.observe(r);\n    const springs = sags.current;\n    return () => {\n      resized.disconnect();\n      // Forget them, so a remount hangs every cable afresh.\n      for (const s of springs.values()) s.stop();\n      springs.clear();\n    };\n  }, [draw]);\n\n  /* Pulling a cable from a source's socket, with a pointer. */\n  const onSocketDown = (source: string) => (e: PointerEvent<HTMLSpanElement>) => {\n    if (disabled || e.button !== 0) return;\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const r = root.current!.getBoundingClientRect();\n    setPulling({ from: source, to: { x: e.clientX - r.left, y: e.clientY - r.top } });\n  };\n  const onSocketMove = (e: PointerEvent<HTMLSpanElement>) => {\n    if (!pulling) return;\n    const r = root.current!.getBoundingClientRect();\n    setPulling({ ...pulling, to: { x: e.clientX - r.left, y: e.clientY - r.top } });\n  };\n  const onSocketUp = (e: PointerEvent<HTMLSpanElement>) => {\n    if (!pulling) return;\n    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>(\"[data-target]\");\n    if (over?.dataset.target) connect(pulling.from, over.dataset.target);\n    setPulling(null);\n  };\n\n  const pullFrom = pulling ? socket(\"source\", pulling.from) : null;\n  const targetOptions = [{ value: NOWHERE, label: \"Nowhere\" }, ...targets.map((t) => ({ value: t.value, label: t.label }))];\n  const used = new Set(Object.values(links).filter(Boolean));\n\n  return (\n    <div\n      ref={(node) => {\n        root.current = node;\n        if (typeof ref === \"function\") ref(node);\n        else if (ref) ref.current = node;\n      }}\n      className=\"echo-patch-bay\"\n      role=\"group\"\n      aria-label={label}\n      data-disabled={disabled || undefined}\n      {...interop}\n    >\n      <svg ref={svg} className=\"echo-patch-bay__cables\" aria-hidden=\"true\" focusable=\"false\">\n        {Object.entries(links).map(([source, target]) =>\n          target ? <path key={source} data-link=\"\" data-from={source} data-to={target} /> : null,\n        )}\n        {pulling && pullFrom ? <path className=\"echo-patch-bay__pulling\" d={cablePath(pullFrom, pulling.to, 12)} /> : null}\n      </svg>\n      <div className=\"echo-patch-bay__grid\">\n      <div className=\"echo-patch-bay__side\" data-side=\"sources\">\n        <span className=\"echo-patch-bay__heading\" aria-hidden=\"true\">\n          {sourcesLabel}\n        </span>\n        {sources.map((s) => (\n          <div key={s.value} className=\"echo-patch-bay__row\">\n            <span className=\"echo-patch-bay__name\">{s.label}</span>\n            <Select\n              size=\"sm\"\n              aria-label={`${s.label} goes to`}\n              options={targetOptions}\n              value={links[s.value] ?? NOWHERE}\n              onValueChange={(v) => connect(s.value, v === NOWHERE ? null : v)}\n              disabled={disabled}\n            />\n            <span\n              className=\"echo-patch-bay__socket\"\n              data-source={s.value}\n              onPointerDown={onSocketDown(s.value)}\n              onPointerMove={onSocketMove}\n              onPointerUp={onSocketUp}\n              onPointerCancel={() => setPulling(null)}\n            >\n              <StatusDot on={Boolean(links[s.value])} decorative />\n            </span>\n          </div>\n        ))}\n      </div>\n      <div className=\"echo-patch-bay__side\" data-side=\"targets\" aria-hidden=\"true\">\n        <span className=\"echo-patch-bay__heading\">{targetsLabel}</span>\n        {targets.map((t) => (\n          <div key={t.value} className=\"echo-patch-bay__row\">\n            <span className=\"echo-patch-bay__socket\" data-target={t.value}>\n              <StatusDot on={used.has(t.value)} decorative />\n            </span>\n            <span className=\"echo-patch-bay__name\">{t.label}</span>\n          </div>\n        ))}\n      </div>\n      </div>\n      {name\n        ? Object.entries(links).map(([source, target]) =>\n            target ? <input key={source} type=\"hidden\" name={`${name}[${source}]`} value={target} /> : null,\n          )\n        : null}\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "patch-bay/patch-bay.css",
+      "sha256": "f8bc765d3f28d567f397902f4f64ac600fe8215962f425a06d7af41e11046df0",
+      "content": "/**\n * PatchBay. Two columns of sockets, each a small well with a StatusDot that\n * lights when a cable is in it, and the cables over them. A cable is a\n * thick cord of the cap's plastic with the key light along its top.\n * Composes var(--echo-*) — no hex literals; the only fixed values are the\n * key light.\n */\n/* The bay is the container its own width is measured on; the grid inside it is what narrows. */\n.echo-patch-bay {\n  container-type: inline-size;\n  position: relative;\n  min-inline-size: 0;\n}\n.echo-patch-bay__grid {\n  display: grid;\n  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);\n  gap: var(--echo-space-12);\n  min-inline-size: 0;\n}\n.echo-patch-bay__cables {\n  position: absolute;\n  inset: 0;\n  inline-size: 100%;\n  block-size: 100%;\n  overflow: visible;\n  pointer-events: none;\n  z-index: var(--echo-z-raised, 1);\n}\n.echo-patch-bay__cables path {\n  fill: none;\n  stroke: var(--echo-cap-highlight);\n  stroke-width: 6;\n  stroke-linecap: round;\n  filter: drop-shadow(0 4px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent));\n}\n.echo-patch-bay__cables .echo-patch-bay__pulling {\n  stroke: var(--echo-accent-glow);\n  stroke-dasharray: 2 8;\n}\n\n.echo-patch-bay__side {\n  display: grid;\n  align-content: start;\n  gap: var(--echo-space-4);\n  min-inline-size: 0;\n}\n.echo-patch-bay__heading {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n/* A row wraps rather than squeezing its Select: the name over it when there isn't room. */\n.echo-patch-bay__row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: var(--echo-space-3) var(--echo-space-5);\n  min-block-size: var(--echo-control-compact, 32px);\n}\n.echo-patch-bay__row > .echo-patch-bay__name {\n  flex: 1 1 7rem;\n}\n.echo-patch-bay__row > :not(.echo-patch-bay__name):not(.echo-patch-bay__socket) {\n  flex: 1 1 9rem;\n  min-inline-size: 0;\n}\n.echo-patch-bay__row > .echo-patch-bay__socket {\n  flex: none;\n}\n.echo-patch-bay__side[data-side=\"targets\"] .echo-patch-bay__row {\n  flex-wrap: nowrap;\n}\n.echo-patch-bay__name {\n  min-inline-size: 0;\n  overflow-wrap: anywhere;\n  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text);\n}\n/* A socket: a small well a cable plugs into; its dot lights when one does. */\n.echo-patch-bay__socket {\n  display: inline-grid;\n  place-items: center;\n  inline-size: var(--echo-control-compact, 32px);\n  block-size: var(--echo-control-compact, 32px);\n  border-radius: var(--echo-radius-full);\n  box-shadow:\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1)));\n  touch-action: none;\n}\n.echo-patch-bay__socket[data-source] {\n  cursor: grab;\n}\n\n/* Narrow (in rem, so larger text counts too): the Selects say it all; the target column and the cables go. */\n@container (max-width: 36rem) {\n  .echo-patch-bay__grid {\n    grid-template-columns: minmax(0, 1fr);\n  }\n  .echo-patch-bay__side[data-side=\"targets\"],\n  .echo-patch-bay__cables,\n  .echo-patch-bay__socket[data-source] {\n    display: none;\n  }\n}\n\n@media (forced-colors: active) {\n  .echo-patch-bay__cables path {\n    stroke: CanvasText;\n    filter: none;\n  }\n  .echo-patch-bay__socket {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "patch-bay/cable.ts",
+      "sha256": "5916487ae57bbb1df3bb9174b71fe090bc3172ff58ac935de7098a1b5b8e737b",
+      "content": "/**\n * A patch cable's curve. Pure: no React, no DOM.\n *\n * A cable hangs between two sockets: it leaves each one sideways and sags\n * under its own weight, more for a longer run. `sag` is how far the middle\n * hangs below the straight line, in px.\n */\nexport interface Point {\n  x: number;\n  y: number;\n}\n\n/** How far a cable of this length hangs when it's still. */\nexport function restingSag(a: Point, b: Point): number {\n  const run = Math.hypot(b.x - a.x, b.y - a.y);\n  return Math.min(90, 18 + run * 0.18);\n}\n\n/** The cable as an SVG path from `a` to `b`. */\nexport function cablePath(a: Point, b: Point, sag: number): string {\n  const reach = Math.max(24, Math.abs(b.x - a.x) * 0.35);\n  const dir = b.x >= a.x ? 1 : -1;\n  const c1 = { x: a.x + reach * dir, y: a.y + sag };\n  const c2 = { x: b.x - reach * dir, y: b.y + sag };\n  const f = (n: number) => n.toFixed(1);\n  return `M${f(a.x)} ${f(a.y)} C${f(c1.x)} ${f(c1.y)} ${f(c2.x)} ${f(c2.y)} ${f(b.x)} ${f(b.y)}`;\n}\n"
+    },
+    {
+      "path": "patch-bay/index.ts",
+      "sha256": "c4dc2da04315aef543eb63fc769d71eed330068899e44607725852f30ddaa965",
+      "content": "export { PatchBay } from \"./patch-bay\";\nexport type { PatchBayProps, PatchBayEnd, PatchBayValue } from \"./patch-bay\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`PatchBay`: connecting things to things.** Sockets down each side and a cable between every connected pair, for mapping an import's columns to fields or routing events to channels. Each source has a `Select` that says where it goes, and that's the control; the cables draw what the Selects say, drop into place and sway once, and can be dragged from socket to socket. On a narrow screen only the Selects stay."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

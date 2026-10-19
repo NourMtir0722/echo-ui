@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "name": "toast",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "Toast",
+  "description": "A raised glass notification slab with a status LED, and the toaster that announces it. Mount <Toaster> once around the app and call toast() from useToast(): the toaster's live region is on the page before anything is said, so every toast is announced. Built on Base UI's Toast. Consumes var(--echo-*).",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "toast/toast.css",
+      "sha256": "88a0d6fc68cf00cc144ee029d75f47bcfea1f83a6c38ec7b5787a062d834dc66",
+      "content": "/**\n * Toast. A raised slab with a status LED: lit when active, dim cream when\n * neutral. Composes var(--echo-*).\n *\n * The slab is the chassis plastic, the same as the Select's sheet and the\n * caps: a darkened, translucent WELL (the old recipe) read as a brown-red\n * pane from nowhere in the system once it sat over anything warm.\n */\n.echo-toast {\n  position: relative;\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-6);\n  overflow: hidden;\n  /*\n   * `min-width: 260px` is a floor, so it overflowed a narrower\n   * container outright (294 > 284 on the docs page). A toast still wants to\n   * be wide when there is room; `min()` gives it that without the floor.\n   */\n  min-width: min(260px, 100%);\n  /* `min-width: 100%` plus 32px of padding overflows without this. */\n  box-sizing: border-box;\n  padding: var(--echo-space-6) var(--echo-space-8);\n  border-radius: var(--echo-radius-xl);\n  border: 0;\n  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);\n  box-shadow: var(\n    --echo-shadow-toast,\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.28 * var(--echo-gloss, 1))),\n    inset 0 0 0 1px color-mix(in oklab, var(--echo-seam) 70%, transparent),\n    0 18px 36px -14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.75 * var(--echo-shade, 1) * 100%), transparent),\n    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),\n    0 calc(5px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n\n.echo-toast__led {\n  display: inline-block;\n  width: 8px;\n  height: 8px;\n  flex-shrink: 0;\n  border-radius: 50%;\n  background: color-mix(in oklab, var(--echo-text) 40%, transparent);\n}\n\n/* Active: the library's one lit accent, light kept inside the LED. */\n/*\n * `active` lights the LED. Everything else (`info`) leaves it dark — the\n * value used to be spelled `\"default\"`.\n */\n.echo-toast[data-tone=\"active\"] .echo-toast__led {\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));\n}\n\n.echo-toast__text {\n  display: flex;\n  flex-direction: column;\n}\n\n.echo-toast__title {\n  /* In the toaster these are Base UI's h2 and p: no browser margins. */\n  margin: 0;\n  /* Long content wraps rather than pushing its container open. */\n  overflow-wrap: anywhere;\n  font-size: var(--echo-text-sm);\n  font-weight: var(--echo-weight-semibold, 600);\n  color: var(--echo-text);\n}\n\n.echo-toast__body {\n  margin: 0;\n  /* Long content wraps rather than pushing the slab open. */\n  overflow-wrap: anywhere;\n  font-size: var(--echo-text-xs);\n  color: var(--echo-text-dim);\n}\n\n/* --- the toaster ---------------------------------------------------------- */\n\n/*\n * One stack in the bottom corner at the inline end, above dialogs (the toast\n * layer). The viewport is on the page from the start, so what arrives in it\n * is announced.\n *\n * The toasts pile like ThrowStack's cards: the newest in front (last in the\n * DOM, so it paints on top), each one\n * behind 12px up and 5% smaller, showing only its edge. Pointer or focus on\n * the pile fans it into a column (Base UI's `data-expanded`, which also\n * pauses the timers), so every toast can be read and reached.\n */\n.echo-toaster {\n  --toast-gap: var(--echo-space-4);\n  --toast-peek: 12px;\n  position: fixed;\n  inset-inline-end: clamp(1rem, 3vw, 2rem);\n  bottom: clamp(1rem, 3vw, 2rem);\n  z-index: var(--echo-z-toast, 400);\n  width: min(360px, calc(100vw - 2rem));\n  outline: none;\n}\n\n/* A toast pops up into place on a spring — solid quickly, overshooting a\n   touch and settling — and leaves quickly and plainly. */\n.echo-toaster .echo-toast {\n  position: absolute;\n  inset-inline: 0;\n  bottom: 0;\n  transform-origin: 50% 100%;\n  transform: translateY(calc(var(--toast-index, 0) * -1 * var(--toast-peek)))\n    scale(calc(1 - var(--toast-index, 0) * 0.05));\n  transition:\n    opacity var(--echo-duration-swap) ease,\n    transform var(--echo-duration-pop) var(--echo-ease-pop),\n    rotate var(--echo-duration-pop) var(--echo-ease-pop),\n    height var(--echo-duration-pop) var(--echo-ease-pop);\n}\n/* Behind the front one, only the slab's edge shows. */\n.echo-toaster .echo-toast[data-behind]:not([data-expanded]) {\n  height: var(--toast-frontmost-height, auto);\n}\n.echo-toaster .echo-toast > * {\n  transition: opacity var(--echo-duration-swap) ease;\n}\n.echo-toaster .echo-toast[data-behind]:not([data-expanded]) > * {\n  opacity: 0;\n}\n/* Fanned: a column, newest at the bottom. */\n.echo-toaster .echo-toast[data-expanded] {\n  overflow: visible;\n  transform: translateY(calc(-1 * var(--toast-offset-y, 0px) - var(--toast-index, 0) * var(--toast-gap)));\n}\n/* Bridges the gap below each one, so moving between toasts keeps it fanned. */\n.echo-toaster .echo-toast[data-expanded]::after {\n  content: \"\";\n  position: absolute;\n  inset-inline: 0;\n  top: 100%;\n  height: calc(var(--toast-gap) + 1px);\n}\n.echo-toaster .echo-toast[data-starting-style] {\n  opacity: 0;\n  transform: translateY(18px) scale(0.92);\n}\n.echo-toaster .echo-toast[data-ending-style] {\n  opacity: 0;\n  transform: translateY(8px) scale(0.97);\n  transition-duration: var(--echo-duration-swap);\n  transition-timing-function: ease-in;\n}\n/*\n * Flicked away: it carries on from where the finger let go, at the speed it\n * was thrown (--fling-ms), turning as it goes (--fling-turn), like a card\n * off ThrowStack. Both are set as the finger lifts (toast.tsx).\n */\n.echo-toaster .echo-toast[data-ending-style][data-swipe-direction] {\n  rotate: var(--fling-turn, 0deg);\n  transition-duration: var(--fling-ms, var(--echo-duration-pop));\n  transition-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);\n}\n.echo-toaster .echo-toast[data-ending-style][data-swipe-direction=\"right\"] {\n  transform: translateX(calc(var(--toast-swipe-movement-x, 0px) + 110%))\n    translateY(var(--toast-swipe-movement-y, 0px));\n}\n.echo-toaster .echo-toast[data-ending-style][data-swipe-direction=\"left\"] {\n  transform: translateX(calc(var(--toast-swipe-movement-x, 0px) - 110%))\n    translateY(var(--toast-swipe-movement-y, 0px));\n}\n.echo-toaster .echo-toast[data-ending-style][data-swipe-direction=\"down\"] {\n  transform: translateY(calc(var(--toast-swipe-movement-y, 0px) + 150%));\n}\n\n.echo-toast__text {\n  flex: 1;\n  min-width: 0;\n}\n\n.echo-toast__close {\n  position: relative;\n  display: grid;\n  place-items: center;\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--echo-radius-full);\n  background: transparent;\n  color: var(--echo-text-dim);\n  cursor: pointer;\n}\n/* A 24px target around the 20px mark. */\n.echo-toast__close::after {\n  content: \"\";\n  position: absolute;\n  inset: -2px;\n}\n@media (hover: hover) {\n  .echo-toast__close:hover {\n    color: var(--echo-text);\n  }\n}\n.echo-toast__close:focus-visible {\n  outline: var(--echo-border-thick, 2px) solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 2px;\n}\n.echo-toast__close svg {\n  width: var(--echo-icon-xs, 12px);\n  height: var(--echo-icon-xs, 12px);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-toaster .echo-toast {\n    transition: opacity var(--echo-duration-sweep) linear;\n  }\n  /* It still piles and fans, but jumps there; a flicked one fades where it is. */\n  .echo-toaster .echo-toast[data-starting-style],\n  .echo-toaster .echo-toast[data-ending-style] {\n    transform: none;\n    rotate: none;\n    transition-duration: var(--echo-duration-sweep);\n  }\n  .echo-toaster .echo-toast[data-ending-style][data-swipe-direction] {\n    transform: translate(var(--toast-swipe-movement-x, 0px), var(--toast-swipe-movement-y, 0px));\n  }\n}\n"
+    },
+    {
+      "path": "toast/toast.tsx",
+      "sha256": "7e1ed1e0a0665b90ef9274f09c61f600753688d18a7a80bc3d8aba44983256c8",
+      "content": "\"use client\";\n\n/**\n * Toast — a raised glass slab with a status LED, and\n * the toaster that announces it.\n *\n * Mount `<Toaster>` once around the app, then call `toast({ title })` from\n * `useToast()` anywhere inside it. The toaster's live region is on the page\n * before any message arrives. That's the point: a `role=\"status\"` element\n * created at the same moment as its text is often not announced at all, which\n * is what the old Toast did. Base UI's Toast owns the queue, the timing, the\n * announcement and the keyboard (F6 moves focus into the toasts); Echo owns\n * the look.\n *\n * The toasts pile up like ThrowStack's cards, each one behind a step up and\n * a little smaller, and fan out into a column while the pointer or focus is\n * on them. Flick one away and it keeps the speed you gave it and spins from\n * where you held it (Base UI decides the swipe; Echo carries it on). The\n * dismiss button does the same for a keyboard.\n *\n * `Toast` on its own is the slab, for showing one on a page. It doesn't\n * announce anything.\n */\nimport { useRef, type HTMLAttributes, type PointerEvent, type ReactNode } from \"react\";\nimport { Toast as BaseToast } from \"@base-ui/react/toast\";\nimport type { EchoTone } from \"echo-ui-core/types\";\nimport { usePressable } from \"echo-ui-core/tactile\";\nimport \"./toast.css\";\n\n/**\n * The subset of Echo's status vocabulary a toast expresses.\n *\n * This used to be `\"default\" | \"active\"` — a different vocabulary from\n * Banner's, using one of the same words for a different idea. `\"default\"`\n * is now `\"info\"`, which is what it always meant.\n *\n * A subset, not the whole list, for the same reason `size` is `\"sm\" | \"md\"`\n * on some components: a toast slab renders one LED, and `warn` and `danger`\n * have no distinct treatment on it yet. Accepting words it cannot express\n * would be a worse lie than not accepting them — a `danger` toast that\n * looked exactly like an `info` one is how a user misses the thing that\n * went wrong. Widening it is a design change, not a rename.\n */\nexport type ToastTone = Extract<EchoTone, \"info\" | \"active\">;\n\nexport interface ToastProps extends HTMLAttributes<HTMLDivElement> {\n  title: string;\n  body?: string;\n  tone?: ToastTone;\n}\n\n/** The slab alone, for display. To announce something, use `useToast()`. */\nexport function Toast({ title, body, tone = \"info\", className, ...rest }: ToastProps) {\n  return (\n    <div className={[\"echo-toast\", className].filter(Boolean).join(\" \")} data-tone={tone} {...rest}>\n      <span className=\"echo-toast__led\" aria-hidden=\"true\" />\n      <div className=\"echo-toast__text\">\n        <span className=\"echo-toast__title\">{title}</span>\n        {body ? <span className=\"echo-toast__body\">{body}</span> : null}\n      </div>\n    </div>\n  );\n}\n\nexport interface ToasterProps {\n  children?: ReactNode;\n  /** How long a toast stays, in ms. 0 keeps it until dismissed. Default 6000. */\n  timeout?: number;\n  /** How many show at once; older ones wait. Default 3. */\n  limit?: number;\n}\n\n/** Mount once, around the app. Announces every toast from `useToast()` inside it. */\nexport function Toaster({ children, timeout = 6000, limit = 3 }: ToasterProps) {\n  return (\n    <BaseToast.Provider timeout={timeout} limit={limit}>\n      {children}\n      <BaseToast.Portal>\n        <BaseToast.Viewport className=\"echo-toaster\">\n          <ToastList />\n        </BaseToast.Viewport>\n      </BaseToast.Portal>\n    </BaseToast.Provider>\n  );\n}\n\nfunction ToastList() {\n  const { toasts } = BaseToast.useToastManager();\n  const flick = useFlick();\n  // Behind: not the front of the pile. One on its way out no longer counts.\n  let shown = 0;\n  const behind = new Set(toasts.filter((t) => t.transitionStatus !== \"ending\" && shown++ > 0).map((t) => t.id));\n  // Oldest first, so the newest is painted last, on top of the pile.\n  return [...toasts].reverse().map((t) => (\n    <BaseToast.Root\n      key={t.id}\n      toast={t}\n      className=\"echo-toast\"\n      data-tone={t.type === \"active\" ? \"active\" : \"info\"}\n      data-behind={behind.has(t.id) ? \"\" : undefined}\n      {...flick}\n    >\n      <span className=\"echo-toast__led\" aria-hidden=\"true\" />\n      <div className=\"echo-toast__text\">\n        <BaseToast.Title className=\"echo-toast__title\" />\n        <BaseToast.Description className=\"echo-toast__body\" />\n      </div>\n      {/*\n        Base UI hides the close button from assistive tech until the stack is\n        hovered or focused, which suits a collapsed pile of toasts. Echo's\n        stack is a plain visible column, so hiding it only left a focusable\n        button that a screen reader was told isn't there.\n      */}\n      <ToastCloseKey />\n    </BaseToast.Root>\n  ));\n}\n\n/**\n * ThrowStack's throw, on a toast. Base UI moves the toast with the finger and\n * decides whether it's dismissed; this adds what a thrown card does: it turns\n * as it's dragged (the other way when held low), and when it goes, it leaves\n * at the speed it was flicked (`--fling-ms`) and keeps turning\n * (`--fling-turn`). Under reduced motion it doesn't turn, and it leaves by\n * fading (toast.css).\n */\nfunction useFlick() {\n  const drag = useRef<{ x: number; y: number; flip: number; vx: number; vy: number; t: number; lx: number; ly: number } | null>(\n    null,\n  );\n  const still = () => typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n  return {\n    onPointerDown(e: PointerEvent<HTMLDivElement>) {\n      // Base UI doesn't swipe from a button; neither does the turn.\n      if (e.button !== 0 || (e.target as Element).closest(\"button\")) return;\n      const r = e.currentTarget.getBoundingClientRect();\n      drag.current = {\n        x: e.clientX,\n        y: e.clientY,\n        flip: e.clientY > r.top + r.height / 2 ? -1 : 1,\n        vx: 0,\n        vy: 0,\n        t: performance.now(),\n        lx: e.clientX,\n        ly: e.clientY,\n      };\n    },\n    onPointerMove(e: PointerEvent<HTMLDivElement>) {\n      const d = drag.current;\n      if (!d) return;\n      const now = performance.now();\n      const dt = Math.max(1, now - d.t);\n      d.vx = d.vx * 0.6 + ((e.clientX - d.lx) / dt) * 1000 * 0.4;\n      d.vy = d.vy * 0.6 + ((e.clientY - d.ly) / dt) * 1000 * 0.4;\n      d.lx = e.clientX;\n      d.ly = e.clientY;\n      d.t = now;\n      if (!still()) e.currentTarget.style.rotate = `${((e.clientX - d.x) * 0.07 * d.flip).toFixed(2)}deg`;\n    },\n    onPointerUp(e: PointerEvent<HTMLDivElement>) {\n      const d = drag.current;\n      drag.current = null;\n      const el = e.currentTarget;\n      el.style.rotate = \"\";\n      if (!d) return;\n      // It leaves at the speed it was flicked: a slow push drifts off, a flick is gone.\n      const speed = Math.hypot(d.vx, d.vy);\n      const ms = Math.round(Math.min(320, Math.max(140, (el.offsetWidth / Math.max(speed, 1)) * 1000)));\n      const sideways = Math.abs(e.clientX - d.x) >= Math.abs(e.clientY - d.y);\n      el.style.setProperty(\"--fling-ms\", `${ms}ms`);\n      el.style.setProperty(\"--fling-turn\", `${sideways ? Math.sign(e.clientX - d.x || 1) * 22 : d.flip * 8}deg`);\n    },\n    onPointerCancel(e: PointerEvent<HTMLDivElement>) {\n      drag.current = null;\n      e.currentTarget.style.rotate = \"\";\n    },\n  };\n}\n\nexport interface ToastOptions {\n  title: string;\n  body?: string;\n  /**\n   * `active` lights the LED: for something happening, not for emphasis.\n   * `info` (the default) is the plain slab.\n   */\n  tone?: ToastTone;\n  /**\n   * `high` interrupts what a screen reader is saying; keep it for things that\n   * can't wait. Default `low`, announced politely.\n   */\n  priority?: \"low\" | \"high\";\n  /** Override the toaster's timeout for this one, in ms. 0 keeps it until dismissed. */\n  timeout?: number;\n}\n\n/** Returns `toast(options)`, which shows and announces a toast and returns its id. */\nexport function useToast() {\n  const manager = BaseToast.useToastManager();\n  return ({ title, body, tone = \"info\", priority, timeout }: ToastOptions): string =>\n    manager.add({ title, description: body, type: tone, priority, timeout });\n}\n\n/* The dismiss key presses like the library's keys: a small one, 1px down. */\nfunction ToastCloseKey() {\n  const press = usePressable<HTMLButtonElement>({}, { lift: 0, travel: 1, tilt: 0 });\n  return (\n    <BaseToast.Close className=\"echo-toast__close\" aria-label=\"Dismiss notification\" aria-hidden={false} {...press}>\n      <svg viewBox=\"0 0 12 12\" aria-hidden=\"true\" focusable=\"false\">\n        <path d=\"M3 3l6 6M9 3l-6 6\" stroke=\"currentColor\" strokeWidth=\"1.8\" strokeLinecap=\"round\" />\n      </svg>\n    </BaseToast.Close>\n  );\n}\n"
+    },
+    {
+      "path": "toast/index.ts",
+      "sha256": "7624c503b501a15fe0e3c9414dcf9071f937f998817109ea520180148c91825a",
+      "content": "export { Toast, Toaster, useToast } from \"./toast\";\nexport type { ToastProps, ToastTone, ToasterProps, ToastOptions } from \"./toast\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The Toaster piles its toasts and you can flick one away.** Toasts used to stand in a plain column. They now pile like `ThrowStack`'s cards, the newest in front and each one behind a step higher and a little smaller, and fan out into the column while the pointer is on them or focus is in them (F6), with their timers paused. Drag one sideways and it turns from where you hold it; let go past the swipe and it leaves at the speed you threw it, still turning, instead of snapping back to fade. Under reduced motion nothing turns and a flicked toast fades where it was let go. Every dismiss button is still reachable from the keyboard."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "breaking"
+      ],
+      "summary": "**`Toaster` and `useToast()`.** Mount `<Toaster>` once; `toast({ title, body, tone })` shows and announces a toast. The live region is there before anything is said, so it's heard. Built on Base UI's Toast: queue, timeout, a dismiss button, and `priority: \"high\"` for what can't wait. **Breaking:** `Toast` on its own is now a display slab without `role=\"status\"`; to announce something, use `useToast()`."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**A toast's title and body no longer sit apart.** In the toaster they are an `h2` and a `p`, and the browser's own margins opened a 21px gap between them that `<Toast>` on its own doesn't have. They now sit together, and the toast is as compact as the slab."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: `tone` means one thing now.** It meant three. `echo-banner` used it for semantic status (`info`/`active`/`warn`/`danger`), `echo-toast` for activity state (`\"default\" | \"active\"`), and `echo-count-badge` for a colour choice (`\"accent\" | \"neutral\"`). Learning `tone` on one component taught you nothing about the next, and Toast's `\"active\"` and Banner's `\"active\"` were not the same idea."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit**. A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

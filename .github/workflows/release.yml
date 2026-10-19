@@ -1,0 +1,358 @@
+# The release, as one button.
+#
+# Publishing is a deliberate act: this does not run on a tag, on a merge, or
+# on a schedule. A maintainer presses the button. What changes is
+# what happens after they press it — the same checks, the same matrix, the
+# same three packages, in the same order, with a record of every one.
+#
+# WHY TRUSTED PUBLISHING. Publishing by hand needs a 2FA code, which is why it
+# has never been automated. The alternative everyone reaches for is a
+# long-lived npm token in a repository secret, which trades a code on a phone
+# for a credential that can publish forever and lives in a settings page. npm's
+# Trusted Publishing does neither: the job proves it is this workflow in this
+# repository through OIDC, npm issues a credential that expires with the job,
+# and the published tarball carries provenance anyone can verify. No token
+# exists to leak.
+#
+# BEFORE THIS CAN RUN, and it cannot yet:
+#
+#   1. The repository must be PUBLIC. Provenance attestation requires it, and
+#      so does OIDC to npm.
+#   2. Each of `echo-ui-core`, `echo-ui-cli` and `echo-ui-mcp` must have a
+#      trusted publisher configured on npmjs.com — Settings → Trusted
+#      Publishers — naming this repository and `release.yml`. All three names
+#      are already reserved, so this is a form, not a first publish.
+#   3. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in repository
+#      secrets, for the deploy job. The token deploys two Workers, `echo-ui`
+#      (the site and `/e/`) and `echo-ui-mcp` (the hosted MCP server), each on
+#      its own custom domain.
+#
+# Until then the dry run works and proves everything except the four seconds
+# that touch npm. Run it that way first; that is what the default is for.
+#
+# Every action is pinned to a commit rather than a tag. Everywhere else in this
+# pipeline `@v4` is a fair trade — a fix arrives without a pull request. Here
+# it would mean the action author's account can change what runs next to an npm
+# credential. Trusted Publishing removes the long-lived token; it does not
+# remove that. `workflows.test.ts` fails if a pin here goes back to a tag.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version being released, e.g. 0.2.0. Must already be in the workspace.
+        required: true
+        type: string
+      dry-run:
+        description: Run everything, publish nothing. Leave this on for the first run.
+        type: boolean
+        default: true
+      skip-matrix:
+        description: Skip the install matrix. Only for a re-run where it already passed.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# The core this run publishes. Every job here builds the registry before the
+# commit that bumps `published-core.json` (that pin records what npm HOLDS, and
+# is bumped only after this succeeds), so the build and the tests' core gate
+# have to be told this run's version is the one about to exist, and only it.
+env:
+  ECHO_RELEASING: ${{ inputs.version }}
+
+# No concurrency group: a release that is cancelled halfway is the one state
+# this pipeline must never be in.
+
+jobs:
+  # ------------------------------------------------------------------ verify
+  # Everything that can say no, before anything irreversible happens. A
+  # published /e/ version is never rewritten and an npm version is never
+  # reused, so this is the last moment any of it is free.
+  verify:
+    name: Checks, and the version is what it says
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The input is a claim; the workspace is the fact. They have to agree, or
+      # the tag would name a version nothing in the tree calls itself.
+      - name: The version input matches the workspace
+        run: |
+          declared=$(node -p "require('./packages/core/package.json').version")
+          if [ "$declared" != "${{ inputs.version }}" ]; then
+            echo "::error::echo-ui-core is $declared in the workspace, not ${{ inputs.version }}."
+            echo "Bump the package versions in a pull request first. This workflow does not edit the repository."
+            exit 1
+          fi
+
+      # `published-core.json` records what npm holds. It is hand-edited on purpose, and this
+      # is the one moment that choice can bite: bump it without publishing and
+      # every offline check goes green over a registry declaring a core nobody
+      # can install. So the pin must still say the OLD version here — it is
+      # updated after this workflow succeeds, not before.
+      - name: The published-core pin has not been bumped ahead of the publish
+        run: |
+          pinned=$(node -p "require('./packages/core/published-core.json').version")
+          if [ "$pinned" = "${{ inputs.version }}" ]; then
+            echo "::error::published-core.json already says ${{ inputs.version }}, but this run has not published it."
+            echo "That pin records what npm HOLDS. Bump it in the commit after this succeeds, not before."
+            exit 1
+          fi
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build the registry
+        run: pnpm build:registry
+
+      # The core gate (core-version.test.ts) wants npm to hold the workspace's
+      # core, and the step above wants it not to yet: this run is the publish.
+      # ECHO_RELEASING, set for the whole run, lets exactly that one through
+      #. The deploy job runs only after the publish succeeds.
+      - name: Test
+        run: pnpm test
+
+      - name: Build the publishable packages
+        run: pnpm -r build
+
+      # What `npm publish` would actually send, printed before anything sends
+      # it. Rule 5 in the working rules is "prepare the package and show what it
+      # contains"; this is that step, kept even though the machine now does the
+      # publishing.
+      - name: Show what each tarball would contain
+        run: |
+          for dir in packages/core/dist packages/cli/dist mcp; do
+            echo "::group::$dir"
+            (cd "$dir" && npm pack --dry-run)
+            echo "::endgroup::"
+          done
+
+  # ------------------------------------------------------------------ matrix
+  # Does `init && add` work in somebody else's project, on every supported
+  # framework, package manager and operating system? This is the question a
+  # release exists to answer, and the only place it is asked.
+  matrix:
+    name: Install matrix
+    needs: verify
+    if: ${{ !inputs.skip-matrix }}
+    uses: ./.github/workflows/release-matrix.yml
+    permissions:
+      contents: read
+
+  # ----------------------------------------------------------------- publish
+  publish:
+    name: Publish to npm
+    needs: [verify, matrix]
+    # `always()` so that skipping the matrix does not skip the release; the
+    # explicit result check is what keeps a FAILED matrix from publishing.
+    if: always() && needs.verify.result == 'success' && needs.matrix.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # The whole point: this is what lets npm verify the job is this workflow
+      # in this repository, and what signs the provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted Publishing is npm 11.5.1 and later. The Node 22 image ships an
+      # older npm, and the failure without this is an authentication error that
+      # says nothing about versions.
+      - name: npm new enough to publish without a token
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build everything that ships
+        run: |
+          pnpm build:registry
+          pnpm -r build
+
+      # Order matters. Core first: every item in `/e/` declares a range that
+      # only core can satisfy, and the CLI refuses an install when it cannot.
+      # A CLI published before the core it needs is a CLI that cannot install
+      # anything, for as long as the gap lasts.
+      - name: Publish echo-ui-core
+        working-directory: packages/core/dist
+        run: npm publish --provenance --access public ${{ inputs.dry-run && '--dry-run' || '' }}
+
+      - name: Publish echo-ui-cli
+        working-directory: packages/cli/dist
+        run: npm publish --provenance --access public ${{ inputs.dry-run && '--dry-run' || '' }}
+
+      - name: Publish echo-ui-mcp
+        working-directory: mcp
+        run: npm publish --provenance --access public ${{ inputs.dry-run && '--dry-run' || '' }}
+
+      - name: What was published
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "### Dry run — nothing was published" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Published at ${{ inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          {
+            echo ""
+            echo "| Package | Version |"
+            echo "| --- | --- |"
+            echo "| echo-ui-core | ${{ inputs.version }} |"
+            echo "| echo-ui-cli | ${{ inputs.version }} |"
+            echo "| echo-ui-mcp | ${{ inputs.version }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------- tag
+  tag:
+    name: Tag the commit
+    needs: publish
+    if: ${{ !inputs.dry-run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Creating the tag and the release is the job.
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Fails if the tag exists, which is the correct answer: a version is
+      # published once, so a second run at the same version is a mistake
+      # somewhere further back.
+      - name: v${{ inputs.version }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ inputs.version }}" -m "Echo UI v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+          gh release create "v${{ inputs.version }}" \
+            --title "Echo UI v${{ inputs.version }}" \
+            --notes "See CHANGELOG.md for what changed and whether re-adding an item can change its behaviour."
+
+  # ------------------------------------------------------------------ deploy
+  # The site and the registry are one deploy: `/e/` is served from
+  # `apps/www/public`, so the components a user installs and the docs that
+  # describe them move together, by construction. The hosted MCP server
+  # follows them, in the same job.
+  deploy:
+    name: Deploy the site and the registry
+    needs: publish
+    if: ${{ !inputs.dry-run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The registry build clears its output before writing, so a
+      # deploy from a working copy cannot serve a file a fresh clone would not
+      # have. This IS a fresh clone, which is the other half of that fix.
+      - name: Build the registry
+        run: pnpm build:registry
+
+      - name: Deploy
+        working-directory: apps/www
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm deploy:site
+
+      # The hosted MCP server (HOSTED_MCP_URL) is a Worker of its own, and the
+      # smoke check asks it for this release's version: deployed only with the
+      # site, it stayed a release behind and the check ended red. It
+      # reads the catalog and `/e/` the site serves, so it goes second.
+      - name: Deploy the hosted MCP server
+        working-directory: mcp
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm deploy:worker
+
+  # ------------------------------------------------------------------- smoke
+  # The smoke check runs after every deploy. Nothing else in this
+  # pipeline asks what production actually SERVES — every other test in the
+  # repository validates the working tree, which is how months of improvement
+  # once failed to reach a single user.
+  smoke:
+    name: Smoke the live site
+    needs: deploy
+    if: ${{ !inputs.dry-run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the registry
+        run: pnpm build:registry
+
+      # npm's registry is eventually consistent, and a version published ninety
+      # seconds ago can still 404 on a read replica. Failing here would page
+      # someone over a contract that is fine.
+      - name: Let npm settle
+        run: sleep 60
+
+      - name: Smoke check
+        run: pnpm smoke

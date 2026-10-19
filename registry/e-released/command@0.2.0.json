@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "name": "command",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Command",
+  "description": "The command palette as a dot-matrix readout: the query line is the LcdChip's recessed screen well, in the LCD voice, with an emissive caret and a scanline wash. Base UI Autocomplete for the input, filtering and listbox semantics; Base UI Dialog for the frame, because a palette is summoned to the middle of the screen rather than anchored to anything. Cmd/Ctrl+K by default; matches on hidden keywords as well as labels.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "command/command.css",
+      "sha256": "ce5d4045c3147be7738cee0a73e7096004aaf30648c20eb1ef9f02e2242d70a4",
+      "content": "/*\n * Command.\n *\n * The palette is a SCREEN, not a search box. The query line sits in the\n * LcdChip's recessed well, in the LCD voice, with an emissive caret and a\n * scanline wash over it — so summoning it reads as waking the device's readout.\n * The results below are on the chassis, in the machine voice, so the screen and\n * the panel stay two different materials.\n *\n * Composes var(--echo-*) only.\n */\n\n.echo-command__backdrop {\n  position: fixed;\n  z-index: var(--echo-z-overlay, 200); /* Modal's scale; the site chrome's sticky rail is at 40. */\n  inset: 0;\n  background: color-mix(in oklab, var(--echo-seam) 88%, black);\n  opacity: 0.72;\n  transition: opacity var(--echo-duration-swap) ease;\n}\n\n.echo-command__backdrop[data-starting-style],\n.echo-command__backdrop[data-ending-style] {\n  opacity: 0;\n}\n\n.echo-command__popup {\n  position: fixed;\n  z-index: var(--echo-z-modal, 210);\n  top: 14vh;\n  left: 50%;\n  box-sizing: border-box;\n  width: min(38rem, calc(100vw - 2.5rem));\n  max-height: 68vh;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  padding: var(--echo-space-5);\n  border-radius: var(--echo-radius-2xl);\n  transform: translateX(-50%);\n  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 40%);\n  outline: none;\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 46%, transparent),\n    inset 0 0 0 1px var(--echo-seam),\n    0 44px 90px -26px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent);\n  transition:\n    opacity var(--echo-duration-swap) ease,\n    transform var(--echo-duration-swap) cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.echo-command__popup[data-starting-style],\n.echo-command__popup[data-ending-style] {\n  opacity: 0;\n  transform: translateX(-50%) scale(0.97) translateY(-8px);\n}\n/* With motion running (usePopupMotion), GSAP draws the arrival and exit. */\n.echo-command__popup[data-motion],\n.echo-command__popup[data-motion][data-starting-style],\n.echo-command__popup[data-motion][data-ending-style] {\n  opacity: 1;\n  transform: translateX(-50%);\n  transition: none;\n}\n\n/* --- the query line: an LCD well ---------------------------------------- */\n\n.echo-command__bar {\n  position: relative;\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-5);\n  flex: none;\n  padding: 0 var(--echo-space-7);\n  border-radius: var(--echo-radius-lg);\n  background: linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%);\n  box-shadow:\n    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));\n}\n\n/*\n * The dot matrix. A repeating-gradient scanline wash over the screen well —\n * the same idea as the `scanlines` texture, inlined here so the item does not\n * take a dependency on echo-textures for four lines of CSS.\n */\n.echo-command__bar::after {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  border-radius: inherit;\n  pointer-events: none;\n  opacity: 0.5;\n  background: repeating-linear-gradient(\n    0deg,\n    color-mix(in oklch, var(--echo-accent-glow) 7%, transparent) 0 1px,\n    transparent 1px 3px\n  );\n}\n\n.echo-command__caret {\n  flex: none;\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-lg);\n  line-height: var(--echo-leading-none, 1);\n  /* Emissive LCD glyph — the same lit accent as StatTile and LcdChip. */\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n  text-shadow: 0 0 10px color-mix(in oklab, var(--echo-lcd-glow) 50%, transparent);\n}\n\n.echo-command__input {\n  width: 100%;\n  height: calc(50px * var(--echo-density, 1));\n  border: 0;\n  outline: none;\n  background: transparent;\n  color: var(--echo-text);\n  caret-color: var(--echo-accent-glow);\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-md);\n  letter-spacing: var(--echo-tracking-normal, 0);\n}\n\n.echo-command__input::placeholder {\n  color: var(--echo-text-dim);\n}\n\n/* --- results: on the chassis, not on the screen -------------------------- */\n\n.echo-command__list {\n  flex: 1 1 auto;\n  min-height: 0;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: var(--echo-space-3) 0 var(--echo-space-1);\n  scrollbar-width: thin;\n  scrollbar-color: var(--echo-cap) transparent;\n}\n\n.echo-command__group + .echo-command__group {\n  margin-top: var(--echo-space-1);\n}\n\n.echo-command__group-label {\n  padding: var(--echo-space-5) var(--echo-space-6) var(--echo-space-3);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n.echo-command__item {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--echo-space-7);\n  padding: var(--echo-space-5) var(--echo-space-6);\n  border-radius: var(--echo-radius-md);\n  cursor: default;\n  user-select: none;\n  outline: none;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n\n/*\n * The armed row carries an accent RAIL, not accent text: accent on the chassis\n * is 3.70:1, under AA. The rail says \"this one\" without asking the label to\n * carry the colour — the same fix Echo uses for accent links.\n */\n.echo-command__item[data-highlighted] {\n  position: relative;\n  background: color-mix(in oklab, var(--echo-text) 8%, transparent);\n  color: var(--echo-text);\n}\n\n.echo-command__item[data-highlighted]::before {\n  content: \"\";\n  position: absolute;\n  inset-inline-start: 3px;\n  top: 7px;\n  bottom: 7px;\n  width: 2px;\n  border-radius: var(--echo-radius-xs);\n  background: var(--echo-accent-glow);\n  box-shadow: 0 0 8px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);\n}\n\n.echo-command__item[data-disabled] {\n  opacity: 0.42;\n  cursor: not-allowed;\n}\n\n.echo-command__label {\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.echo-command__hint {\n  flex: none;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-2xs);\n  letter-spacing: var(--echo-tracking-wide, 0.06em);\n  color: var(--echo-text-dim);\n}\n\n/*\n * Base UI keeps the Empty element mounted and simply blanks its content when\n * there ARE results, so its padding was leaving 52px of dead space above the\n * first group. Collapsing the padding rather than `display: none` keeps it in\n * the accessibility tree, which is where it announces \"no results\" from.\n */\n.echo-command__empty:empty {\n  padding: 0;\n}\n\n.echo-command__empty {\n  padding: var(--echo-space-10) var(--echo-space-6);\n  text-align: center;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-command__popup {\n    transition-duration: var(--echo-duration-glitch);\n  }\n  .echo-command__popup[data-starting-style],\n  .echo-command__popup[data-ending-style] {\n    transform: translateX(-50%);\n  }\n}\n"
+    },
+    {
+      "path": "command/command.tsx",
+      "sha256": "7f88347cc8feea77f215ccdb13619cc50784c4414697dfd899b4f618892e9b01",
+      "content": "\"use client\";\n\n/**\n * Command. The command palette,\n * as a dot-matrix readout you type into.\n *\n * WHY AUTOCOMPLETE AND NOT COMBOBOX. Base UI is explicit: Combobox is a\n * filterable Select whose input is restricted to the item set, and it points\n * search widgets at Autocomplete — which documents \"filterable command pickers\"\n * as its own use case. A palette takes free-form text and runs an action; it\n * does not hold a value. Combobox would have been the wrong semantics wearing\n * the right shape.\n *\n * WHY A DIALOG AROUND IT. Autocomplete anchors its list to the input. A palette\n * is not anchored to anything — it is summoned to the middle of the screen. So\n * Dialog owns the frame (backdrop, focus trap, Escape, scroll lock) and\n * Autocomplete owns the input, the filtering and the listbox semantics inside\n * it. `Autocomplete.List` falls back to being its own positioner when there is\n * no Positioner above it, which is what makes the inline list legal rather than\n * a hack.\n *\n * THE SKIN. The input sits in the LcdChip's recessed screen well, in the LCD\n * voice, with an emissive caret — so the palette reads as the device's readout\n * rather than as a web search box. That is the whole point of the item: a\n * command bar in this vocabulary is something no other library's version feels\n * like.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport { useCallback, useEffect, useMemo, useState, type ReactNode } from \"react\";\nimport { Dialog } from \"@base-ui/react/dialog\";\nimport { Autocomplete } from \"@base-ui/react/autocomplete\";\nimport type { EchoPortalContainer } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { liquidBloom, usePopupMotion } from \"echo-ui-core/presence\";\nimport \"./command.css\";\n\nexport interface CommandItem {\n  /** Stable identity. Also what `onRun` receives. */\n  id: string;\n  /** What the command is called. The primary thing matched and read. */\n  label: string;\n  /** Trailing hint — a shortcut, a destination, a current value. */\n  hint?: string;\n  /**\n   * Extra words that should match this command without being shown. \"trash\"\n   * finding \"Delete take\" is the difference between a palette people use and\n   * one they give up on.\n   */\n  keywords?: string[];\n  disabled?: boolean;\n  /** Run it. The palette closes first, so this can open another surface. */\n  run?: () => void;\n}\n\nexport interface CommandGroup {\n  label: string;\n  items: CommandItem[];\n}\n\nexport interface CommandProps {\n  /** Grouped commands. Groups keep their order; items are filtered within them. */\n  groups: CommandGroup[];\n  open?: boolean;\n  onOpenChange?: (open: boolean) => void;\n  /**\n   * Bind a global hotkey. Default \"k\" (with Cmd on Apple, Ctrl elsewhere).\n   * Pass null for no binding — the right choice when the app owns its\n   * shortcuts, or when two palettes could otherwise answer one keystroke.\n   */\n  shortcut?: string | null;\n  placeholder?: string;\n  /** Shown when nothing matches. Say what would help, not just \"no results\". */\n  emptyMessage?: ReactNode;\n  /** Fired with the item that was run, after the palette closes. */\n  onRun?: (item: CommandItem) => void;\n  /**\n   * Where the palette mounts. Defaults to <body>. Pass an element inside a\n   * scoped theme (`createEchoTheme(seed, { selector })`) and the palette wears\n   * that theme too — mounted on <body>, it can only read the :root one.\n   */\n  container?: EchoPortalContainer;\n}\n\n/** Everything a query should match against, joined once per item. */\nconst searchText = (item: CommandItem) =>\n  [item.label, item.hint, ...(item.keywords ?? [])].filter(Boolean).join(\" \").toLowerCase();\n\nexport function Command({\n  groups,\n  open: controlledOpen,\n  onOpenChange,\n  shortcut = \"k\",\n  placeholder = \"Type a command…\",\n  emptyMessage = \"No commands match.\",\n  onRun,\n  container,\n}: CommandProps) {\n  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);\n  const open = controlledOpen ?? uncontrolledOpen;\n  const [query, setQuery] = useState(\"\");\n  const sound = useSoundOptional();\n\n  const setOpen = useCallback(\n    (next: boolean) => {\n      if (controlledOpen === undefined) setUncontrolledOpen(next);\n      onOpenChange?.(next);\n    },\n    [controlledOpen, onOpenChange],\n  );\n\n  // The global hotkey. Bound on the document so it works wherever focus is,\n  // which is the entire proposition of a palette.\n  useEffect(() => {\n    if (!shortcut) return;\n    const onKeyDown = (event: KeyboardEvent) => {\n      if (event.key.toLowerCase() !== shortcut.toLowerCase()) return;\n      // metaKey on Apple, ctrlKey everywhere else — accepting either would\n      // swallow Ctrl+K (delete-to-end-of-line) on macOS.\n      if (!event.metaKey && !event.ctrlKey) return;\n      event.preventDefault();\n      setOpen(!open);\n    };\n    document.addEventListener(\"keydown\", onKeyDown);\n    return () => document.removeEventListener(\"keydown\", onKeyDown);\n  }, [shortcut, open, setOpen]);\n\n  /*\n   * Filtering is done here rather than by Base UI's own filter so that\n   * `keywords` count — an item has to match on words it never displays. Groups\n   * that end up empty are dropped, because a heading over nothing reads as a\n   * rendering bug.\n   */\n  const filtered = useMemo(() => {\n    const q = query.trim().toLowerCase();\n    if (!q) return groups;\n    return groups\n      .map((group) => ({ ...group, items: group.items.filter((i) => searchText(i).includes(q)) }))\n      .filter((group) => group.items.length > 0);\n  }, [groups, query]);\n\n  const runItem = useCallback(\n    (item: CommandItem) => {\n      if (item.disabled) return;\n      sound?.play(\"select\");\n      // Close BEFORE running: a command that opens another dialog would\n      // otherwise race this one's exit and lose the focus trap.\n      setOpen(false);\n      setQuery(\"\");\n      item.run?.();\n      onRun?.(item);\n    },\n    [onRun, setOpen, sound],\n  );\n\n  // Liquid bloom, the same arrival as Modal: out of a pill in the middle.\n  const bloom = usePopupMotion(liquidBloom);\n\n  return (\n    <Dialog.Root\n      open={open}\n      onOpenChange={(next) => {\n        if (next) sound?.play(\"transition\");\n        else setQuery(\"\");\n        setOpen(next);\n      }}\n    >\n      <Dialog.Portal container={container}>\n        <Dialog.Backdrop className=\"echo-command__backdrop\" />\n        <Dialog.Popup\n          ref={bloom}\n          className=\"echo-command__popup\"\n          aria-label=\"Command palette\"\n          /*\n           * Escape has to close the PALETTE. Autocomplete's own Escape closes\n           * its list — and the list here is forced open, so it handles the key\n           * and nothing happens, leaving a modal with no keyboard way out.\n           * Capture runs before Autocomplete sees it.\n           */\n          onKeyDownCapture={(event) => {\n            if (event.key !== \"Escape\") return;\n            event.preventDefault();\n            event.stopPropagation();\n            setQuery(\"\");\n            setOpen(false);\n          }}\n        >\n          <Autocomplete.Root\n            items={filtered}\n            value={query}\n            onValueChange={setQuery}\n            // Always open: inside the palette the list IS the palette, so there\n            // is nothing for a closed state to mean.\n            open\n            // The first match is armed, so Enter runs the obvious thing without\n            // an arrow press. `mode=\"none\"` keeps it from rewriting the query.\n            autoHighlight=\"always\"\n            mode=\"none\"\n            itemToStringValue={(item: CommandItem) => item.label}\n          >\n            <div className=\"echo-command__bar\">\n              <span className=\"echo-command__caret\" aria-hidden=\"true\">\n                ›\n              </span>\n              <Autocomplete.Input\n                className=\"echo-command__input\"\n                placeholder={placeholder}\n                aria-label=\"Search commands\"\n              />\n            </div>\n\n            <Autocomplete.Empty className=\"echo-command__empty\">{emptyMessage}</Autocomplete.Empty>\n\n            <Autocomplete.List className=\"echo-command__list\">\n              {(group: CommandGroup) => (\n                <Autocomplete.Group\n                  key={group.label}\n                  items={group.items}\n                  className=\"echo-command__group\"\n                >\n                  <Autocomplete.GroupLabel className=\"echo-command__group-label\">\n                    {group.label}\n                  </Autocomplete.GroupLabel>\n                  <Autocomplete.Collection>\n                    {(item: CommandItem) => (\n                      <Autocomplete.Item\n                        key={item.id}\n                        value={item}\n                        disabled={item.disabled}\n                        className=\"echo-command__item\"\n                        onClick={() => runItem(item)}\n                      >\n                        <span className=\"echo-command__label\">{item.label}</span>\n                        {item.hint ? (\n                          <span className=\"echo-command__hint\">{item.hint}</span>\n                        ) : null}\n                      </Autocomplete.Item>\n                    )}\n                  </Autocomplete.Collection>\n                </Autocomplete.Group>\n              )}\n            </Autocomplete.List>\n          </Autocomplete.Root>\n        </Dialog.Popup>\n      </Dialog.Portal>\n    </Dialog.Root>\n  );\n}\n"
+    },
+    {
+      "path": "command/index.ts",
+      "sha256": "e42bd51eef1ad170b32e789a6c4efa97855eca5739ba74698f6ebaf0a4cd9c10",
+      "content": "export { Command } from \"./command\";\nexport type { CommandProps, CommandItem, CommandGroup } from \"./command\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "glitch"
+  ],
+  "sound": [
+    "transition",
+    "select"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: Echo's public API names Echo's own types, not Base UI's.** Eleven items put a `@base-ui/react` type straight into a signature you write against — `BaseSwitch.Root.ChangeEventDetails` on a change handler, `ComponentProps<typeof BaseSelect.Portal>[\"container\"]` on a portal target. That made Echo's API a downstream of Base UI's internals: an upstream rename would have been a breaking Echo release triggered by somebody else's refactor."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**Examples that did not compile.** The motion example passed strings to `useTactile` instead of `{ motion }` phases; the `useGsapPresence` example omitted the `actionsRef` cast Base UI needs; the `Command` keywords example and the `AppShell` metrics example were not valid code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**45 components** across controls, overlays, structure, surfaces, primitives, navigation and texture — including `Command` (a dot-matrix command palette), `AppShell`, `Sheet` (on Base UI's Drawer, with swipe-to-dismiss), `AlertDialog`, `Menu` + `ContextMenu`, `Textarea`, and `Chart`."
+    }
+  ]
+}

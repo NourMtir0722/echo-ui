@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "name": "chat",
+  "version": "0.2.0",
+  "kind": "block",
+  "title": "Chat screen",
+  "description": "One conversation as a front panel: an Avatar and StatusDot header, a message log, a Loader typing indicator, and a Textarea composer with one lit Send cap. Proves that the material language survives running text — incoming messages get no container, yours sit in the composer's recessed well, and the only raised object is Send.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "avatar",
+    "textarea",
+    "hardware-button",
+    "loader",
+    "status-dot",
+    "kbd"
+  ],
+  "files": [
+    {
+      "path": "chat/chat.css",
+      "sha256": "bdaf573f9f6938bbc95c24ee10e4275ad128f820f3965544faae7e3dfd61ca7e",
+      "content": "/*\n * The chat screen. Composes var(--echo-*) only.\n *\n * The material rule it follows: running text gets no container. Incoming\n * messages are text on the page's own ground; outgoing messages sit in a\n * recessed well — the composer's material — and the Send cap is the one\n * raised, lit object. A bubble per message would be forty molded cards on one\n * screen.\n */\n.echo-chat {\n  display: grid;\n  grid-template-rows: auto minmax(0, 1fr) auto auto auto;\n  box-sizing: border-box;\n  width: 100%;\n  max-width: 46rem;\n  height: min(100dvh, 48rem);\n  margin: 0 auto;\n  padding: clamp(1.25rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem);\n  color: var(--echo-text);\n}\n\n.echo-chat__head {\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-6);\n  padding-bottom: var(--echo-space-8);\n  border-bottom: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n\n.echo-chat__who {\n  display: grid;\n  gap: var(--echo-space-1);\n  min-width: 0;\n}\n\n.echo-chat__name {\n  margin: 0;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-lg);\n  font-weight: var(--echo-weight-bold, 700);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.echo-chat__sub {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-3);\n  min-width: 0;\n  font-family: var(--echo-font-mono, ui-monospace, monospace);\n  font-size: var(--echo-text-2xs);\n  letter-spacing: var(--echo-tracking-wide, 0.06em);\n  color: var(--echo-text-dim);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.echo-chat__thread {\n  display: flex;\n  flex-direction: column;\n  gap: var(--echo-space-6);\n  min-height: 0;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: var(--echo-space-10) var(--echo-space-1);\n  scrollbar-width: thin;\n  scrollbar-color: var(--echo-cap) transparent;\n}\n\n.echo-chat__day {\n  align-self: center;\n  margin: 0 0 var(--echo-space-4);\n  font-family: var(--echo-font-mono, ui-monospace, monospace);\n  font-size: var(--echo-text-3xs);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n.echo-chat__msg {\n  display: grid;\n  align-items: end;\n  gap: var(--echo-space-2) var(--echo-space-5);\n  max-width: 86%;\n}\n\n.echo-chat__msg[data-grouped] {\n  margin-top: calc(var(--echo-space-3) * -1);\n}\n\n.echo-chat__msg[data-from=\"them\"] {\n  /* The avatar column is in rem, like the avatar it holds, so both grow\n     together when a reader raises their text size. */\n  grid-template-columns: 2rem minmax(0, 1fr);\n  justify-self: start;\n  align-self: flex-start;\n}\n\n.echo-chat__msg[data-from=\"me\"] {\n  grid-template-columns: minmax(0, 1fr);\n  justify-items: end;\n  align-self: flex-end;\n}\n\n.echo-chat__avatar {\n  grid-row: 1;\n  display: flex;\n  align-items: flex-end;\n}\n\n.echo-chat__bubble {\n  min-width: 0;\n  font-size: var(--echo-text-md);\n  line-height: var(--echo-leading-body, 1.55);\n  /* Long words and URLs wrap inside the column, never open it. */\n  overflow-wrap: anywhere;\n  white-space: pre-wrap;\n}\n\n/* Theirs: no container. Text on the ground. */\n.echo-chat__msg[data-from=\"them\"] .echo-chat__bubble {\n  padding: var(--echo-space-2) 0;\n}\n\n/* Yours: the composer's recessed well, so what you typed keeps its material. */\n.echo-chat__msg[data-from=\"me\"] .echo-chat__bubble {\n  padding: var(--echo-space-5) var(--echo-space-7);\n  border-radius: var(--echo-radius-xl);\n  border-end-end-radius: var(--echo-radius-xs);\n  background: linear-gradient(\n    160deg,\n    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),\n    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))\n  );\n  box-shadow:\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));\n}\n\n.echo-chat__time {\n  font-family: var(--echo-font-mono, ui-monospace, monospace);\n  font-size: var(--echo-text-3xs);\n  letter-spacing: var(--echo-tracking-wide, 0.06em);\n  color: var(--echo-text-dim);\n}\n\n.echo-chat__msg[data-from=\"them\"] .echo-chat__time {\n  grid-column: 2;\n}\n\n.echo-chat__msg[data-grouped] .echo-chat__time {\n  display: none;\n}\n\n/* Visually hidden speaker name, so the log reads \"You: …\" / \"Echo: …\". */\n.echo-chat__sr {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n\n/* The indicator keeps its row even when empty, so the composer never jumps. */\n.echo-chat__typing {\n  display: flex;\n  align-items: center;\n  min-height: var(--echo-space-10);\n  padding: 0 var(--echo-space-1) var(--echo-space-4);\n}\n\n.echo-chat__composer {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) auto;\n  align-items: end;\n  gap: var(--echo-space-6);\n  padding-top: var(--echo-space-8);\n  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n\n/*\n * The composer's textarea has to be able to shrink inside the flex row.\n *\n * Reached by descendant selector rather than by handing Textarea a\n * `className`: Echo components are closed (PRINCIPLES.md), and a parent\n * styling a child through the child's own documented class is how a template\n * does layout without reopening the component's API.\n */\n.echo-chat__composer .echo-textarea {\n  min-width: 0;\n}\n\n.echo-chat__hint {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: var(--echo-space-3);\n  margin: var(--echo-space-5) 0 0;\n  font-size: var(--echo-text-2xs);\n  color: var(--echo-text-dim);\n}\n\n@media (max-width: 560px) {\n  .echo-chat__msg {\n    max-width: 100%;\n  }\n  /* A phone has no Enter-to-send convention worth teaching; the cap is it. */\n  .echo-chat__hint {\n    display: none;\n  }\n}\n\n/*\n * One row of text is 22px — under the 24px target minimum (WCAG 2.5.8) and a\n * poor tap target. The floor is one default control, which also lines the\n * composer's well up with the Send cap beside it. Autosize still grows it.\n */\n.echo-chat__composer .echo-textarea__input {\n  min-height: var(--echo-control-default);\n}\n"
+    },
+    {
+      "path": "chat/chat.tsx",
+      "sha256": "f7c2675a86443cce00880da441593d700c83ad57a406454d4b8dc929ffe854c8",
+      "content": "\"use client\";\n\n/**\n * The chat screen (a template, like auth / settings / console).\n *\n * One conversation as a front panel: a header with who you are talking to and\n * whether they are there, the thread, and a composer. What it proves is the\n * thing the other three templates do not reach — whether the material\n * language survives RUNNING TEXT, where most of the screen is words rather\n * than controls.\n *\n * The answer it commits to is restraint:\n *   - incoming messages have no container at all — text beside an avatar;\n *   - outgoing messages sit in a recessed well, the same material as the\n *     composer they were typed into, so \"what I wrote\" reads as one thing\n *     from the textarea to the thread;\n *   - the only raised, lit object on the screen is the Send cap.\n *\n * No backend: `onSend` hands you the text and may return (or resolve to) the\n * reply. Without it the screen answers from `replies`, so it is alive as a\n * demo.\n */\nimport { useEffect, useRef, useState, type KeyboardEvent } from \"react\";\nimport { Avatar } from \"../avatar\";\nimport { Textarea } from \"../textarea\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Loader } from \"../loader\";\nimport { StatusDot } from \"../status-dot\";\nimport { Kbd } from \"../kbd\";\nimport \"./chat.css\";\n\nexport interface ChatMessage {\n  id: string;\n  from: \"me\" | \"them\";\n  text: string;\n  /** Shown as-is, in the machine voice. */\n  time: string;\n}\n\nexport interface ChatScreenProps {\n  /**\n   * This screen is inside another page: the title drops to <h2>, so the page\n   * keeps one <h1>. Never set it on the screen that owns the page.\n   */\n  embedded?: boolean;\n  /** Who you are talking to. */\n  participant?: string;\n  /** Under the name: a role, a channel, a device. */\n  subtitle?: string;\n  /** The thread so far, oldest first. Defaults to a demo conversation. */\n  messages?: ChatMessage[];\n  /**\n   * Called with what you sent. Return (or resolve to) the reply text to have\n   * it appear after the typing indicator; return nothing to reply yourself\n   * later through `messages`.\n   */\n  onSend?: (text: string) => string | void | Promise<string | void>;\n  /** Canned replies, cycled, used only when there is no `onSend`. */\n  replies?: string[];\n}\n\nconst DEMO: ChatMessage[] = [\n  { id: \"m1\", from: \"them\", time: \"09:41\", text: \"Morning. The take from last night is on the device — 4:12, peaking at −3 dB.\" },\n  { id: \"m2\", from: \"me\", time: \"09:43\", text: \"Can you trim the first eight seconds? There is a chair squeak before the count-in.\" },\n  { id: \"m3\", from: \"them\", time: \"09:43\", text: \"Trimmed. The count-in now starts on the downbeat.\" },\n];\n\nconst DEMO_REPLIES = [\n  \"Done. It is on the device.\",\n  \"Noted — I will keep that for the next session.\",\n  \"Saved. Changes apply to this device only.\",\n];\n\nconst clock = () => {\n  const d = new Date();\n  return `${String(d.getHours()).padStart(2, \"0\")}:${String(d.getMinutes()).padStart(2, \"0\")}`;\n};\n\nfunction SendIcon() {\n  return (\n    <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.8\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n      <path d=\"M3 8h9M8.5 4.5 12 8l-3.5 3.5\" />\n    </svg>\n  );\n}\n\nexport function ChatScreen({\n  embedded,\n  participant = \"Echo\",\n  subtitle = \"Session assistant\",\n  messages: initial = DEMO,\n  onSend,\n  replies = DEMO_REPLIES,\n}: ChatScreenProps) {\n  const [messages, setMessages] = useState<ChatMessage[]>(initial);\n  const [draft, setDraft] = useState(\"\");\n  const [typing, setTyping] = useState(false);\n  const replyIndex = useRef(0);\n  const nextId = useRef(0);\n  const thread = useRef<HTMLDivElement>(null);\n  const Title = embedded ? \"h2\" : \"h1\";\n\n  // Keep the newest message in view. Scrolling the thread, not the page: an\n  // embedded screen must never yank the document it sits in.\n  useEffect(() => {\n    const el = thread.current;\n    if (el) el.scrollTop = el.scrollHeight;\n  }, [messages, typing]);\n\n  const push = (from: ChatMessage[\"from\"], text: string) =>\n    setMessages((list) => [...list, { id: `n${nextId.current++}`, from, text, time: clock() }]);\n\n  async function send() {\n    const text = draft.trim();\n    if (!text || typing) return;\n    push(\"me\", text);\n    setDraft(\"\");\n    setTyping(true);\n    try {\n      let reply: string | void;\n      if (onSend) {\n        reply = await onSend(text);\n      } else {\n        // A short, honest pause: long enough to see the indicator, short\n        // enough that the demo does not feel slow.\n        await new Promise((r) => setTimeout(r, 900));\n        reply = replies[replyIndex.current++ % Math.max(replies.length, 1)];\n      }\n      if (reply) push(\"them\", reply);\n    } finally {\n      setTyping(false);\n    }\n  }\n\n  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {\n    // Enter sends; Shift+Enter is a new line. IME composition must not send.\n    if (e.key === \"Enter\" && !e.shiftKey && !e.nativeEvent.isComposing) {\n      e.preventDefault();\n      void send();\n    }\n  }\n\n  return (\n    <div className=\"echo-chat\">\n      <header className=\"echo-chat__head\">\n        <Avatar name={participant} size=\"md\" />\n        <div className=\"echo-chat__who\">\n          <Title className=\"echo-chat__name\">{participant}</Title>\n          <span className=\"echo-chat__sub\">\n            <StatusDot on decorative />\n            online · {subtitle}\n          </span>\n        </div>\n      </header>\n\n      {/*\n        role=\"log\": new messages are announced politely, in order, and the\n        history is not re-read. The typing indicator lives OUTSIDE it — it is\n        its own status region (Loader), and a log that announced \"typing\"\n        between every message would be noise.\n      */}\n      <div className=\"echo-chat__thread\" ref={thread} role=\"log\" aria-label={`Conversation with ${participant}`}>\n        <p className=\"echo-chat__day\">Today</p>\n        {messages.map((m, i) => {\n          const prev = messages[i - 1];\n          const grouped = prev?.from === m.from;\n          return (\n            <div\n              key={m.id}\n              className=\"echo-chat__msg\"\n              data-from={m.from}\n              data-grouped={grouped || undefined}\n            >\n              {m.from === \"them\" && (\n                <span className=\"echo-chat__avatar\" aria-hidden=\"true\">\n                  {!grouped && <Avatar name={participant} size=\"sm\" />}\n                </span>\n              )}\n              <div className=\"echo-chat__bubble\">\n                <span className=\"echo-chat__sr\">{m.from === \"me\" ? \"You\" : participant}: </span>\n                {m.text}\n              </div>\n              <span className=\"echo-chat__time\">{m.time}</span>\n            </div>\n          );\n        })}\n      </div>\n\n      <div className=\"echo-chat__typing\" data-on={typing || undefined}>\n        {typing && <Loader dot={7} label={`${participant} is typing`} />}\n      </div>\n\n      <form\n        className=\"echo-chat__composer\"\n        onSubmit={(e) => {\n          e.preventDefault();\n          void send();\n        }}\n      >\n        <Textarea\n          aria-label={`Message ${participant}`}\n          placeholder={`Message ${participant}`}\n          value={draft}\n          onValueChange={setDraft}\n          onKeyDown={onKeyDown}\n          rows={1}\n          maxRows={6}\n        />\n        <HardwareButton\n          type=\"submit\"\n          variant=\"primary\"\n          iconOnly\n          aria-label=\"Send\"\n          icon={<SendIcon />}\n          disabled={!draft.trim() || typing}\n        />\n      </form>\n      <p className=\"echo-chat__hint\">\n        <Kbd>↩</Kbd> to send · <Kbd>⇧</Kbd> <Kbd>↩</Kbd> for a new line\n      </p>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "chat/index.ts",
+      "sha256": "c7117e92da6b7daaa6df316d30ef4c3b112edf20ece4689124fdd539afd29486",
+      "content": "export { ChatScreen } from \"./chat\";\nexport type { ChatMessage, ChatScreenProps } from \"./chat\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "press",
+    "release"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`echo-chat`** — a template block: a chat screen wired through one `onSend` callback."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only.** A few source comments used screens that are no longer in the library as their example; they now make the point without them. Nothing these components render or do changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

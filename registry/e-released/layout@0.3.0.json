@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "name": "layout",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Stack & Grid",
+  "description": "The two layouts a screen is made of, with gaps on the space scale: Stack is a column or a wrapping row, Grid is as many columns as fit (minItemWidth) or a fixed number. Closed: a gap is a step, not a length, so two cards laid out by two people are spaced the same way.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {},
+  "items": [],
+  "files": [
+    {
+      "path": "layout/layout.tsx",
+      "sha256": "b98ab4cf23b24aac772c223ab4f2e411153070f61aa10379de7020dbc764ccdd",
+      "content": "/**\n * Stack and Grid. The two layouts a screen is made of, with the gaps on the\n * space scale, so two people laying out two cards space them the same way.\n * Closed: a gap is a step (`gap={6}` is `--echo-space-6`), not a length, and\n * there's no className to reach for.\n *\n *   <Stack gap={6}>…</Stack>                    a column\n *   <Stack direction=\"row\" align=\"center\">…      a row\n *   <Grid minItemWidth=\"16rem\" gap={8}>…</Grid>  as many columns as fit\n *\n * A row wraps by default, and a Grid's columns never get narrower than the\n * screen, so neither pushes a phone sideways.\n */\nimport type { CSSProperties, ReactNode } from \"react\";\nimport \"./layout.css\";\n\n/** A step on the space scale: 0 is none, 6 is 12px, 8 is 16px, 11 is 32px. */\nexport type SpaceStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;\ntype Align = \"start\" | \"center\" | \"end\" | \"stretch\" | \"baseline\";\ntype Justify = \"start\" | \"center\" | \"end\" | \"between\";\n\nconst space = (step: SpaceStep) => (step === 0 ? \"0\" : `var(--echo-space-${step})`);\nconst JUSTIFY: Record<Justify, string> = { start: \"flex-start\", center: \"center\", end: \"flex-end\", between: \"space-between\" };\n\nexport interface StackProps {\n  children?: ReactNode;\n  /** `column` (default) or `row`. */\n  direction?: \"column\" | \"row\";\n  /** Space between items, a step on the space scale. Default 6 (12px). */\n  gap?: SpaceStep;\n  /** Cross-axis alignment. Default `stretch` for a column, `center` for a row. */\n  align?: Align;\n  /** Main-axis distribution. Default `start`. */\n  justify?: Justify;\n  /** A row wraps onto more lines when it runs out of room. Default true. */\n  wrap?: boolean;\n  /** The element: a `ul` for a list of things, a `section`, a `nav`. Default `div`. */\n  as?: \"div\" | \"section\" | \"ul\" | \"ol\" | \"nav\" | \"header\" | \"footer\";\n  \"aria-label\"?: string;\n  \"aria-labelledby\"?: string;\n}\n\nexport function Stack({\n  children,\n  direction = \"column\",\n  gap = 6,\n  align,\n  justify = \"start\",\n  wrap = true,\n  as: As = \"div\",\n  ...aria\n}: StackProps) {\n  const style = {\n    \"--stack-gap\": space(gap),\n    \"--stack-align\": align ?? (direction === \"row\" ? \"center\" : \"stretch\"),\n    \"--stack-justify\": JUSTIFY[justify],\n  } as CSSProperties;\n  return (\n    <As className=\"echo-stack\" data-direction={direction} data-wrap={wrap && direction === \"row\" ? \"\" : undefined} style={style} {...aria}>\n      {children}\n    </As>\n  );\n}\n\nexport interface GridProps {\n  children?: ReactNode;\n  /**\n   * The narrowest a column may be; as many columns as fit, never narrower\n   * than the screen (`\"16rem\"`). Fewer items than fit share the row rather\n   * than leave columns empty. Use this or `columns`.\n   */\n  minItemWidth?: string;\n  /** A fixed number of equal columns. On a screen too narrow for them, see `minItemWidth`. */\n  columns?: number;\n  /** Space between cells, a step on the space scale. Default 8 (16px). */\n  gap?: SpaceStep;\n  /** Align each cell's content vertically. Default `stretch`. */\n  align?: \"start\" | \"center\" | \"end\" | \"stretch\";\n  as?: \"div\" | \"section\" | \"ul\" | \"ol\";\n  \"aria-label\"?: string;\n  \"aria-labelledby\"?: string;\n}\n\nexport function Grid({ children, minItemWidth, columns, gap = 8, align = \"stretch\", as: As = \"div\", ...aria }: GridProps) {\n  const template = minItemWidth\n    ? `repeat(auto-fit, minmax(min(${minItemWidth}, 100%), 1fr))`\n    : `repeat(${Math.max(1, Math.floor(columns ?? 1))}, minmax(0, 1fr))`;\n  const style = { \"--grid-template\": template, \"--grid-gap\": space(gap), \"--grid-align\": align } as CSSProperties;\n  return (\n    <As className=\"echo-grid\" style={style} {...aria}>\n      {children}\n    </As>\n  );\n}\n"
+    },
+    {
+      "path": "layout/layout.css",
+      "sha256": "99cc314d65e3a3c179566edb86c3f9462e3ce9ff90a746e774e0060add431ae8",
+      "content": "/**\n * Stack and Grid. Gaps come from the space scale through the props; lists\n * lose their bullets and indent, since a Stack of cards is not prose.\n */\n.echo-stack {\n  display: flex;\n  flex-direction: column;\n  align-items: var(--stack-align, stretch);\n  justify-content: var(--stack-justify, flex-start);\n  gap: var(--stack-gap, var(--echo-space-6));\n  min-width: 0;\n}\n.echo-stack[data-direction=\"row\"] {\n  flex-direction: row;\n}\n.echo-stack[data-wrap] {\n  flex-wrap: wrap;\n}\n.echo-grid {\n  display: grid;\n  grid-template-columns: var(--grid-template, minmax(0, 1fr));\n  align-items: var(--grid-align, stretch);\n  gap: var(--grid-gap, var(--echo-space-8));\n  min-width: 0;\n}\n:is(ul, ol).echo-stack,\n:is(ul, ol).echo-grid {\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n"
+    },
+    {
+      "path": "layout/index.ts",
+      "sha256": "1b8f75d926cd31ffd547d598fd33126ed8776da9ae5f6f7c295b32bd2febf80d",
+      "content": "export { Stack, Grid } from \"./layout\";\nexport type { StackProps, GridProps, SpaceStep } from \"./layout\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**Grid, ChoiceCards and ShortcutMap no longer leave columns empty** (BUG-189). Fewer items than fit share the row (`auto-fit`), so two cards in a row with room for three are two wide cards, not two cards and a gap."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six containers: `Card`, `Item`, `Stack` & `Grid`, `Collapsible`, `ScrollArea` and `Link`.** The pieces every screen is laid out with, so nobody spaces a card by hand. All six are closed: their slots and spacing are props, not a `className`. - **`Card`** is a Panel with an anatomy (media, a header with one action, a body, a footer whose controls are `sm`) and `size` for its padding. With `href` or `onClick` the whole card is one link or button, named by its title, with one focus ring; it lifts as you reach for it, sinks a pixel as you press and sends Panel's ripple out from your finger. - **`Item`** is the list row: media, title, description, trailing content, ruled by a hairline. `swipeActions` sit behind it: swipe it and they slide into view, and Tab reaches each one, sliding the row open the same way, so the gesture is never the only way in. - **`Stack` & `Grid`** (`echo-layout`) take gaps as steps on the space scale; a row wraps and a Grid's columns never get wider than the screen. - **`Collapsible`** is one disclosure on its own, in Accordion's ruled style; closed content stays findable with find-in-page, which opens it. - **`ScrollArea`** scrolls inside itself with a groove and a molded thumb, shades whichever edge has more to see, and is a named region the keyboard can scroll. - **`Link`** keeps the words in the text colour and draws the accent as the underline (accent text on the chassis is under AA); `external` says it opens a new tab; `render` takes your router's link."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

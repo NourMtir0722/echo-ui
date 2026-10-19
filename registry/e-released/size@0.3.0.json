@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "name": "size",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "SizeProvider",
+  "description": "One size scale for everything with a height: sm, md and lg are the control heights (32, 44 and 60px at default density), so a button, a field and a select of the same size line up in a row. Wrap a toolbar, a filter bar or a card footer in SizeProvider and every control inside takes that size; a size passed to a control wins. Controls read it with useControlSize.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {},
+  "items": [],
+  "files": [
+    {
+      "path": "size/size.tsx",
+      "sha256": "b91ba99b3d5346a6440fb08994ce548af5eb1049474dd046f7a98eac77bc61f2",
+      "content": "\"use client\";\n\n/**\n * One size scale for everything with a height. `sm`, `md` and `lg` are the\n * control heights (`--echo-control-compact`, `-default`, `-large`: 32, 44 and\n * 60px at default density), so a button, a field and a select of the same\n * size are the same height and line up in a row.\n *\n * Size flows down: wrap a toolbar, a filter bar or a card footer in\n * `<SizeProvider size=\"sm\">` and every control in it is `sm` without saying\n * so. A `size` passed to a control wins. Density is different: it's global\n * (\"this product is dense\") and scales all three steps; size picks one.\n */\nimport { createContext, useContext, type ReactNode } from \"react\";\n\nexport type ControlSize = \"sm\" | \"md\" | \"lg\";\n\nconst SizeContext = createContext<ControlSize | undefined>(undefined);\n\nexport interface SizeProviderProps {\n  /** The size every control inside takes, unless it's given its own. */\n  size: ControlSize;\n  children?: ReactNode;\n}\n\nexport function SizeProvider({ size, children }: SizeProviderProps) {\n  return <SizeContext.Provider value={size}>{children}</SizeContext.Provider>;\n}\n\n/**\n * The size a control should render at: its own `size` if it was given one,\n * else the nearest SizeProvider's, else `md`.\n */\nexport function useControlSize(own?: ControlSize): ControlSize {\n  const inherited = useContext(SizeContext);\n  return own ?? inherited ?? \"md\";\n}\n"
+    },
+    {
+      "path": "size/index.ts",
+      "sha256": "577c971095c6f5521938df83775849144f09882a724394878be5a8aeff759ac3",
+      "content": "export { SizeProvider, useControlSize } from \"./size\";\nexport type { ControlSize, SizeProviderProps } from \"./size\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**One `size` on everything with a height.** `Field`, `Select`, `NumberField`, `OtpField` and `Segmented` take `size=\"sm\" | \"md\" | \"lg\"` (32, 44 or 60px), matching `HardwareButton`, and all of them read a `SizeProvider` around them. `md` is exactly what they were. `Avatar` gains `xs` (inline with a line of text) and `xl` (a profile header)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

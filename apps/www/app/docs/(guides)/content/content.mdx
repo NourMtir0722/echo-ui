@@ -1,0 +1,113 @@
+import { FontRoles } from "@/components/guides/live";
+
+# Content
+
+Echo is a device, and devices are labelled. The words on a panel are part of the material: short,
+literal, and printed on the plastic rather than written in a paragraph. This page is what to put in
+the slots the components give you.
+
+It is short on purpose. It covers the words a component makes you write, not how to write your
+product.
+
+## The two voices
+
+The type roles carry two registers, and each has its own way of writing.
+
+<FontRoles />
+
+**The machine voice** (`machine`, and the `readout` face) is what is printed on the device: control
+labels, panel legends, status tags, units. Write it like a legend, not a sentence.
+
+- No articles. "Output level", not "The output level".
+- No terminal full stop. It is a label, not a statement.
+- Sentence case, and let the token do the uppercasing where a component asks for it. Typing
+  "OUTPUT LEVEL" yourself means it cannot be lowercased later, and a screen reader may spell it.
+- Units are separate and abbreviated: "−12.4 dB", "48 kHz".
+
+**The body voice** (`sans`) is you talking to a person: descriptions, errors, empty states, dialog
+copy. Full sentences, full stops, second person. "Your changes are saved on this device."
+
+**Don't** mix them in one line. A control label that turns into a sentence halfway through stops
+reading as a label.
+
+## Buttons
+
+A button says what it does when read on its own, out of context — because that is how it is read
+by someone tabbing to it, and by someone deciding whether to press it.
+
+| Instead of | Write |
+| --- | --- |
+| "OK" | "Save changes" |
+| "Submit" | "Send invite" |
+| "Yes" / "No" | "Delete 3 projects" / "Cancel" |
+| "Learn more" | "How billing works" |
+
+Verb first, object second, and the same verb the surrounding screen used. Two to four words is the
+whole budget; past that it is not a label any more.
+
+"Cancel" is the one bare word Echo keeps. It means the same thing everywhere and it is what people
+look for.
+
+An icon-only button still needs words — in `aria-label`, and in the same form: "Mute channel", not
+"Mute button". The role is already announced.
+
+## Errors
+
+An error is one sentence that says what happened and what to do. It goes in the field's `error`
+slot, or in a `Banner` if it is a condition rather than an event.
+
+| Instead of | Write |
+| --- | --- |
+| "Invalid input" | "Use lowercase letters, numbers and dashes." |
+| "Error 403" | "You do not have access to this workspace. Ask an admin to add you." |
+| "Something went wrong" | "We could not reach the server. Try again in a moment." |
+
+- **Say what to do next**, or say plainly that there is nothing to do and it is being worked on.
+- **Do not blame the reader.** "You entered an invalid email" becomes "That does not look like an
+  email address."
+- **Never a bare code.** If a code helps support, put it after the sentence, not instead of it.
+- **Do not apologise more than once**, and not at all for something routine.
+
+## Empty states
+
+Two lines: what is not here, and what to do about it. The heading is the state; the description is
+the way out; the action slot is the way out made pressable.
+
+> **No projects yet**
+> A project holds your deploys, your logs and your environment variables.
+> "Create a project"
+
+If the emptiness is a filter rather than a beginning, say so and offer the way back:
+"No projects match *stag*." with "Clear filter".
+
+## Status and readouts
+
+Status words are the machine voice, and they are the same word every time: pick "Connected" or
+"Online" and use it in the tag, in the tooltip and in the log. A device that calls one state two
+names reads as two states.
+
+Numbers belong to the `mono` or `lcd` face, so digits line up and "0" and "O" are told apart. Keep
+the unit with the number and the label away from it — "Latency" above, "48 ms" in the readout.
+
+**Don't** write a status that is only true at the moment it rendered. "Last synced 2 minutes ago"
+is a claim that rots; "Last synced 14:02" does not.
+
+## Capitalisation and punctuation
+
+- **Sentence case everywhere**, including headings, buttons and menu items. Title Case Is A Second
+  Voice.
+- **No full stop** on labels, headings, buttons or table cells. Full stops on anything that is a
+  sentence: descriptions, errors, empty states, dialog copy.
+- **Ellipsis only for a real continuation** — a menu item that opens a dialog ("Rename…"). Not for
+  loading; the skeleton is already saying that.
+- **Numerals, not words**, for anything countable: "3 projects", not "three projects".
+
+## What not to write
+
+- **Don't name the widget.** "Click the button below" breaks on every layout and every screen
+  reader. Name the action.
+- **Don't write instructions the component already gives.** A field with a visible label and a
+  description does not need a paragraph above it explaining that it is a field.
+- **Don't be clever in an error.** Personality is for the empty state at worst; nobody wants a joke
+  from something that just failed.
+- **Don't use "simply", "just", or "easy".** If it were, the sentence would not be needed.

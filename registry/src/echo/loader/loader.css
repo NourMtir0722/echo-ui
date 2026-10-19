@@ -1,0 +1,51 @@
+/**
+ * Loader. Three LEDs in the library's one lit accent, breathing in
+ * sequence — the breath is opacity and scale, not a halo. Composes
+ * var(--echo-*); reduced motion holds the dots steady.
+ */
+.echo-loader {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+}
+
+.echo-loader__dot {
+  width: var(--echo-loader-dot, 9px);
+  height: var(--echo-loader-dot, 9px);
+  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+  animation: echo-loader-pulse 1s infinite ease-in-out;
+}
+
+.echo-loader__dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.echo-loader__dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes echo-loader-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-loader__dot {
+    animation: none;
+    opacity: 0.7;
+  }
+}

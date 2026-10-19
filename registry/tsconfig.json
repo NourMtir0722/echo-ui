@@ -1,0 +1,16 @@
+{
+  // The WORKSPACE: build scripts, tests, the agent layer. These genuinely run
+  // in Node, so Node's types belong here.
+  //
+  // They do not belong on the files a user copies, which is what
+  // `tsconfig.shipped.json` next to this one exists to check. Compiling shipped
+  // sources under Node's globals is how `process.env.NODE_ENV` reached three
+  // components and broke a Vite app, and how `echo-ui-core` shipped
+  // the same assumption in its published build. `pnpm typecheck` runs
+  // both configs.
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src", "scripts", "registry.json"]
+}

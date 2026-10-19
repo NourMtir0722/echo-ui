@@ -1,0 +1,72 @@
+name: Feature request
+description: A component, a prop, or a capability Echo should have and doesn't.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Echo has a locked architecture and a deliberately small API surface: the stack, the
+        layering and the copy-into-your-tree distribution model are settled, and `PRINCIPLES.md`
+        says what a component is allowed to expose and why. A request that fits inside those is
+        cheap to say yes to. One that needs them re-decided is a conversation, not a pull request
+        — open it here and we will have it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: |
+        The problem, not the solution. "I need a `size` prop" is an answer; "I have a toolbar where
+        the controls have to read as secondary to the primary action" is the question, and it may
+        have a better answer than the one you came with.
+    validations:
+      required: true
+
+  - type: textarea
+    id: today
+    attributes:
+      label: What do you do about it today?
+      description: |
+        Including "I edited the copied file", which is a legitimate answer here — you own those
+        files. It is also the most useful signal there is: an edit many people make is a prop
+        Echo is missing.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of change is it?
+      options:
+        - A new prop or option on an existing item
+        - A new component
+        - A new block or template
+        - Something in echo-ui-core (theme, sound, motion, tactile, presence)
+        - The CLI or the MCP server
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: shape
+    attributes:
+      label: What would it look like?
+      description: The API you would want, as code. A rough sketch is fine.
+      render: tsx
+
+  - type: textarea
+    id: accessibility
+    attributes:
+      label: Anything this has to get right for accessibility?
+      description: |
+        Echo's floor is WCAG 2.2 AA and it is not negotiable, so a feature that cannot meet it
+        does not ship. If you already know what the hard part is — a name for the control, a focus
+        order, something that must not be colour alone — say so now rather than in review.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you file
+      options:
+        - label: I checked the docs and the existing components for something that already does this.
+          required: true

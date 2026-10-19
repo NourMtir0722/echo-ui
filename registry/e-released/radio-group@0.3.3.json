@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "name": "radio-group",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "RadioGroup",
+  "description": "One choice from a small set: each option is a recessed hole beside its label, and the chosen one lights a pip inside its hole. Base UI owns roving focus, arrow-key selection, and form semantics; Echo owns the material. Compound API: RadioGroup with RadioGroup.Item children.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "radio-group/radio-group.css",
+      "sha256": "6b964adfbf7ec74de3bbeed5c16174cc53fa2bb04af81148dc774838c768de75",
+      "content": "/**\n * RadioGroup. Each option is a recessed hole beside\n * its label; choosing one lights a pip inside the hole. Rebuilt after the\n * original ECHO repo's radio: every option used to be its own molded pill\n * cap, so a three-way choice put three raised buttons on the panel and read\n * as three actions instead of one choice. A choice is not a button — the\n * hole is the control, the text is the label, and only the chosen one lights.\n * Composes var(--echo-*).\n */\n.echo-radio-group {\n  display: flex;\n  /*\n   * The group used to be a single non-wrapping row, so on a phone the\n   * third \"Output routing\" option — \"Both\" — was simply cut off by the panel\n   * edge. A user could not see or reach one of three choices.\n   *\n   * `align-items: stretch` is the other half of the fix: \"Line out\" wraps to\n   * two lines at that width, and without it the pills in one group ended up\n   * different heights, which reads as three unrelated controls rather than as\n   * one choice.\n   */\n  flex-wrap: wrap;\n  align-items: stretch;\n  gap: var(--echo-space-5) var(--echo-space-10);\n}\n\n.echo-radio-group[data-orientation=\"vertical\"] {\n  flex-direction: column;\n  align-items: flex-start;\n  gap: var(--echo-space-5);\n}\n\n.echo-radio {\n  display: inline-flex;\n  align-items: center;\n  /* Never wider than the group, so a long option wraps instead of clipping. */\n  max-width: 100%;\n  /* A 24px row: the target is the whole line, label included. */\n  min-height: 24px;\n  gap: var(--echo-space-5);\n  padding: 0;\n  border: 0;\n  background: none;\n  cursor: pointer;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n  transition: color var(--echo-duration-swap) ease;\n}\n\n.echo-radio[data-checked] {\n  color: var(--echo-text);\n}\n@media (hover: hover) {\n  .echo-radio:hover {\n    color: var(--echo-text);\n  }\n}\n\n.echo-radio:focus-visible {\n  outline: none;\n}\n\n/* Focus rings the hole, not the whole line — the hole is the control. */\n.echo-radio:focus-visible .echo-radio__control {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow:\n    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));\n}\n\n.echo-radio[data-disabled] {\n  opacity: 0.45;\n  cursor: default;\n}\n\n/* The recessed hole the pip sits in. */\n.echo-radio__control {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  box-sizing: border-box;\n  /* The hole must not be squeezed by a label that wraps beside it. */\n  flex-shrink: 0;\n  width: 20px;\n  height: 20px;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-drawn-hollow, linear-gradient(\n    160deg,\n    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),\n    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))\n  ));\n  /*\n   * The last shadow is the bezel: a 1px rim of chassis plastic around the\n   * hole. Without it a hole the colour of the page ground has no edge and\n   * vanishes — it only read on a raised panel.\n   */\n  box-shadow:\n    inset 0 calc(2px + 1px * var(--radio-depth, 0)) calc(4px + 2px * var(--radio-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),\n    0 0 0 1px color-mix(in oklab, var(--echo-cap) 85%, transparent);\n}\n\n/*\n * Base UI renders the Indicator only while checked, so the pip IS the state.\n * It is the Record button's lit cap in miniature — the same primary-cap stops,\n * a lit top edge — and it stays inside the hole: no halo.\n */\n.echo-radio__pip {\n  display: block;\n  width: 10px;\n  height: 10px;\n  border-radius: var(--echo-radius-full);\n  /* Drawn, the chosen one is filled in solid ink. */\n  background: var(--echo-drawn-ink, linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  ));\n  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));\n  /* Chosen, the pip blooms into its hole, overshooting and settling; the one\n     let go drains away quickly. Base UI holds it mounted until it has. */\n  transition:\n    transform var(--echo-duration-pop) var(--echo-ease-pop),\n    opacity var(--echo-duration-tick) ease;\n}\n.echo-radio__pip[data-starting-style] {\n  transform: scale(0);\n  opacity: 0;\n}\n.echo-radio__pip[data-ending-style] {\n  transform: scale(0.2);\n  opacity: 0;\n  transition-duration: var(--echo-duration-swap);\n  transition-timing-function: ease-in;\n}\n\n/* The hole answers the hand: its rim catches the light under the pointer. */\n.echo-radio__control {\n  transition: box-shadow var(--echo-duration-tick) ease;\n}\n@media (hover: hover) {\n  .echo-radio:not([data-disabled]):not(:focus-visible):hover .echo-radio__control {\n    box-shadow:\n      inset 0 calc(2px + 1px * var(--radio-depth, 0)) calc(4px + 2px * var(--radio-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n      inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),\n      0 0 0 1px color-mix(in oklab, var(--echo-cap-highlight) 70%, transparent);\n  }\n}\n/* Pressed, the hole deepens on the library's stroke (--press from the\n   radio's physics, --load while held) and the lit pip sinks with it. */\n.echo-radio__control {\n  --radio-depth: calc(var(--press, 0) + 0.5 * var(--load, 0));\n}\n.echo-radio__pip {\n  translate: 0 calc(0.6px * var(--radio-depth));\n}\n\n.echo-radio__label {\n  min-width: 0;\n  overflow-wrap: anywhere;\n  /* 1 clips descenders once the label is allowed to wrap to two lines. */\n  line-height: var(--echo-leading-tight, 1.25);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-radio,\n  .echo-radio__pip,\n  .echo-radio__control {\n    transition: none;\n  }\n}\n\n/*\n * Coarse-pointer targets.\n *\n * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both\n * platform guidelines use — a fingertip rather than conformance. Gated on\n * `@media (pointer: coarse)`, so the desktop rendering does not move.\n *\n * Where a control's visual size is the design (a 24px checkbox, a 10px pip),\n * the target is grown with the same transparent pseudo-element as the 24px minimum,\n * not by growing the control.\n */\n@media (pointer: coarse) {\n  .echo-radio {\n    min-height: 44px;\n  }\n}\n\n/*\n * Forced colors (Windows High Contrast) drops gradients and shadows, which is\n * everything that draws this control's state. System colors draw it instead;\n * nothing here sets forced-color-adjust: none, so focus outlines still show.\n */\n@media (forced-colors: active) {\n  .echo-radio__control {\n    border: var(--echo-border-thick, 2px) solid ButtonText;\n  }\n  .echo-radio__pip {\n    background: Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "radio-group/radio-group.tsx",
+      "sha256": "ed84007e6e54d93b4870808878c193f6ed15182ed8a567f764bd707d5f77a91e",
+      "content": "\"use client\";\n\n/**\n * RadioGroup. Base UI RadioGroup behavior\n * (roving focus, arrow-key selection, form semantics) skinned as a row of\n * recessed holes beside their labels, the chosen one lit by a pip.\n *\n * Compound API: <RadioGroup><RadioGroup.Item value=\"a\">Label</RadioGroup.Item></RadioGroup>.\n *\n * The label lives INSIDE Radio.Root (which renders the role=radio button), so\n * the text IS the accessible name and the whole line is the hit target. A\n * wrapping <label> would not associate with a button and would leave the radio\n * unnamed.\n *\n * Sound rides on the group's onValueChange rather than useTactile: Base UI's\n * Root owns the click, so wrapping the callback avoids clobbering it.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport { forwardRef, type DOMAttributes, type ReactNode } from \"react\";\nimport { RadioGroup as BaseRadioGroup } from \"@base-ui/react/radio-group\";\nimport { Radio as BaseRadio } from \"@base-ui/react/radio\";\nimport type { EchoChangeEvent, EchoInterop } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { mergeHandlers, useCapPhysics } from \"echo-ui-core/tactile\";\nimport \"./radio-group.css\";\n\nexport type RadioGroupOrientation = \"horizontal\" | \"vertical\";\n\n/**\n * A control has to have a name: `aria-label`, or\n * `aria-labelledby` pointing at visible text. Leaving both out is a type\n * error, so it gets decided rather than forgotten.\n */\ntype AccessibleName =\n  | { \"aria-label\": string; \"aria-labelledby\"?: string }\n  | { \"aria-labelledby\": string; \"aria-label\"?: string };\n\n/**\n * `value` is narrowed to `string`, not left as Base UI's `unknown`.\n *\n * Base UI types a radio group's value as unknown because it will carry any\n * value you hand an Item. Echo's Select had already made the call to narrow to\n * string, and shipping two sibling value-selectors whose callbacks need\n * different handling is incoherence a whole screen of controls exposes:\n * `onValueChange={setRouting}` typechecks on one and not the other, for no\n * reason a consumer can see. A radio group in a form is string-valued.\n */\n/**\n * Narrowed deliberately.\n *\n * This used to be `Omit<Skin<ComponentProps<typeof BaseRadioGroup>>, …>`:\n * a wholesale passthrough of Base UI's props, which made Echo's public API a\n * downstream of Base UI's internals AND accepted `className`, the open\n * API `PRINCIPLES.md` says Echo does not have. The public-API leak check could\n * not see it, because a `typeof` passthrough has no dot after the alias.\n */\ninterface RadioGroupOwnProps extends EchoInterop {\n  value?: string;\n  defaultValue?: string;\n  /** Lay the options out in a row or a stack. Default \"horizontal\". */\n  orientation?: RadioGroupOrientation;\n  /** Fired with the newly selected value. */\n  onValueChange?: (\n    value: string,\n    eventDetails: EchoChangeEvent,\n  ) => void;\n  children?: ReactNode;\n}\n\nexport type RadioGroupProps = RadioGroupOwnProps & AccessibleName;\n\n/** `forwardRef`, not a `ref` prop — see the note on `Field`. */\nconst RadioGroupRoot = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroupRoot(\n  { onValueChange, orientation = \"horizontal\", ...props },\n  ref,\n) {\n  const sound = useSoundOptional();\n  return (\n    <BaseRadioGroup\n      ref={ref}\n      className=\"echo-radio-group\"\n      data-orientation={orientation}\n      onValueChange={(value, eventDetails) => {\n        sound?.play(\"select\");\n        onValueChange?.(value as string, eventDetails);\n      }}\n      {...props}\n    />\n  );\n});\n\n/**\n * The same narrowing for an item: its own props, not Base UI's, and no\n * `className`. `value` is what the group reports when this one is chosen.\n */\ninterface RadioGroupItemProps extends EchoInterop {\n  value: string;\n  children?: ReactNode;\n}\n\nconst RadioGroupItem = forwardRef<HTMLButtonElement, RadioGroupItemProps>(function RadioGroupItem(\n  { children, ...props },\n  ref,\n) {\n  // The hole takes the library's press (useCapPhysics) without moving: it\n  // deepens as the stroke lands and while held (--press, --load), and the lit\n  // pip sinks with it. The row hears the pointer; the hole is what answers.\n  const hole = useCapPhysics<HTMLSpanElement>({ lift: 0, travel: 0, tilt: 0 });\n  const live = (e: { currentTarget: Element }) => !e.currentTarget.hasAttribute(\"data-disabled\");\n  const own: DOMAttributes<HTMLElement> = {\n    onPointerDown: (e) => live(e) && hole.handlers.onPointerDown?.(e as never),\n    onPointerUp: (e) => hole.handlers.onPointerUp?.(e as never),\n    onPointerLeave: (e) => hole.handlers.onPointerLeave?.(e as never),\n    onPointerCancel: (e) => hole.handlers.onPointerCancel?.(e as never),\n    onBlur: (e) => hole.handlers.onBlur?.(e as never),\n    // Space chooses a radio; Enter and the arrows don't press it.\n    onKeyDown: (e) => e.key === \" \" && live(e) && hole.handlers.onKeyDown?.(e as never),\n    onKeyUp: (e) => e.key === \" \" && hole.handlers.onKeyUp?.(e as never),\n  };\n\n  return (\n    <BaseRadio.Root ref={ref} className=\"echo-radio\" {...props} {...mergeHandlers(own, props as Record<string, unknown>)}>\n      <span ref={hole.ref} className=\"echo-radio__control\" aria-hidden=\"true\">\n        <BaseRadio.Indicator className=\"echo-radio__pip\" />\n      </span>\n      <span className=\"echo-radio__label\">{children}</span>\n    </BaseRadio.Root>\n  );\n});\n\n// Assembled into `RadioGroup` in index.ts, which isn't a client module.\nexport { RadioGroupRoot, RadioGroupItem };\n"
+    },
+    {
+      "path": "radio-group/index.ts",
+      "sha256": "8082d8947f988a3f14ac5c6e72999a9b794c83814fae3ef20bea4ac76b204f38",
+      "content": "/**\n * The entry point for RadioGroup, deliberately NOT a client module: the parts are\n * attached here, from named client exports. Attached inside the \"use client\"\n * file, they didn't survive a server component's import, so RadioGroup.Item was\n * undefined in a Next.js page or layout and the build failed.\n */\nimport { RadioGroupRoot, RadioGroupItem } from \"./radio-group\";\n\nexport const RadioGroup = Object.assign(RadioGroupRoot, {\n  Item: RadioGroupItem,\n});\nexport type { RadioGroupProps, RadioGroupOrientation } from \"./radio-group\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "select"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`RadioGroupProps`** is now exported from `echo-radio-group`, like every other component's props type."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only.** A few source comments used screens that are no longer in the library as their example; they now make the point without them. Nothing these components render or do changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: Echo's public API names Echo's own types, not Base UI's.** Eleven items put a `@base-ui/react` type straight into a signature you write against — `BaseSwitch.Root.ChangeEventDetails` on a change handler, `ComponentProps<typeof BaseSelect.Portal>[\"container\"]` on a portal target. That made Echo's API a downstream of Base UI's internals: an upstream rename would have been a breaking Echo release triggered by somebody else's refactor."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Controls must have an accessible name, or they don't compile.** `Switch`, `Checkbox`, `Slider`, `Segmented`, `Select`, `RadioGroup` and `Progress` need `aria-label` or `aria-labelledby`; `Field` and `Textarea` need `label`, `aria-label` or `aria-labelledby`; an `iconOnly` `HardwareButton` needs `aria-label` or `aria-labelledby`. **Breaking** for code that left them out: add the name. A control inside a `<label>` points `aria-labelledby` at the label's text."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit**. A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

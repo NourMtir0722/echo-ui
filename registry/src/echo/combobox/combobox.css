@@ -1,0 +1,185 @@
+/**
+ * Combobox. Field's label and well, with the text, the chosen tags and a
+ * small chevron cap inside it; the list is Select's popup (select.css), the
+ * tags are Tag's (tag.css). On the control scale.
+ */
+.echo-combobox {
+  --ctl-h: var(--echo-control-default);
+  --ctl-font: var(--echo-text-md);
+  --ctl-px: var(--echo-space-8);
+  --ctl-radius: var(--echo-radius-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--echo-space-4);
+  min-width: 0;
+}
+.echo-combobox[data-size="sm"] {
+  --ctl-h: var(--echo-control-compact);
+  --ctl-font: var(--echo-text-sm);
+  --ctl-px: var(--echo-space-6);
+  --ctl-radius: var(--echo-radius-lg);
+}
+.echo-combobox[data-size="lg"] {
+  --ctl-h: var(--echo-control-large);
+  --ctl-font: var(--echo-text-lg);
+  --ctl-px: var(--echo-space-9);
+  --ctl-radius: var(--echo-radius-2xl);
+}
+.echo-combobox__label {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-combobox:focus-within .echo-combobox__label {
+  color: var(--echo-text);
+}
+.echo-combobox__well {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-3);
+  box-sizing: border-box;
+  min-height: var(--ctl-h);
+  padding-block: 0;
+  padding-inline: var(--ctl-px) var(--echo-space-3);
+  border-radius: var(--ctl-radius);
+  cursor: text;
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  transition: box-shadow var(--echo-duration-swap) ease;
+}
+.echo-combobox__well:focus-within {
+  box-shadow:
+    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-combobox[data-multiple] .echo-combobox__well {
+  padding-block: var(--echo-space-2);
+}
+.echo-combobox__chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-2);
+  min-width: 0;
+}
+.echo-combobox__input {
+  flex: 1;
+  box-sizing: border-box;
+  min-width: 6ch;
+  height: calc(var(--ctl-h) - 2 * var(--echo-space-2));
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--echo-text);
+  caret-color: var(--echo-accent-glow);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ctl-font);
+}
+.echo-combobox:not([data-multiple]) .echo-combobox__input {
+  height: var(--ctl-h);
+}
+.echo-combobox__input::placeholder {
+  color: var(--echo-text-dim);
+}
+/* A chosen value buds into the well: it swells out of the text line and settles. */
+.echo-combobox__chip {
+  animation: echo-combobox-bud var(--echo-duration-pop) var(--echo-ease-pop) both;
+  transform-origin: 100% 50%;
+}
+@keyframes echo-combobox-bud {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.echo-combobox__chip:focus-visible,
+.echo-combobox__chip:focus-within {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 1px;
+}
+/* The chevron: a small cap at the end of the well. */
+.echo-combobox__trigger {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: calc(var(--ctl-h) - 2 * var(--echo-space-3));
+  height: calc(var(--ctl-h) - 2 * var(--echo-space-3));
+  max-height: 36px;
+  max-width: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  color: var(--echo-text-dim);
+  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 50%, var(--echo-cap-shadow) 100%);
+  box-shadow: var(
+    --echo-shadow-key,
+    inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 2px 0 var(--echo-line-width, 0px) var(--echo-seam)
+  );
+}
+.echo-combobox__trigger svg {
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+  transition: transform var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-combobox__trigger[data-popup-open] svg {
+  transform: rotate(180deg);
+}
+.echo-combobox__trigger:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+/* A 24px target round the cap, at the smallest size. */
+.echo-combobox__trigger::after {
+  content: "";
+  position: absolute;
+  inset: min(0px, calc((100% - 24px) / 2));
+}
+.echo-combobox__list {
+  outline: none;
+}
+.echo-combobox__empty:not(:empty) {
+  padding: var(--echo-space-4) var(--echo-space-6);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+/* "Create …" reads as an offer, not an existing option. */
+.echo-select__item[data-create] {
+  font-style: italic;
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-combobox__chip {
+    animation: none;
+  }
+  .echo-combobox__trigger svg {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-combobox__well {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-combobox__well:focus-within {
+    outline: 2px solid Highlight;
+  }
+  .echo-combobox__trigger {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+}

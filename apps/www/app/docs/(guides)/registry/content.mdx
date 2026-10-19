@@ -1,0 +1,74 @@
+import { HOMEPAGE, InstallTree, ItemCount, ItemTypes } from "@/components/guides/live";
+
+# Registry
+
+The Echo registry has <ItemCount />. You add them with [`npx echo-ui-cli`](/docs/cli), and each one
+is copied into your project as source you own.
+
+## Item types
+
+<ItemTypes />
+
+## Names
+
+Every item is addressed by its bare name — `modal`, `hardware-button`, `console`. There is no
+namespace to map: `echo.json` names one registry, and everything in it is Echo.
+
+Each item is one JSON file at <code>{HOMEPAGE}/e/&lt;name&gt;.json</code>, holding its files' full
+source with a hash for each, the `echo-ui-core` range it works with, its npm dependencies, the Echo
+items it needs, its motion and sound tokens, its accessibility record and its changelog. The index
+of everything is at <code>{HOMEPAGE}/e/index.json</code>.
+
+## Versions
+
+Every item carries its own version, and every version stays published. `/e/modal.json` is whatever
+is current; <code>/e/modal@0.2.0.json</code> is that exact version, and it is never rewritten. That
+is what `echo-lock.json` pins to, and what makes it possible to tell later what you installed —
+down to the byte — rather than guessing from what is on disk now.
+
+An item's version moves when its files change, or when it needs a newer `echo-ui-core`. A release
+that touches one component doesn't renumber the rest; one that needs a new core renumbers every
+item, so a version never declares two cores. `/e/modal.json` is always the same file as the pinned
+version it names.
+
+## Where files go
+
+Everything goes under the one folder `echo.json` names — `src/components/echo` by default — with a
+subfolder per item. Adding HardwareButton writes exactly these files:
+
+<InstallTree item="echo-hardware-button" />
+
+Items import each other by relative path inside that folder, and import the theme, sound and motion
+engines from the `echo-ui-core` package. Nothing depends on an alias, so moving the folder is a
+matter of moving it.
+
+## Dependencies
+
+- **npm packages** (`echo-ui-core`, `gsap`, `@base-ui/react`) are declared by the items that use them,
+  and the CLI installs them. Nearly every component depends on `echo-ui-core`, which holds the
+  theme, sound and motion engines and `useTactile`. Base UI is imported per component —
+  `@base-ui/react/dialog`, not the whole package.
+- **Other Echo items** come along automatically. The Console template, for example, brings the
+  components it's built from.
+
+## What the CLI checks
+
+The registry is data from somewhere else, so the CLI treats it that way. Every file arrives with a
+SHA-256 of its contents and is refused if it doesn't match. Every path is checked before anything is
+opened, so no item can write outside your Echo folder. Only https is fetched, unless you name a
+local registry yourself with `--registry`. A read that meets a dropped connection or a server error
+is tried twice more, half a second and then a second and a half later; a registry that doesn't
+answer within 30 seconds is given up on, with its address, rather than waited on.
+
+## For tools and agents
+
+The same components are published in forms that tools and AI agents can read:
+
+| File | What it is |
+| --- | --- |
+| `/e/index.json` | Every item, its version and what it depends on. What `list` reads. |
+| `/r/catalog.json` | Every item's description, install command, props, examples, anti-patterns and docs, plus the token names. The MCP server reads this. |
+| `/llms.txt` | A short index for language models: what Echo is, how to set it up, and one line per item. |
+| `/llms-full.txt` | Everything in `llms.txt`, then the full reference for every item. |
+
+See [For AI agents](/docs/ai).

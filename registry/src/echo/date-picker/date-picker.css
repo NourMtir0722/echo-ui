@@ -1,0 +1,26 @@
+/**
+ * DatePicker. DateField and Calendar as they are; this only seats the
+ * calendar's screen in the popover's panel. The panel becomes a thin bezel
+ * around the screen, as wide as the month, rather than a text panel with a
+ * screen inside it.
+ */
+.echo-date-picker {
+  min-width: 0;
+}
+.echo-popover__popup:has(.echo-date-picker__calendar) {
+  max-width: none;
+  padding: var(--echo-space-3);
+}
+.echo-date-picker__calendar {
+  display: grid;
+}
+/*
+ * In a popup nothing around the calendar has a width for its own to be a
+ * share of: it takes seven days' width, or the screen's less its gutters.
+ */
+.echo-date-picker__calendar .echo-calendar {
+  inline-size: min(
+    calc(100vw - 2 * var(--echo-space-8) - 2 * var(--echo-space-3)),
+    calc(7 * var(--cell) + 6 * var(--echo-space-2) + 2 * var(--echo-space-5))
+  );
+}

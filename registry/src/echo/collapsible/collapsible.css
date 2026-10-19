@@ -1,0 +1,112 @@
+/**
+ * Collapsible. Accordion's ruled row on its own: a hairline above and below,
+ * the title as text, the chevron as the one affordance. The panel's height
+ * runs on Base UI's --collapsible-panel-height; the chevron carries the
+ * weight (it turns over on a spring), the panel doesn't, because a panel that
+ * bounced would jolt everything below it.
+ */
+.echo-collapsible {
+  border-block: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+.echo-collapsible__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+  width: 100%;
+  min-height: var(--echo-control-default);
+  padding: var(--echo-space-6) var(--echo-space-3);
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  text-align: start;
+  color: var(--echo-text);
+  background: transparent;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold, 600);
+  transition: background var(--echo-duration-tick) ease;
+}
+@media (hover: hover) {
+  .echo-collapsible__trigger:hover {
+    background: color-mix(in oklab, var(--echo-cap) 28%, transparent);
+  }
+}
+.echo-collapsible__trigger:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow)));
+}
+.echo-collapsible__trigger[data-disabled] {
+  cursor: default;
+  opacity: 0.45;
+}
+.echo-collapsible__chevron {
+  flex: none;
+  color: var(--echo-text-dim);
+  /* It turns over on a spring, overshooting a touch past the turn. */
+  transition:
+    transform var(--echo-duration-pop) var(--echo-ease-pop),
+    color var(--echo-duration-tick) ease;
+}
+@media (hover: hover) {
+  .echo-collapsible__trigger:not([data-disabled]):hover .echo-collapsible__chevron {
+    transform: translateY(2px);
+    color: var(--echo-text);
+  }
+}
+.echo-collapsible__trigger[data-panel-open] .echo-collapsible__chevron {
+  transform: rotate(180deg);
+  color: var(--echo-text);
+}
+@media (hover: hover) {
+  .echo-collapsible__trigger[data-panel-open]:not([data-disabled]):hover .echo-collapsible__chevron {
+    transform: rotate(180deg) translateY(2px);
+  }
+}
+.echo-collapsible__panel {
+  overflow: hidden;
+  height: var(--collapsible-panel-height);
+  color: var(--echo-text-dim);
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-body, 1.55);
+  /* Quick to open, settling without overshoot. */
+  transition: height var(--echo-duration-pop) cubic-bezier(0.32, 0.72, 0, 1);
+}
+.echo-collapsible__panel[data-starting-style],
+.echo-collapsible__panel[data-ending-style] {
+  height: 0;
+}
+.echo-collapsible__panel[data-ending-style] {
+  transition-duration: var(--echo-duration-sweep);
+}
+.echo-collapsible__inner {
+  padding: 0 var(--echo-space-3) var(--echo-space-8);
+  max-width: 62ch;
+  /* The contents surface once the panel has opened under them. */
+  transition:
+    opacity var(--echo-duration-sweep) ease var(--echo-duration-tick),
+    transform var(--echo-duration-pop) var(--echo-ease-pop) var(--echo-duration-tick);
+}
+.echo-collapsible__panel[data-starting-style] .echo-collapsible__inner,
+.echo-collapsible__panel[data-ending-style] .echo-collapsible__inner {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.echo-collapsible__panel[data-ending-style] .echo-collapsible__inner {
+  transition-duration: var(--echo-duration-tick);
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-collapsible__panel,
+  .echo-collapsible__inner,
+  .echo-collapsible__chevron {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-collapsible {
+    border-color: CanvasText;
+  }
+}

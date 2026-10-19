@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "name": "hold-button",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "HoldButton",
+  "description": "Confirm by holding: the primary plastic fills the cap while you press, drains if you let go early, and the action happens when it's full. For the moments a second tap would be too easy. Space and Enter hold it too; a single press that can't hold (assistive tech) arms it instead, and a second press confirms. ConfirmButton is the two-press alternative.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "size"
+  ],
+  "files": [
+    {
+      "path": "hold-button/hold-button.tsx",
+      "sha256": "6d8dacc0a3fc3c84990c13d5760402aad753b000742e35f5fab8b1dd8802237c",
+      "content": "\"use client\";\n\n/**\n * HoldButton. A destructive or final action you confirm by holding: press\n * and keep pressing, and the primary plastic fills the cap from the start\n * edge; let go early and it drains back; hold to the end and it's done. For\n * the moments a second tap would be too easy (delete a project, end a call\n * for everyone, publish to production). ConfirmButton is the two-press\n * alternative; choose one per product and keep to it.\n *\n * Space and Enter hold it the same way. Assistive tech often can't hold: its\n * activation arrives as one click, so a click that wasn't a held press arms\n * the button instead, it says \"Press again to confirm\", and the next press\n * within a few seconds confirms. Nothing is ever confirmed by a single tap.\n */\nimport { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from \"react\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport { HardwareButton } from \"../hardware-button\";\nimport type { ControlSize } from \"../size\";\nimport \"./hold-button.css\";\n\nexport interface HoldButtonProps {\n  /** What it does: \"Delete project\". */\n  children: ReactNode;\n  onConfirm: () => void;\n  /** How long to hold, ms. Default 1200. */\n  duration?: number;\n  /** What it says once done, for a moment. Default \"Done\". */\n  doneLabel?: string;\n  /** What it says when armed by a single press. Default \"Press again to confirm\". */\n  armedLabel?: string;\n  variant?: \"primary\" | \"neutral\";\n  size?: ControlSize;\n  icon?: ReactNode;\n  disabled?: boolean;\n}\n\nconst DONE: SoundRecipe = { wave: \"triangle\", freq: 880, decay: 0.18, gain: 0.12, bend: 220 };\n\nexport function HoldButton({\n  children,\n  onConfirm,\n  duration = 1200,\n  doneLabel = \"Done\",\n  armedLabel = \"Press again to confirm\",\n  variant = \"neutral\",\n  size,\n  icon,\n  disabled,\n}: HoldButtonProps) {\n  const sound = useSoundOptional();\n  const [fill, setFill] = useState(0);\n  const [state, setState] = useState<\"idle\" | \"armed\" | \"done\">(\"idle\");\n  const raf = useRef(0);\n  const held = useRef(false);\n  const heldAt = useRef(0);\n  const from = useRef(0);\n  const fillNow = useRef(0);\n  const disarm = useRef(0);\n  const reset = useRef(0);\n\n  const confirm = useCallback(() => {\n    cancelAnimationFrame(raf.current);\n    held.current = false;\n    fillNow.current = 1;\n    setFill(1);\n    setState(\"done\");\n    sound?.play(DONE);\n    onConfirm();\n    window.clearTimeout(reset.current);\n    reset.current = window.setTimeout(() => {\n      setState(\"idle\");\n      fillNow.current = 0;\n      setFill(0);\n    }, 1400);\n  }, [onConfirm, sound]);\n\n  // Holding pours the plastic in at an even rate; letting go drains it on the\n  // same clock, a little faster, from wherever it had got to.\n  const run = useCallback(() => {\n    cancelAnimationFrame(raf.current);\n    const t0 = performance.now();\n    const start = fillNow.current;\n    const tick = (now: number) => {\n      const dt = now - t0;\n      const f = held.current ? Math.min(1, start + dt / duration) : Math.max(0, start - (dt / duration) * 1.6);\n      fillNow.current = f;\n      setFill(f);\n      if (held.current && f >= 1) return confirm();\n      if (held.current || f > 0) raf.current = requestAnimationFrame(tick);\n    };\n    raf.current = requestAnimationFrame(tick);\n  }, [confirm, duration]);\n\n  const press = () => {\n    if (disabled || state === \"done\" || held.current) return;\n    if (state === \"armed\") return confirm();\n    held.current = true;\n    heldAt.current = performance.now();\n    from.current = fillNow.current;\n    run();\n  };\n  const release = () => {\n    if (!held.current) return;\n    held.current = false;\n    run();\n  };\n\n  useEffect(\n    () => () => {\n      cancelAnimationFrame(raf.current);\n      window.clearTimeout(disarm.current);\n      window.clearTimeout(reset.current);\n    },\n    [],\n  );\n\n  const label = state === \"done\" ? doneLabel : state === \"armed\" ? armedLabel : children;\n  return (\n    <span className=\"echo-hold-button\" data-state={state}>\n      <HardwareButton\n        variant={variant}\n        size={size}\n        icon={icon}\n        disabled={disabled}\n        fill={fill}\n        onPointerDown={(e) => {\n          if (e.button !== 0) return;\n          press();\n        }}\n        onPointerUp={release}\n        onKeyDown={(e) => {\n          if ((e.key === \" \" || e.key === \"Enter\") && !e.repeat) {\n            e.preventDefault();\n            press();\n          }\n        }}\n        /* Not on HardwareButton's typed interop list, but passed through and\n           chained with its own handlers all the same. */\n        {...({\n          onPointerLeave: release,\n          onPointerCancel: release,\n          onKeyUp: (e: KeyboardEvent<HTMLButtonElement>) => {\n            if (e.key === \" \" || e.key === \"Enter\") release();\n          },\n        } as object)}\n        onClick={(e) => {\n          // A click with no press behind it (assistive tech, a script) arms it.\n          if (e.detail !== 0 || state !== \"idle\" || held.current) return;\n          setState(\"armed\");\n          window.clearTimeout(disarm.current);\n          disarm.current = window.setTimeout(() => setState((s) => (s === \"armed\" ? \"idle\" : s)), 5000);\n        }}\n      >\n        {label}\n      </HardwareButton>\n      <span className=\"echo-hold-button__hint\" aria-live=\"polite\">\n        {state === \"armed\" ? armedLabel : state === \"done\" ? doneLabel : \"\"}\n      </span>\n    </span>\n  );\n}\n"
+    },
+    {
+      "path": "hold-button/hold-button.css",
+      "sha256": "0d0d1453868b113c58ddb2de4dac252364f85d58e5a081192839bab5b6d218b5",
+      "content": "/**\n * HoldButton. A HardwareButton whose fill is the hold; the hint is spoken,\n * not shown (the label already changes).\n */\n.echo-hold-button {\n  display: inline-flex;\n}\n.echo-hold-button__hint {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n"
+    },
+    {
+      "path": "hold-button/index.ts",
+      "sha256": "fa89df69a72bd5995b2c154fc5b527685a2952a5e5f581b535de6196b66e5428",
+      "content": "export { HoldButton } from \"./hold-button\";\nexport type { HoldButtonProps } from \"./hold-button\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Choosing: `Combobox`, `TagsInput`, `ChoiceCards`, `CheckboxGroup`, `Fieldset`, `Form` and `HoldButton`.** - **`Combobox`**: a Select you can type into. `multiple` keeps choices as tags that bud out of the text line; `creatable` offers to add what you typed. Built on Base UI Combobox. - **`TagsInput`**: free-form tags in Field's well (Enter or a comma adds, Backspace takes the last back, a paste becomes several), with `normalize` to clean or refuse each one. - **`ChoiceCards`**: options that need more than a word, as cards; the chosen one lights a rail and drops its pip. One choice is a radio group, `multiple` a group of checkboxes. - **`CheckboxGroup`**: a named set of checkboxes with an optional parent that shows a dash when only some are on. - **`Fieldset`**: a named group of fields with a legend. - **`Form`**: fails well. Pass `errors` to it and to each field; after a failed submit a summary at the top takes focus, counts the problems and links each to its field. - **`HoldButton`**: confirm by holding; the cap fills while pressed and drains if let go. A press that can't hold (assistive tech) arms it and a second press confirms."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

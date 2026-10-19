@@ -1,0 +1,43 @@
+/* The Stop button swells with your voice: its own box, so the cap's transform is untouched. */
+.echo-voice-note__swell {
+  display: inline-flex;
+}
+
+.echo-voice-note__take {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+}
+
+/* The level: bars that rise with the voice, in the label's own colour. */
+.echo-voice-note__bars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-1);
+  block-size: 18px;
+}
+.echo-voice-note__bars > i {
+  --level: 0.14;
+  inline-size: 3px;
+  block-size: 100%;
+  border-radius: var(--echo-radius-full);
+  background: currentColor;
+  transform: scaleY(var(--level));
+  transform-origin: 50% 50%;
+}
+
+.echo-voice-note__time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The take while recording is a readout, not an action: disabled but at full strength. */
+.echo-voice-note .echo-hw__cap:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  .echo-voice-note__bars > i {
+    background: CanvasText;
+  }
+}

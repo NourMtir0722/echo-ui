@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "name": "checkbox-group",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "CheckboxGroup",
+  "description": "A named set of checkboxes sharing one value, the list of what's checked. Each option is a row, the checkbox and its words, the whole row a target. parent adds a checkbox that checks or clears them all and shows a dash when only some are on. Built on Base UI CheckboxGroup with Echo's Checkbox.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "checkbox"
+  ],
+  "files": [
+    {
+      "path": "checkbox-group/checkbox-group.tsx",
+      "sha256": "3fc55bac4061fef55233f64f4977a45764aa6712667932e46646ca64145825a9",
+      "content": "\"use client\";\n\n/**\n * CheckboxGroup. A named set of checkboxes that share one value: the list of\n * what's checked. Each option is a row, the checkbox and its words (and a\n * line under them), the whole row a target. `parent` adds a checkbox above\n * the others that checks or clears them all, and shows a dash when only some\n * are on.\n *\n * Base UI CheckboxGroup keeps the value and the parent's state; each box is\n * Echo's Checkbox, with its drawn tick.\n */\nimport { forwardRef, useId, type ReactNode } from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { CheckboxGroup as BaseCheckboxGroup } from \"@base-ui/react/checkbox-group\";\nimport { Checkbox } from \"../checkbox\";\nimport \"./checkbox-group.css\";\n\nexport interface CheckboxGroupOption {\n  value: string;\n  label: string;\n  description?: ReactNode;\n  disabled?: boolean;\n}\n\ninterface CheckboxGroupOwnProps extends EchoInterop {\n  /** The group's name, shown above it. */\n  label: string;\n  options: CheckboxGroupOption[];\n  value?: string[];\n  defaultValue?: string[];\n  onValueChange?: (value: string[]) => void;\n  /** A checkbox above the rest that checks or clears them all (\"All notifications\"). */\n  parent?: string;\n}\n\nexport type CheckboxGroupProps = CheckboxGroupOwnProps;\n\n/** `forwardRef` — see the note on `Field`. The ref lands on the group. */\nexport const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(function CheckboxGroup(\n  { label, options, value, defaultValue, onValueChange, parent, name, disabled, id: _id, ...interop },\n  ref,\n) {\n  const id = useId();\n  const all = options.filter((o) => !o.disabled).map((o) => o.value);\n  const row = (key: string, text: string, box: ReactNode, description?: ReactNode) => (\n    <label key={key} className=\"echo-checkbox-group__row\">\n      {box}\n      <span className=\"echo-checkbox-group__text\">\n        <span id={`${id}-${key}`} className=\"echo-checkbox-group__label\">\n          {text}\n        </span>\n        {description ? <span className=\"echo-checkbox-group__description\">{description}</span> : null}\n      </span>\n    </label>\n  );\n  return (\n    <BaseCheckboxGroup\n      ref={ref}\n      className=\"echo-checkbox-group\"\n      {...interop}\n      aria-labelledby={`${id}-name`}\n      {...(value !== undefined ? { value } : {})}\n      {...(defaultValue !== undefined ? { defaultValue } : {})}\n      {...(parent ? { allValues: all } : {})}\n      {...(disabled !== undefined ? { disabled } : {})}\n      onValueChange={(next) => onValueChange?.(next as string[])}\n    >\n      <span id={`${id}-name`} className=\"echo-checkbox-group__name\">\n        {label}\n      </span>\n      {parent\n        ? row(\"all\", parent, <Checkbox aria-labelledby={`${id}-all`} {...({ parent: true } as object)} />)\n        : null}\n      <div className=\"echo-checkbox-group__options\" data-nested={parent ? \"\" : undefined}>\n        {options.map((o) =>\n          row(\n            o.value,\n            o.label,\n            <Checkbox\n              aria-labelledby={`${id}-${o.value}`}\n              {...({ value: o.value } as object)}\n              {...(name ? { name } : {})}\n              {...(o.disabled ? { disabled: true } : {})}\n            />,\n            o.description,\n          ),\n        )}\n      </div>\n    </BaseCheckboxGroup>\n  );\n});\n"
+    },
+    {
+      "path": "checkbox-group/checkbox-group.css",
+      "sha256": "b505d87367fd8567e1d18a8175a993282f70ca7e708cee48ea8ddec7c11020a1",
+      "content": "/**\n * CheckboxGroup. A machine-voice name over rows of checkbox and words; with\n * a parent, the options sit indented under it.\n */\n.echo-checkbox-group {\n  display: grid;\n  gap: var(--echo-space-5);\n  min-width: 0;\n}\n.echo-checkbox-group__name {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n.echo-checkbox-group__options {\n  display: grid;\n  gap: var(--echo-space-5);\n}\n.echo-checkbox-group__options[data-nested] {\n  padding-inline-start: var(--echo-space-10);\n}\n.echo-checkbox-group__row {\n  display: flex;\n  align-items: flex-start;\n  gap: var(--echo-space-6);\n  cursor: pointer;\n}\n.echo-checkbox-group__text {\n  display: grid;\n  gap: var(--echo-space-1);\n  padding-block-start: 1px;\n}\n.echo-checkbox-group__label {\n  font-size: var(--echo-text-md);\n  color: var(--echo-text);\n}\n.echo-checkbox-group__description {\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n"
+    },
+    {
+      "path": "checkbox-group/index.ts",
+      "sha256": "7d62c08d4b31eba5ef4011755df6a876277fd96fa136b1ee4670a665d0d56758",
+      "content": "export { CheckboxGroup } from \"./checkbox-group\";\nexport type { CheckboxGroupProps, CheckboxGroupOption } from \"./checkbox-group\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "select"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Choosing: `Combobox`, `TagsInput`, `ChoiceCards`, `CheckboxGroup`, `Fieldset`, `Form` and `HoldButton`.** - **`Combobox`**: a Select you can type into. `multiple` keeps choices as tags that bud out of the text line; `creatable` offers to add what you typed. Built on Base UI Combobox. - **`TagsInput`**: free-form tags in Field's well (Enter or a comma adds, Backspace takes the last back, a paste becomes several), with `normalize` to clean or refuse each one. - **`ChoiceCards`**: options that need more than a word, as cards; the chosen one lights a rail and drops its pip. One choice is a radio group, `multiple` a group of checkboxes. - **`CheckboxGroup`**: a named set of checkboxes with an optional parent that shows a dash when only some are on. - **`Fieldset`**: a named group of fields with a legend. - **`Form`**: fails well. Pass `errors` to it and to each field; after a failed submit a summary at the top takes focus, counts the problems and links each to its field. - **`HoldButton`**: confirm by holding; the cap fills while pressed and drains if let go. A press that can't hold (assistive tech) arms it and a second press confirms."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

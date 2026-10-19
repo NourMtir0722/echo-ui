@@ -1,0 +1,114 @@
+/**
+ * Breadcrumb. Engraved trail text: the path is
+ * dimmed, the place you are is lit. Composes var(--echo-*).
+ */
+.echo-breadcrumb__list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-snug, 1.4);
+}
+
+.echo-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.echo-breadcrumb__link {
+  padding: var(--echo-space-1) var(--echo-space-2);
+  border-radius: var(--echo-radius-sm);
+  color: var(--echo-text-dim);
+  text-decoration: none;
+  transition: color var(--echo-duration-tick) ease;
+}
+
+@media (hover: hover) {
+  .echo-breadcrumb__link:hover {
+    color: var(--echo-text);
+    text-decoration: underline;
+  }
+}
+
+.echo-breadcrumb__link:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  color: var(--echo-text);
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+.echo-breadcrumb__current {
+  padding: var(--echo-space-1) var(--echo-space-2);
+  color: var(--echo-text);
+  font-weight: var(--echo-weight-semibold, 600);
+}
+
+.echo-breadcrumb__separator {
+  padding: 0 var(--echo-space-1);
+  color: var(--echo-seam);
+  color: color-mix(in oklab, var(--echo-text-dim) 55%, transparent);
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-breadcrumb__link {
+    transition: none;
+  }
+}
+
+/*
+ * WCAG 2.2 2.5.8 — a target must be at least 24x24 CSS px.
+ *
+ * Expanded with a centred pseudo-element rather than by growing the control:
+ * the visual size IS the design, and no component in the library used hit-area
+ * expansion before this, so every target was exactly as big as it looked.
+ * `max(100%, 24px)` keeps the expansion a floor — a target already larger than
+ * 24px is untouched.
+ */
+.echo-breadcrumb__link {
+  position: relative;
+  /* Declares a deliberate 24px target pad; see tests/helpers/layout.ts. */
+  --echo-hit-area: 24px;
+}
+
+.echo-breadcrumb__link::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both
+ * platform guidelines use — a fingertip rather than conformance. Gated on
+ * `@media (pointer: coarse)`, so the desktop rendering does not move.
+ *
+ * Where a control's visual size is the design (a 24px checkbox, a 10px pip),
+ * the target is grown with the same transparent pseudo-element as the 24px minimum,
+ * not by growing the control.
+ */
+@media (pointer: coarse) {
+  .echo-breadcrumb__link {
+    --echo-hit-area: 44px;
+  }
+
+  .echo-breadcrumb__link::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}

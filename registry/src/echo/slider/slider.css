@@ -1,0 +1,204 @@
+/**
+ * Slider. A molded cap knob with an accent grip line, in a recessed track
+ * whose filled portion is lit in the accent. Composes var(--echo-*).
+ *
+ * The fill is light INSIDE the well, never a halo around it: no control in the
+ * library throws an outer glow, and the slider was the last one that did.
+ */
+.echo-slider {
+  position: relative;
+  /* Fluid, capped at the old fixed width. */
+  width: 100%;
+  max-width: 260px;
+}
+
+.echo-slider__control {
+  display: flex;
+  align-items: center;
+  /* Never narrower than its own knob: squeezed to nothing, the knob was the
+     one thing left sticking out of the row. */
+  min-width: 1.75rem;
+  height: var(--echo-control-compact);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.echo-slider__track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: var(--echo-radius-full);
+  /* Deep recessed well — same near-black recipe as the Field. */
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+
+/* The rail clips the fill: the fill slides with the knob (see slider.tsx),
+   and its extension off the start edge must not show outside the well. */
+.echo-slider__rail {
+  position: absolute;
+  inset: 0;
+  /* Explicit, not just implied by inset: Base UI sizes the fill with
+     height: inherit, which reads this property, not the used height. */
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.echo-slider__indicator {
+  position: absolute;
+  height: 100%;
+  border-radius: var(--echo-radius-full);
+  /* Drawn, the travel is the accent as a flat fill under the ink. */
+  background: var(--echo-drawn-fill, linear-gradient(90deg, var(--echo-accent-5) 0%, var(--echo-accent-glow) 100%));
+  /* A lit top edge, inside the fill — the light sits in the rail. None on a drawn device. */
+  box-shadow: inset 0 calc(1px * (1 - var(--echo-drawn, 0))) 0 color-mix(in oklch, var(--echo-accent-highlight) 45%, transparent);
+}
+/* While the fill trails the knob it slides away from the rail's start; this
+   keeps the start covered. The rail clips it. */
+.echo-slider__indicator::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: calc(100% - 5px);
+  width: 400px;
+  background: var(--echo-drawn-fill, var(--echo-accent-5));
+  box-shadow: inherit;
+}
+
+/*
+ * The thumb is Base UI's positioning shell and the focus target's parent; it
+ * draws nothing. What you see is the cap inside it, which physics moves:
+ * --lift raises it toward the key light, casting a longer, softer shadow.
+ */
+.echo-slider__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.echo-slider__travel {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+/* Molded fader knob (reference material.buttonCap, 4 stops) with a grip line. */
+.echo-slider__cap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--echo-radius-full);
+  /* Drawn, the knob is the value, filled in solid ink. */
+  background: var(--echo-drawn-ink, linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    color-mix(in oklab, var(--echo-cap-highlight) 50%, var(--echo-cap)) 40%,
+    var(--echo-cap) 62%,
+    var(--echo-cap-shadow) 100%
+  ));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    /* Drawn: a paper ring knocks the knob out of a fill as dark as it is. */
+    0 0 0 calc(2px * var(--echo-drawn, 0)) var(--echo-surface),
+    0 calc(3px + 6px * var(--lift, 0)) calc(6px + 12px * var(--lift, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent);
+  will-change: transform;
+}
+/* Focus lands on the visually hidden range input inside the thumb, so the
+   thumb matches :has(), never :focus-visible itself. */
+.echo-slider__thumb:has(:focus-visible) {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  border-radius: var(--echo-radius-full);
+}
+.echo-slider__thumb:has(:focus-visible) .echo-slider__cap {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));
+}
+.echo-slider__grip {
+  width: 2px;
+  height: 12px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  /* Lifted, the grip line lights up. */
+  box-shadow: 0 0 calc(6px * var(--lift, 0) * (1 - var(--echo-drawn, 0))) var(--echo-accent-glow);
+}
+
+.echo-slider[data-disabled] {
+  opacity: 0.45;
+}
+
+/*
+ * Coarse-pointer target.
+ *
+ * The knob is 28px. What actually receives the tap is Base UI's native range
+ * input inside it, so the input is what has to grow — a transparent pad on the
+ * thumb would look right and catch nothing. The input is invisible and
+ * position: fixed over the knob, so growing it costs no visual change: the
+ * moulded knob stays 28px and the finger gets 44.
+ */
+@media (pointer: coarse) {
+  .echo-slider__thumb > input {
+    width: 44px;
+    height: 44px;
+    transform: translate(-8px, -8px);
+  }
+}
+
+/* Small: a 6px rail and a 20px knob, for dense rows. */
+.echo-slider[data-size="sm"] .echo-slider__control {
+  height: var(--echo-control-compact);
+}
+
+.echo-slider[data-size="sm"] .echo-slider__track {
+  height: 6px;
+}
+
+.echo-slider[data-size="sm"] .echo-slider__thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.echo-slider[data-size="sm"] .echo-slider__grip {
+  height: 8px;
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops gradients and shadows, which is
+ * everything that draws this control's state. System colors draw it instead;
+ * nothing here sets forced-color-adjust: none, so focus outlines still show.
+ */
+@media (forced-colors: active) {
+  .echo-slider__track {
+    background: Canvas;
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-slider__indicator {
+    background: Highlight;
+  }
+  .echo-slider__cap {
+    background: ButtonText;
+    border: var(--echo-border-thick, 2px) solid Canvas;
+  }
+  .echo-slider__grip {
+    background: Canvas;
+  }
+}

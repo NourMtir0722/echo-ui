@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "name": "filter-tray",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "FilterTray",
+  "description": "Chunky filter pads in one long well, with the action at its end. A pad that's on is a lit cap; the action carries the count. Apply, and the lit pads fold into the action (Morph) and it becomes one key saying how many are on, their names engraved on the tray's floor beside it; press it and they come back out. For the filter bar of a shop, a map or a feed.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "morph",
+    "size",
+    "scope"
+  ],
+  "files": [
+    {
+      "path": "filter-tray/filter-tray.tsx",
+      "sha256": "3426ac79db1f0c95f563cb92eb7f46c10e66038a46d7d8c7f8c1e1bcdf7bf9dc",
+      "content": "\"use client\";\n\n/**\n * FilterTray. Chunky filter pads in one long well, with the action at its\n * end. A pad that's on is a lit cap, lit from inside; the action carries the\n * count. Apply, and the lit pads fold into the action cap (Morph) and it\n * becomes one key that says how many are on, with their names engraved on the\n * tray's floor beside it; press that key and they come back out.\n *\n * Every pad is a HardwareButton: its icon on the cap, its name engraved under\n * it and said as its accessible name, `aria-pressed` for its state.\n */\nimport { forwardRef, useEffect, useRef, useState, type ReactNode } from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Morph } from \"../morph\";\nimport { SizeProvider, type ControlSize } from \"../size\";\nimport { Scope } from \"../scope\";\nimport \"./filter-tray.css\";\n\nexport interface FilterTrayOption {\n  value: string;\n  /** Engraved under the pad, and the pad's accessible name. */\n  label: string;\n  /** The glyph on the pad. */\n  icon: ReactNode;\n  /** A colour of its own for this pad, as a hex: it lights in it when it's on (a Scope). */\n  accent?: string;\n}\n\nexport interface FilterTrayProps extends EchoInterop {\n  /** What the pads filter: the tray's accessible name. */\n  label: string;\n  options: readonly FilterTrayOption[];\n  /** The pads that are on (controlled). */\n  value?: readonly string[];\n  defaultValue?: readonly string[];\n  onValueChange?: (value: string[]) => void;\n  /** Folded into the action (controlled). */\n  applied?: boolean;\n  defaultApplied?: boolean;\n  /** Called when the pads fold in (true) or come back out (false). */\n  onAppliedChange?: (applied: boolean) => void;\n  /** The action's word. Default \"Filter\". */\n  actionLabel?: string;\n  /** Height on the control scale for every pad. Default `lg`. */\n  size?: ControlSize;\n}\n\nconst plural = (n: number) => `${n} filter${n === 1 ? \"\" : \"s\"}`;\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on\n * the tray.\n */\nexport const FilterTray = forwardRef<HTMLDivElement, FilterTrayProps>(function FilterTray(\n  {\n    label,\n    options,\n    value,\n    defaultValue,\n    onValueChange,\n    applied,\n    defaultApplied = false,\n    onAppliedChange,\n    actionLabel = \"Filter\",\n    size = \"lg\",\n    disabled = false,\n    name,\n    ...interop\n  },\n  ref,\n) {\n  const [innerValue, setInnerValue] = useState<readonly string[]>(defaultValue ?? []);\n  const on = value ?? innerValue;\n  const [innerApplied, setInnerApplied] = useState(defaultApplied);\n  const appliedNow = applied ?? innerApplied;\n  const folded = appliedNow && on.length > 0;\n\n  const setOn = (next: string[]) => {\n    if (value === undefined) setInnerValue(next);\n    onValueChange?.(next);\n  };\n  const setFolded = (next: boolean) => {\n    if (applied === undefined) setInnerApplied(next);\n    onAppliedChange?.(next);\n  };\n\n  // Nothing on is nothing applied: once the pads are cleared (from outside,\n  // or never chosen), the next pad lights without folding the tray, and a\n  // controlled `applied` hears that it's off.\n  const setFoldedRef = useRef(setFolded);\n  setFoldedRef.current = setFolded;\n  useEffect(() => {\n    if (appliedNow && on.length === 0) setFoldedRef.current(false);\n  }, [appliedNow, on.length]);\n\n  const chosen = options.filter((o) => on.includes(o.value));\n  const names = chosen.map((o) => o.label).join(\", \");\n  const count = chosen.length;\n\n  return (\n    <div\n      ref={ref}\n      className=\"echo-filter-tray\"\n      role=\"group\"\n      aria-label={label}\n      data-size={size}\n      data-folded={folded || undefined}\n      {...interop}\n    >\n      {folded ? (\n        <span className=\"echo-filter-tray__summary\" aria-hidden=\"true\">\n          {chosen.map((o) => o.label).join(\" · \")}\n        </span>\n      ) : null}\n      <SizeProvider size={size}>\n        <Morph\n          align=\"end\"\n          status={folded ? `${plural(count)} on: ${names}` : \"\"}\n          onEscape={folded ? () => setFolded(false) : undefined}\n        >\n          {folded ? (\n            <HardwareButton\n              data-morph=\"action\"\n              variant=\"primary\"\n              disabled={disabled}\n              aria-label={`${plural(count)}: ${names}. Change filters`}\n              onClick={() => setFolded(false)}\n            >\n              {plural(count)}\n            </HardwareButton>\n          ) : (\n            <>\n              {options.map((o) => {\n                const pressed = on.includes(o.value);\n                const pad = (\n                  <HardwareButton\n                    key={o.value}\n                    iconOnly\n                    icon={o.icon}\n                    aria-label={o.label}\n                    caption={o.label}\n                    aria-pressed={pressed}\n                    variant={pressed ? \"primary\" : \"neutral\"}\n                    disabled={disabled}\n                    onClick={() => setOn(pressed ? on.filter((v) => v !== o.value) : [...on, o.value])}\n                  />\n                );\n                return o.accent ? (\n                  <Scope key={o.value} accent={o.accent}>\n                    {pad}\n                  </Scope>\n                ) : (\n                  pad\n                );\n              })}\n              <HardwareButton\n                data-morph=\"action\"\n                variant=\"primary\"\n                disabled={disabled || count === 0}\n                aria-label={count ? `${actionLabel}: ${plural(count)}` : `${actionLabel}: choose a filter first`}\n                onClick={() => setFolded(true)}\n              >\n                {count ? `${actionLabel} · ${count}` : actionLabel}\n              </HardwareButton>\n            </>\n          )}\n        </Morph>\n      </SizeProvider>\n      {name ? on.map((v) => <input key={v} type=\"hidden\" name={name} value={v} />) : null}\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "filter-tray/filter-tray.css",
+      "sha256": "eb16afed7408988b8069baac4d51f62724c7c63de9a7c7af33e04b7ae8f55277",
+      "content": "/**\n * FilterTray. One long well, as ButtonGroup's: the pads give up their own\n * wells and sit on its floor, names engraved under them, the action at the\n * far end. Composes var(--echo-*) — no hex literals; the only fixed values\n * are the single-key-light occlusion model.\n */\n.echo-filter-tray {\n  --ft-well: var(--echo-space-3, 6px);\n  /* A pad's cap: the control height less the well it would have had. */\n  --ft-cap: calc(var(--echo-control-large, 60px) - 2 * var(--echo-space-2, 4px));\n  position: relative;\n  display: flex;\n  align-items: flex-start;\n  gap: var(--echo-space-6);\n  box-sizing: border-box;\n  inline-size: 100%;\n  min-inline-size: 0;\n  padding: var(--ft-well) var(--ft-well) var(--echo-space-2);\n  /* A pad, its gap and two lines of name, so wrapping names never move it. */\n  min-block-size: calc(\n    var(--ft-well) + var(--ft-cap) + var(--echo-space-4, 8px) + 2 * var(--echo-leading-tight, 1.25) * var(--echo-text-3xs, 0.625rem) +\n      var(--echo-space-2, 4px)\n  );\n  /* The well's corner follows a pad's, a well's width out. */\n  --ft-radius: calc(var(--echo-radius-xl) + var(--ft-well));\n  border-radius: var(--ft-radius);\n  box-shadow:\n    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n/* The pads and the action sit on the tray's floor, not in wells of their own. */\n.echo-filter-tray .echo-hw__well {\n  padding: 0;\n  box-shadow: none;\n}\n.echo-filter-tray[data-size=\"md\"] {\n  --ft-cap: calc(var(--echo-control-default, 44px) - 2 * var(--echo-space-2, 4px));\n}\n.echo-filter-tray[data-size=\"sm\"] {\n  --ft-cap: calc(var(--echo-control-compact, 32px) - 2 * var(--echo-space-1, 2px));\n}\n/* Icons read at a pad's size. */\n.echo-filter-tray[data-size=\"lg\"] .echo-hw {\n  --hw-icon: var(--echo-icon-xl, 28px);\n}\n.echo-filter-tray[data-size=\"md\"] .echo-hw {\n  --hw-icon: var(--echo-icon-lg, 20px);\n}\n\n/* A pad's name wraps under it rather than pushing its neighbours away. */\n.echo-filter-tray .echo-hw__caption {\n  inline-size: calc(var(--hw-h) + var(--echo-space-6));\n  letter-spacing: var(--echo-tracking-wider, 0.12em);\n  line-height: var(--echo-leading-tight, 1.25);\n}\n\n.echo-filter-tray > .echo-morph {\n  flex: 1 1 auto;\n  min-inline-size: 0;\n  justify-items: stretch;\n}\n.echo-filter-tray .echo-morph__row {\n  justify-content: flex-start;\n  align-items: flex-start;\n}\n/* The action is always the last key: it keeps to the tray's far end. */\n.echo-filter-tray .echo-morph__row > .echo-hw:last-child {\n  margin-inline-start: auto;\n}\n\n/*\n * Folded: what's on, engraved on the floor beside the one key. Laid over the\n * floor rather than taking room in it, so the tray keeps its size and the key\n * lands where it rests while the pads fold into it.\n */\n.echo-filter-tray__summary {\n  position: absolute;\n  inset-block-start: calc(var(--ft-well) + var(--ft-cap) / 2);\n  inset-inline-start: calc(var(--ft-well) + var(--echo-space-5));\n  inset-inline-end: calc(50% - var(--echo-space-8));\n  translate: 0 -50%;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-wider, 0.12em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n  pointer-events: none;\n}\n\n/* Once the pads have folded into the key, the tray settles to one row. */\n.echo-filter-tray[data-folded] {\n  min-block-size: calc(2 * var(--ft-well) + var(--ft-cap));\n  transition: min-block-size var(--echo-duration-sweep) var(--echo-ease-glide) var(--echo-duration-pop);\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-filter-tray[data-folded] {\n    transition: none;\n  }\n}\n\n@media (forced-colors: active) {\n  .echo-filter-tray {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "filter-tray/index.ts",
+      "sha256": "a1c3b10c85cd3d586f37f11aef756a18d8726f9159a4103b23588b2369690920",
+      "content": "export { FilterTray } from \"./filter-tray\";\nexport type { FilterTrayProps, FilterTrayOption } from \"./filter-tray\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`FilterTray`: filter pads in one long well, with the action at its end.** A pad that's on is a lit cap with its name engraved under it; the action carries the count. Apply, and the lit pads fold into the action (Morph) and it becomes one key saying how many are on, their names engraved on the tray's floor beside it; press it, or Escape, and they come back out."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**A colour per pad, and per creature.** A `FilterTray` option and a `Creature` take `accent`: the pad lights in its own colour, the creature is a family of colours, each through a `Scope`."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

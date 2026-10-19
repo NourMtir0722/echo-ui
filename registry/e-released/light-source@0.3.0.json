@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "name": "light-source",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "LightSource",
+  "description": "Your pointer becomes the light the caps inside it are lit by: each HardwareButton's shine turns toward it and its shadow falls away from it, the nearest most. When the pointer leaves, the light drifts back to the room's key light. It lights what you put in it and adds nothing of its own.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button"
+  ],
+  "files": [
+    {
+      "path": "light-source/light-source.css",
+      "sha256": "bcb9b04e2513e50bcd2ea0225bdf6948f20b5d4ee60312e99c3fd04da69ac9cc",
+      "content": "/**\n * LightSource. The light itself is a soft glow under the pointer; what it\n * does to the caps is HardwareButton's own light offset (--hw-light-x/-y,\n * where its drop shadow falls) and a shine on the face toward the light.\n */\n.echo-light-source {\n  position: relative;\n  isolation: isolate;\n}\n\n/* Placed (inline, translate) from the pointer's physical position. */\n.echo-light-source__bulb {\n  position: absolute;\n  inline-size: 200px;\n  block-size: 200px;\n  border-radius: var(--echo-radius-full);\n  pointer-events: none;\n  z-index: var(--echo-z-base, 0);\n  background: radial-gradient(circle, rgb(255 255 255 / calc(0.18 * var(--echo-gloss, 1))), transparent 65%);\n  opacity: 0;\n  transition: opacity var(--echo-duration-glide) ease;\n}\n.echo-light-source__bulb[data-lit] {\n  opacity: 1;\n}\n\n/* The shine: on the face of each cap, on the side toward the light. */\n.echo-light-source .echo-hw__cap::before {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  z-index: var(--echo-z-base, 0);\n  border-radius: inherit;\n  pointer-events: none;\n  background: radial-gradient(\n    circle at var(--hw-sheen-x, 35%) var(--hw-sheen-y, 25%),\n    rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))),\n    transparent 60%\n  );\n  /* Faint far from the light, bright near it. */\n  opacity: calc(0.15 + 0.85 * var(--hw-sheen, 0));\n}\n\n@media (forced-colors: active) {\n  .echo-light-source__bulb,\n  .echo-light-source .echo-hw__cap::before {\n    display: none;\n  }\n}\n"
+    },
+    {
+      "path": "light-source/light-source.tsx",
+      "sha256": "b7493de84493a8009f9e4732ca5f361f1e840faf955fc6996f82a767b40d68e6",
+      "content": "\"use client\";\n\n/**\n * LightSource. Your pointer becomes the light the caps inside it are lit by:\n * each HardwareButton's shine turns toward it and its shadow falls away from\n * it, the nearest most. When the pointer leaves, the light drifts back to\n * the room's key light, up and to the left.\n *\n * It lights what you put in it — it adds no controls of its own. Under\n * reduced motion the light jumps instead of gliding.\n */\nimport { useEffect, useRef, type ReactNode } from \"react\";\nimport { createSpring } from \"echo-ui-core/tactile\";\nimport \"./light-source.css\";\n\nexport interface LightSourceProps {\n  /** HardwareButtons (and anything else); the caps are what it lights. */\n  children: ReactNode;\n  /** How far a shadow can fall, px. Default 13. */\n  reach?: number;\n  className?: string;\n}\n\nexport function LightSource({ children, reach = 13, className }: LightSourceProps) {\n  const root = useRef<HTMLDivElement>(null);\n  const bulb = useRef<HTMLDivElement>(null);\n  const reachRef = useRef(reach);\n  reachRef.current = reach;\n\n  useEffect(() => {\n    const el = root.current!;\n    const reduced = typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n    const home = () => ({ x: -60, y: -80 });\n    const draw = () => {\n      const lx = sx.value;\n      const ly = sy.value;\n      const base = el.getBoundingClientRect();\n      if (bulb.current) bulb.current.style.translate = `${(lx - 100).toFixed(1)}px ${(ly - 100).toFixed(1)}px`;\n      for (const cap of el.querySelectorAll<HTMLElement>(\".echo-hw__cap\")) {\n        const r = cap.getBoundingClientRect();\n        const dx = r.left + r.width / 2 - base.left - lx;\n        const dy = r.top + r.height / 2 - base.top - ly;\n        const d = Math.hypot(dx, dy) || 1;\n        const fall = Math.min(d / 14, reachRef.current);\n        // The shadow falls away from the light; the shine sits on the side facing it.\n        cap.style.setProperty(\"--hw-light-x\", `${((dx / d) * fall).toFixed(2)}px`);\n        cap.style.setProperty(\"--hw-light-y\", `${((dy / d) * fall - 4).toFixed(2)}px`);\n        cap.style.setProperty(\"--hw-sheen-x\", `${(50 - (dx / d) * 38).toFixed(1)}%`);\n        cap.style.setProperty(\"--hw-sheen-y\", `${(50 - (dy / d) * 38).toFixed(1)}%`);\n        cap.style.setProperty(\"--hw-sheen\", Math.max(0, 1 - d / 260).toFixed(3));\n      }\n    };\n    const h = home();\n    const sx = createSpring(h.x, { duration: 0.45, bounce: 0 }, draw);\n    const sy = createSpring(h.y, { duration: 0.45, bounce: 0 }, draw);\n    draw();\n    const go = (x: number, y: number, duration: number) => {\n      if (reduced) {\n        sx.set(x);\n        sy.set(y);\n        draw();\n        return;\n      }\n      sx.to(x, { config: { duration, bounce: 0 } });\n      sy.to(y, { config: { duration, bounce: 0 } });\n    };\n    // The glow is the pointer's: it shows only while the pointer is here.\n    const move = (e: PointerEvent) => {\n      const r = el.getBoundingClientRect();\n      bulb.current?.setAttribute(\"data-lit\", \"\");\n      go(e.clientX - r.left, e.clientY - r.top, 0.18);\n    };\n    const leave = () => {\n      bulb.current?.removeAttribute(\"data-lit\");\n      const p = home();\n      go(p.x, p.y, 0.45);\n    };\n    el.addEventListener(\"pointermove\", move);\n    el.addEventListener(\"pointerleave\", leave);\n    return () => {\n      sx.stop();\n      sy.stop();\n      el.removeEventListener(\"pointermove\", move);\n      el.removeEventListener(\"pointerleave\", leave);\n      for (const cap of el.querySelectorAll<HTMLElement>(\".echo-hw__cap\")) {\n        for (const v of [\"--hw-light-x\", \"--hw-light-y\", \"--hw-sheen-x\", \"--hw-sheen-y\", \"--hw-sheen\"]) cap.style.removeProperty(v);\n      }\n    };\n  }, []);\n\n  return (\n    <div ref={root} className={[\"echo-light-source\", className].filter(Boolean).join(\" \")}>\n      <div ref={bulb} className=\"echo-light-source__bulb\" style={{ left: 0, top: 0 }} aria-hidden />\n      {children}\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "light-source/index.ts",
+      "sha256": "1d2d160534cf1c1549ff0405112d50e07dcbb71a7f075f39a85325ea888b5db0",
+      "content": "export { LightSource } from \"./light-source\";\nexport type { LightSourceProps } from \"./light-source\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six other kinds of physics.** `PullCord` is a switch you pull: the cord stretches, clicks at a detent and changes as you let go. `SplitFlap` is a readout that turns over flap by flap. `LightSource` makes your pointer the light the HardwareButtons inside it are lit by. `Magnetic` makes the buttons inside lean toward your hand before you touch them. `ThrowStack` is a stack of Panels you flick away with the speed you gave them. `Ripple` is a surface that sends a wave from where you press. All of them are built from Echo's own caps, panels and roles, have a keyboard path, and hold still under reduced motion."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

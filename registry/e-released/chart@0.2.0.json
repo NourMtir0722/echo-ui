@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "name": "chart",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Chart",
+  "description": "StatTile's dot-matrix language applied to a series: a column per sample, cells lit from the bottom, in the same recessed screen well LcdChip and Progress use. Values quantise to whole cells by construction — steppiness is the data model, not a style. No axes, no gridlines, no tooltips, no smoothing: it is a readout, not a charting library.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "chart/chart.css",
+      "sha256": "cc83c9c0aad978f74f63dd2fb7e2a30d2fc6a41037793f8da454d2cb910341ba",
+      "content": "/*\n * Chart. An LED matrix in a recessed screen well — the same\n * well LcdChip and Progress use, so a readout of a series and a readout of a\n * number are visibly the same instrument. Composes var(--echo-*) only.\n */\n.echo-chart {\n  display: inline-grid;\n  gap: var(--echo-space-4);\n  min-width: 0;\n}\n\n.echo-chart__matrix {\n  display: flex;\n  align-items: stretch;\n  gap: var(--echo-space-2);\n  min-width: 0;\n  padding: var(--echo-space-6);\n  border-radius: var(--echo-radius-lg);\n  overflow-x: auto;\n  overscroll-behavior-x: contain;\n  background: linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%);\n  box-shadow:\n    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));\n  scrollbar-width: thin;\n  scrollbar-color: var(--echo-cap) transparent;\n}\n\n.echo-chart__col {\n  display: grid;\n  grid-template-rows: repeat(var(--echo-chart-rows, 7), 1fr);\n  gap: var(--echo-space-2);\n  flex: 1 1 6px;\n  min-width: 5px;\n  min-height: 84px;\n}\n\n/* An unlit cell is dead plastic under the glass, not an absence. */\n.echo-chart__cell {\n  border-radius: var(--echo-radius-xs);\n  background: color-mix(in oklab, var(--echo-text) 7%, transparent);\n}\n\n.echo-chart__cell[data-lit] {\n  background: var(--echo-accent-glow);\n  box-shadow: 0 0 6px color-mix(in oklch, var(--echo-accent-glow) 65%, transparent);\n}\n\n/*\n * In line mode the single lit cell is the whole reading, so it is worth a\n * little more bloom — otherwise a sparse matrix reads as a broken bar chart.\n */\n.echo-chart__matrix[data-variant=\"line\"] .echo-chart__cell[data-lit] {\n  box-shadow: 0 0 9px color-mix(in oklch, var(--echo-accent-glow) 80%, transparent);\n}\n\n.echo-chart__caption {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n/*\n * Power on (useBootOnView). \"off\" is set only on a chart that starts out of\n * view; \"on\" lights each column from the bottom up, column after column, in\n * steps — it is still a matrix of LEDs, so nothing fades.\n */\n.echo-chart[data-boot=\"off\"] .echo-chart__cell[data-lit] {\n  background: color-mix(in oklab, var(--echo-text) 7%, transparent);\n  box-shadow: none;\n}\n.echo-chart[data-boot=\"on\"] .echo-chart__cell[data-lit] {\n  animation: echo-chart-boot var(--echo-duration-press) steps(1, end) both;\n  animation-delay: calc(var(--c, 0) * var(--echo-duration-glitch) * 0.5 + var(--r, 0) * var(--echo-duration-glitch) * 0.35);\n}\n@keyframes echo-chart-boot {\n  from {\n    background: color-mix(in oklab, var(--echo-text) 7%, transparent);\n    box-shadow: none;\n  }\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-chart[data-boot] .echo-chart__cell[data-lit] {\n    animation: none;\n  }\n}\n"
+    },
+    {
+      "path": "chart/chart.tsx",
+      "sha256": "8513b5265161c8797ac5a4659054eda3beab272425b99aa02025d61b52b5dd73",
+      "content": "\"use client\";\n\n/**\n * Chart. StatTile's dot-matrix language applied to a series.\n *\n * It exists because a template demanded it. `echo-console` does: a device dashboard with no reading of anything over time is a table\n * with badges on it, and a chart is the one thing on that screen that has to\n * look like Echo rather than like a charting library.\n *\n * SO IT IS NOT A CHARTING LIBRARY. There are no axes, no gridlines, no\n * tooltips and no smoothing, because none of those are things a device panel\n * has. It is an LED matrix: a column per sample, cells lit from the bottom.\n * Values quantise to whole cells by construction — Echo's rule that a screen\n * readout does not ease smoothly is not a style here, it is the data model.\n * If you need a real chart with axes and hit-testing, use a real charting\n * library; this is a readout.\n *\n * a11y: a matrix of divs says nothing, so the whole thing is one `role=\"img\"`\n * with a generated summary — what it measures, its range, and where it ended.\n * Pass `summary` when you can say it better.\n */\nimport { useMemo, type HTMLAttributes } from \"react\";\nimport { useBootOnView } from \"echo-ui-core/tactile\";\nimport \"./chart.css\";\n\nexport type ChartVariant = \"bar\" | \"line\";\n\nexport interface ChartProps extends Omit<HTMLAttributes<HTMLDivElement>, \"children\"> {\n  /** The series, oldest first. Empty renders an unlit matrix. */\n  data: number[];\n  /**\n   * What is being measured. Required: it is the accessible name, and a chart\n   * nobody can read is a decorative rectangle.\n   */\n  label: string;\n  /** `bar` lights from the bottom up; `line` lights only the value's cell. */\n  variant?: ChartVariant;\n  /** Matrix height in cells. More cells is finer, not smoother. */\n  rows?: number;\n  /** Scale ceiling. Defaults to the largest value present. */\n  max?: number;\n  /** Scale floor. Default 0. */\n  min?: number;\n  /** Replaces the generated accessible description. */\n  summary?: string;\n  /** Machine label under the matrix. */\n  caption?: string;\n}\n\nexport function Chart({\n  data,\n  label,\n  variant = \"bar\",\n  rows = 7,\n  max,\n  min = 0,\n  summary,\n  caption,\n  className,\n  ...rest\n}: ChartProps) {\n  const ceiling = max ?? (data.length ? Math.max(...data) : 1);\n  const span = ceiling - min || 1;\n\n  /**\n   * How many cells each column lights. Rounding here rather than in CSS is\n   * what makes the quantisation the data model instead of a rendering\n   * accident — the same number drives the pixels and the summary.\n   */\n  const levels = useMemo(\n    () =>\n      data.map((value) => {\n        const clamped = Math.min(Math.max(value, min), ceiling);\n        return Math.max(0, Math.min(rows, Math.round(((clamped - min) / span) * rows)));\n      }),\n    [data, min, ceiling, span, rows],\n  );\n\n  const described =\n    summary ??\n    (data.length === 0\n      ? \"No data.\"\n      : `${data.length} samples, from ${Math.min(...data)} to ${Math.max(...data)}, ending at ${\n          data[data.length - 1]\n        }.`);\n\n  // Powers on the first time it scrolls into view: each column lights from\n  // the bottom up, one after another, like a meter finding its level.\n  const boot = useBootOnView<HTMLDivElement>();\n\n  return (\n    <div ref={boot} className={[\"echo-chart\", className].filter(Boolean).join(\" \")} {...rest}>\n      <div\n        className=\"echo-chart__matrix\"\n        data-variant={variant}\n        role=\"img\"\n        aria-label={`${label}. ${described}`}\n        style={{ \"--echo-chart-rows\": rows } as React.CSSProperties}\n      >\n        {levels.map((level, column) => (\n          <div className=\"echo-chart__col\" key={column} style={{ \"--c\": column } as React.CSSProperties}>\n            {Array.from({ length: rows }, (_, i) => {\n              // Row 0 is the TOP of the column, so lit cells count from the end.\n              const cellFromBottom = rows - i;\n              const lit = variant === \"bar\" ? cellFromBottom <= level : cellFromBottom === level;\n              return (\n                <span\n                  key={i}\n                  className=\"echo-chart__cell\"\n                  data-lit={lit ? \"\" : undefined}\n                  style={{ \"--r\": cellFromBottom } as React.CSSProperties}\n                  aria-hidden=\"true\"\n                />\n              );\n            })}\n          </div>\n        ))}\n      </div>\n      {caption ? <span className=\"echo-chart__caption\">{caption}</span> : null}\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "chart/index.ts",
+      "sha256": "20023578c7786c9fbad64a69a41f402ae107e0e478ceaa6555242690726d7626",
+      "content": "export { Chart } from \"./chart\";\nexport type { ChartProps, ChartVariant } from \"./chart\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**45 components** across controls, overlays, structure, surfaces, primitives, navigation and texture — including `Command` (a dot-matrix command palette), `AppShell`, `Sheet` (on Base UI's Drawer, with swipe-to-dismiss), `AlertDialog`, `Menu` + `ContextMenu`, `Textarea`, and `Chart`."
+    }
+  ]
+}

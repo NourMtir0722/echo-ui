@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "name": "switch",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Switch",
+  "description": "Base UI Switch (role=switch, keyboard, a11y) with a hardware-toggle skin — a molded thumb sliding in a recessed track — and a click sound on toggle.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "gsap": "^3.13.0",
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "switch/switch.css",
+      "sha256": "a78e7bd28d683a6e6f18bab22df0485e19ac819e9216f7d36a8b041797cd62fd",
+      "content": "/**\n * Switch. A molded cap thumb in a deep recessed track (the Field's well),\n * lit in the accent when on. The thumb is a fixed-size\n * block that only translates — never resizes — so the knob can't morph on toggle.\n * Composes var(--echo-*).\n */\n.echo-switch {\n  position: relative;\n  display: inline-block;\n  box-sizing: border-box;\n  width: 48px;\n  height: 24px;\n  padding: var(--echo-space-2);\n  border: 0;\n  border-radius: var(--echo-radius-full);\n  cursor: pointer;\n  /* Deep recessed well — same near-black recipe as the Field. */\n  background: linear-gradient(\n    160deg,\n    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),\n    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))\n  );\n  box-shadow: var(\n    --echo-shadow-well,\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)))\n  );\n  /* How lit the track is, 0–1. The state sets it; while the knob is thrown\n     or dragged, switch.tsx writes it from the knob's position, so the colour\n     fills in behind the knob. */\n  --p: 0;\n}\n\n.echo-switch[data-checked] {\n  --p: 1;\n}\n\n.echo-switch::before {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  border-radius: inherit;\n  background: linear-gradient(180deg, var(--echo-accent-4) 0%, var(--echo-accent-5) 100%);\n  opacity: var(--p);\n  pointer-events: none;\n}\n\n.echo-switch:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n\n.echo-switch:disabled {\n  opacity: 0.45;\n  cursor: default;\n}\n\n/* Molded buttonCap thumb (reference material.buttonCap, 4 stops). Fixed size —\n   only `transform` animates, so the knob never changes shape on toggle. */\n.echo-switch__thumb {\n  /* Above the lit layer. */\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  display: block;\n  box-sizing: border-box;\n  flex-shrink: 0;\n  width: 18px;\n  height: 18px;\n  border-radius: var(--echo-radius-full);\n  background: linear-gradient(\n    180deg,\n    var(--echo-cap-highlight) 0%,\n    color-mix(in oklab, var(--echo-cap-highlight) 50%, var(--echo-cap)) 40%,\n    var(--echo-cap) 62%,\n    var(--echo-cap-shadow) 100%\n  );\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))),\n    0 calc(2px + 4px * var(--lift, 0)) calc(4px + 7px * var(--lift, 0))\n      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent);\n  will-change: transform;\n}\n\n/*\n * Travel = inner width (48 − 6) − thumb (18) = 24px. The resting position is a\n * logical margin, which switch.tsx never touches and which follows the\n * writing direction by itself; the throw across is GSAP on `transform`. Not\n * the `translate` property: GSAP folds that into its own transform on the\n * first tween and resets it to none, which parked the knob at \"off\".\n */\n.echo-switch[data-checked] .echo-switch__thumb {\n  margin-inline-start: 24px;\n}\n\n\n\n/*\n * Coarse-pointer targets.\n *\n * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both\n * platform guidelines use — a fingertip rather than conformance. Gated on\n * `@media (pointer: coarse)`, so the desktop rendering does not move.\n *\n * Where a control's visual size is the design (a 24px checkbox, a 10px pip),\n * the target is grown with the same transparent pseudo-element as the 24px minimum,\n * not by growing the control.\n */\n@media (pointer: coarse) {\n  .echo-switch {\n    --echo-hit-area: 44px;\n    position: relative;\n  }\n\n  .echo-switch::after {\n    content: \"\";\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    width: max(100%, 44px);\n    height: max(100%, 44px);\n    transform: translate(-50%, -50%);\n  }\n}\n\n/*\n * Forced colors (Windows High Contrast) drops gradients and shadows, which is\n * everything that draws this control's state. System colors draw it instead;\n * nothing here sets forced-color-adjust: none, so focus outlines still show.\n */\n@media (forced-colors: active) {\n  .echo-switch::before {\n    display: none;\n  }\n  .echo-switch {\n    background: Canvas;\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-switch[data-checked] {\n    background: Highlight;\n    border-color: Highlight;\n  }\n  .echo-switch__thumb {\n    background: ButtonText;\n  }\n  .echo-switch[data-checked] .echo-switch__thumb {\n    background: HighlightText;\n  }\n}\n"
+    },
+    {
+      "path": "switch/switch.tsx",
+      "sha256": "d591a1be0be2dbab33ec499856cbb714da3bfdfb1e8ea77e139bbc124a4a0490",
+      "content": "\"use client\";\n\n/**\n * Switch. Base UI Switch behavior (role=switch,\n * keyboard, a11y) with a hardware-toggle skin and a click sound on toggle.\n *\n * Sound is driven from onCheckedChange rather than useTactile: Base UI's Root\n * owns the click handler, so wrapping the change callback avoids clobbering it.\n *\n * The knob has mass, and it keeps its shape. Hovered, it pops up out of the\n * track; held, it grows and lifts clear. It can be dragged: it follows the\n * finger along the track, the colour filling in behind it, rubber-banding\n * past the ends — let go past halfway and the switch flips, short of it and\n * the knob springs home. A click throws it across on a spring. The state\n * flips at once either way; only the knob and the light catch up.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport { Switch as BaseSwitch } from \"@base-ui/react/switch\";\nimport {\n  forwardRef,\n  useCallback,\n  useEffect,\n  useRef,\n  type MutableRefObject,\n  type PointerEvent,\n} from \"react\";\nimport gsap from \"gsap\";\nimport type { EchoChangeEvent, EchoInterop } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { springs } from \"echo-ui-core/motion\";\nimport {\n  createSpring,\n  rubberband,\n  timing,\n  useReducedMotionRef,\n  watchTravel,\n  type Spring,\n} from \"echo-ui-core/tactile\";\nimport \"./switch.css\";\n\ninterface SwitchOwnProps extends EchoInterop {\n  checked?: boolean;\n  defaultChecked?: boolean;\n  onCheckedChange?: (checked: boolean, eventDetails: EchoChangeEvent) => void;\n}\n\n/**\n * A control has to have a name: `aria-label`, or\n * `aria-labelledby` pointing at visible text. Leaving both out is a type\n * error, so it gets decided rather than forgotten.\n */\ntype AccessibleName =\n  | { \"aria-label\": string; \"aria-labelledby\"?: string }\n  | { \"aria-labelledby\": string; \"aria-label\"?: string };\n\nexport type SwitchProps = SwitchOwnProps & AccessibleName;\n\n/** `forwardRef`, not a `ref` prop — see the note on `Checkbox`. */\nexport const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch(\n  { onCheckedChange, ...props },\n  ref,\n) {\n  const sound = useSoundOptional();\n  const reduced = useReducedMotionRef();\n  const root = useRef<HTMLButtonElement | null>(null);\n  const thumb = useRef<HTMLSpanElement | null>(null);\n  const hovered = useRef(false);\n  const held = useRef(false);\n  // The knob's offset from where CSS puts it: the rest of a throw still to\n  // travel, plus how far the finger has dragged it.\n  const lag = useRef<Spring | null>(null);\n  const drag = useRef<Spring | null>(null);\n  const gesture = useRef<{ startX: number; moved: boolean; pointerId: number } | null>(null);\n  const swallowClick = useRef(false);\n\n  const setRoot = useCallback(\n    (node: HTMLButtonElement | null) => {\n      root.current = node;\n      if (typeof ref === \"function\") ref(node);\n      else if (ref) (ref as MutableRefObject<HTMLButtonElement | null>).current = node;\n    },\n    [ref],\n  );\n\n  /** +1 in left-to-right, -1 in right-to-left: which way \"on\" is. */\n  const direction = () => (root.current && getComputedStyle(root.current).direction === \"rtl\" ? -1 : 1);\n\n  useEffect(() => {\n    const r = root.current;\n    const t = thumb.current;\n    if (!r || !t) return;\n    // Draw the knob, and fill the track behind it: --p is how far toward\n    // \"on\" the knob is, 0–1, so dragging it halfway lights the track halfway.\n    const draw = () => {\n      const x = (lag.current?.value ?? 0) + (drag.current?.value ?? 0);\n      gsap.set(t, { x });\n      const on = r.hasAttribute(\"data-checked\") ? 1 : 0;\n      const p = Math.min(1, Math.max(0, on + (x * direction()) / 24));\n      r.style.setProperty(\"--p\", p.toFixed(3));\n    };\n    lag.current = createSpring(0, springs.bouncy, draw);\n    drag.current = createSpring(0, springs.bouncy, draw);\n    const stop = watchTravel({\n      part: t,\n      frame: r,\n      on: r,\n      attributes: [\"data-checked\", \"data-unchecked\"],\n      onMove: (dx) => {\n        if (reduced.current || !lag.current) {\n          draw();\n          return;\n        }\n        lag.current.shift(dx);\n        lag.current.to(0, { config: springs.bouncy });\n      },\n    });\n    return () => {\n      stop();\n      lag.current?.stop();\n      drag.current?.stop();\n      gsap.killTweensOf(t);\n    };\n  }, [reduced]);\n\n  /* The knob's pose. It never deforms: it pops up when hovered, and grows and\n     lifts when held. */\n  const pose = (name: \"lift\" | \"rebound\") => {\n    const t = thumb.current;\n    if (!t) return;\n    const vars = { \"--lift\": held.current ? 1 : hovered.current ? 0.6 : 0 };\n    if (reduced.current) {\n      gsap.set(t, vars);\n      return;\n    }\n    gsap.to(t, {\n      ...timing(name),\n      overwrite: \"auto\",\n      ...vars,\n      scale: held.current ? 1.22 : hovered.current ? 1.12 : 1,\n    });\n  };\n\n  const release = (e: PointerEvent<HTMLElement>) => {\n    const g = gesture.current;\n    gesture.current = null;\n    if (held.current) {\n      held.current = false;\n      pose(\"rebound\");\n    }\n    if (!g || !drag.current) return;\n    if (e.currentTarget.hasPointerCapture(g.pointerId)) e.currentTarget.releasePointerCapture(g.pointerId);\n    if (!g.moved) return;\n    // Past halfway (or flicked that way) the click that follows flips the\n    // switch; short of it, the click is swallowed and the knob goes home.\n    const on = e.currentTarget.hasAttribute(\"data-checked\");\n    const toward = (drag.current.value + drag.current.velocity * 0.08) * direction();\n    const flips = on ? toward < -12 : toward > 12;\n    swallowClick.current = !flips;\n    drag.current.to(0, { config: springs.bouncy });\n  };\n\n  return (\n    <BaseSwitch.Root\n      ref={setRoot}\n      className=\"echo-switch\"\n      onCheckedChange={(checked, eventDetails) => {\n        sound?.play(\"tap\");\n        onCheckedChange?.(checked, eventDetails);\n      }}\n      onClickCapture={(e) => {\n        if (!swallowClick.current) return;\n        swallowClick.current = false;\n        e.preventDefault();\n        e.stopPropagation();\n      }}\n      onPointerEnter={(e) => {\n        if (e.pointerType !== \"mouse\" || props.disabled) return;\n        hovered.current = true;\n        pose(\"lift\");\n      }}\n      onPointerLeave={() => {\n        hovered.current = false;\n        if (!gesture.current) pose(\"rebound\");\n      }}\n      onPointerDown={(e) => {\n        if (e.button !== 0 || props.disabled) return;\n        held.current = true;\n        swallowClick.current = false;\n        pose(\"lift\");\n        if (reduced.current) return;\n        gesture.current = { startX: e.clientX, moved: false, pointerId: e.pointerId };\n        e.currentTarget.setPointerCapture(e.pointerId);\n      }}\n      onPointerMove={(e) => {\n        const g = gesture.current;\n        if (!g || !drag.current) return;\n        const dx = e.clientX - g.startX;\n        if (Math.abs(dx) > 3) g.moved = true;\n        if (!g.moved) return;\n        // Free between the two ends; past either, it rubber-bands.\n        const on = e.currentTarget.hasAttribute(\"data-checked\");\n        const d = direction();\n        const lo = on ? -24 : 0;\n        const hi = on ? 0 : 24;\n        let x = dx * d;\n        if (x < lo) x = lo + rubberband(x - lo, 8);\n        if (x > hi) x = hi + rubberband(x - hi, 8);\n        drag.current.to(x * d, { config: springs.track });\n      }}\n      onPointerUp={release}\n      onPointerCancel={release}\n      {...props}\n    >\n      <BaseSwitch.Thumb ref={thumb} className=\"echo-switch__thumb\" />\n    </BaseSwitch.Root>\n  );\n});\n"
+    },
+    {
+      "path": "switch/index.ts",
+      "sha256": "d5dfdf1dbff07b0baceaeb83c19e65731cfcb5fd03b815dda17029409e52cde0",
+      "content": "export { Switch } from \"./switch\";\nexport type { SwitchProps } from \"./switch\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "lift",
+    "rebound"
+  ],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: Echo's public API names Echo's own types, not Base UI's.** Eleven items put a `@base-ui/react` type straight into a signature you write against — `BaseSwitch.Root.ChangeEventDetails` on a change handler, `ComponentProps<typeof BaseSelect.Portal>[\"container\"]` on a portal target. That made Echo's API a downstream of Base UI's internals: an upstream rename would have been a breaking Echo release triggered by somebody else's refactor."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Controls must have an accessible name, or they don't compile.** `Switch`, `Checkbox`, `Slider`, `Segmented`, `Select`, `RadioGroup` and `Progress` need `aria-label` or `aria-labelledby`; `Field` and `Textarea` need `label`, `aria-label` or `aria-labelledby`; an `iconOnly` `HardwareButton` needs `aria-label` or `aria-labelledby`. **Breaking** for code that left them out: add the name. A control inside a `<label>` points `aria-labelledby` at the label's text."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

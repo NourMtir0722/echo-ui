@@ -1,0 +1,78 @@
+name: Visual baselines (Linux)
+
+# The screenshot tests only ever ran on a Mac, by hand, which is how
+# 29 baselines went stale without anyone noticing. CI can run them too,
+# but only against baselines taken on the same renderer: fonts and antialiasing
+# differ between macOS, a bare Ubuntu runner and a container.
+#
+# So this job writes the Linux baselines inside the SAME image the CI e2e job
+# uses, and pushes them to a branch for review. Once they are on main, ci.yml
+# starts running the `visual:` tests automatically — it looks for the files.
+#
+# Run it when a deliberate design change moves the look, after updating the
+# macOS baselines locally.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to push the baselines to
+        default: visual-baselines/linux
+        type: string
+
+# Scoped to the job rather than the workflow, so that the write is
+# attached to the thing that writes: this job pushes a baselines branch.
+permissions:
+  contents: read
+
+jobs:
+  baselines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    # Must match the image in ci.yml's e2e job, and the Playwright version in
+    # package.json — playwright-image.test.ts fails if they drift apart.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build registry and docs
+        run: |
+          pnpm build:registry
+          pnpm --filter @echo-ui/www build
+
+      - name: Write the Linux baselines
+        run: pnpm exec playwright test --update-snapshots --grep "visual:"
+
+      - name: Push them for review
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${{ inputs.branch }}"
+          git add tests/__screenshots__
+          if git diff --cached --quiet; then
+            echo "No baseline changes — the Linux look is already recorded."
+            exit 0
+          fi
+          git commit -m "Linux screenshot baselines, taken in the CI image"
+          git push --force-with-lease origin "${{ inputs.branch }}"
+          echo "Pushed to ${{ inputs.branch }} — open a PR and review every changed image."
+
+      - name: Keep them as an artifact too
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-baselines
+          path: tests/__screenshots__

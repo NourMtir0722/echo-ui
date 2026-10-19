@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "name": "avatar",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Avatar",
+  "description": "A person or device as a molded disc — the image seated in a well, or initials engraved into the plastic when there is no image or the image fails to load. The failure case is the whole point: a bare <img> with a broken URL leaves a hole, this falls back.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "avatar/avatar.css",
+      "sha256": "1c62bfab90e9e2b82eaa1b8113b3570264743f1286dfffba6b8fa289f127bc81",
+      "content": "/**\n * Avatar. A disc sunk into the chassis: the image\n * sits in a well, initials are engraved into the plastic. Composes\n * var(--echo-*).\n */\n.echo-avatar {\n  /* Not overflow:hidden — the presence LED sits ON the rim, half outside.\n     The image clips itself to the disc instead. */\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));\n  box-shadow:\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n/*\n * The disc is in rem, like the type it holds: identical at a default\n * text size, and it grows with the reader's instead of clipping the initials.\n */\n/* xs: inline with a line of text, a mention or a byline. */\n.echo-avatar[data-size=\"xs\"] {\n  width: 1.25rem;\n  height: 1.25rem;\n  font-size: var(--echo-text-3xs);\n}\n.echo-avatar[data-size=\"sm\"] {\n  width: 1.5rem;\n  height: 1.5rem;\n  font-size: var(--echo-text-3xs);\n}\n\n.echo-avatar[data-size=\"md\"] {\n  width: 2.25rem;\n  height: 2.25rem;\n  font-size: var(--echo-text-xs);\n}\n\n.echo-avatar[data-size=\"lg\"] {\n  width: 3.25rem;\n  height: 3.25rem;\n  font-size: var(--echo-text-lg);\n}\n/* xl: a profile header. */\n.echo-avatar[data-size=\"xl\"] {\n  width: 5rem;\n  height: 5rem;\n  font-size: var(--echo-text-2xl);\n}\n\n.echo-avatar__image {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n  display: block;\n  border-radius: inherit;\n}\n\n/* Engraved, not printed: dark ink with a light lower bevel. */\n.echo-avatar__initials {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-wide, 0.06em);\n  line-height: var(--echo-leading-none, 1);\n  color: var(--echo-text-dim);\n  text-shadow: 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--echo-gloss, 1)));\n}\n\n/*\n * The presence LED (2026-09-18). A socket drilled into the rim at the key\n * light's far corner: empty when idle, lit accent when live — StatusDot's\n * fill-vs-hollow rule, so the state survives greyscale and every CVD. The\n * chassis-coloured ring seats it in the plastic rather than floating it on top.\n */\n.echo-avatar__led {\n  position: absolute;\n  inset-inline-end: 0;\n  bottom: 0;\n  box-sizing: border-box;\n  width: 26%;\n  height: 26%;\n  min-width: 8px;\n  min-height: 8px;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-well);\n  border: var(--echo-border-fine, 1.5px) solid color-mix(in oklab, var(--echo-text-dim) 72%, transparent);\n  box-shadow:\n    0 0 0 2px var(--echo-surface),\n    inset 0 1px 1.5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  /* The LED lights and goes dark over a moment, like StatusDot's. */\n  transition:\n    background-color var(--echo-duration-tick) ease-out,\n    border-color var(--echo-duration-tick) ease-out;\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-avatar__led {\n    transition: none;\n  }\n}\n\n.echo-avatar[data-status=\"live\"] .echo-avatar__led {\n  background: var(--echo-accent-glow);\n  border-color: var(--echo-accent-glow);\n  box-shadow:\n    0 0 0 2px var(--echo-surface),\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));\n}\n"
+    },
+    {
+      "path": "avatar/avatar.tsx",
+      "sha256": "6f23a90e041547eb4e5e2d343a9371fd7e3dcbacb51a16487245b932ff2b7694",
+      "content": "\"use client\";\n\n/**\n * Avatar. A person or device as a molded disc: the\n * image seated in a well, or initials engraved into the plastic when there is\n * no image — or when the image fails to load, which is the case a plain <img>\n * silently gets wrong.\n *\n * A static component with no behaviour primitive underneath: the only\n * behaviour is the load-failure fallback, which is a single piece of state.\n * NOTE: @base-ui/react has since added an `avatar` primitive with the same\n * fallback semantics. Moving onto it would change the component's behaviour,\n * not just its internals, so it stays hand-built until that call is made.\n */\nimport { useCallback, useState } from \"react\";\nimport type { HTMLAttributes } from \"react\";\nimport \"./avatar.css\";\n\nexport type AvatarSize = \"xs\" | \"sm\" | \"md\" | \"lg\" | \"xl\";\nexport type AvatarStatus = \"live\" | \"idle\";\n\nexport interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, \"children\"> {\n  /** Image URL. Omit to render initials. */\n  src?: string;\n  /** Who or what this is. Required — it is the accessible name. */\n  name: string;\n  size?: AvatarSize;\n  /** Override the derived initials (e.g. a device code). */\n  initials?: string;\n  /**\n   * A presence LED seated in the rim: `live` is lit, `idle` is an empty\n   * socket — StatusDot's fill-vs-hollow rule, so the state never rests on\n   * colour alone. Added to the accessible name as \", live\" / \", idle\".\n   */\n  status?: AvatarStatus;\n  /** Override the words announced for `status`. */\n  statusLabel?: string;\n}\n\n/** First letters of the first and last words — \"Ada Lovelace\" → \"AL\". */\nfunction deriveInitials(name: string): string {\n  const words = name.trim().split(/\\s+/).filter(Boolean);\n  if (words.length === 0) return \"?\";\n  const first = words[0]![0] ?? \"\";\n  const last = words.length > 1 ? (words[words.length - 1]![0] ?? \"\") : \"\";\n  return (first + last).toUpperCase();\n}\n\nexport function Avatar({\n  src,\n  name,\n  size = \"md\",\n  initials,\n  status,\n  statusLabel,\n  className,\n  ...rest\n}: AvatarProps) {\n  // Keyed by URL rather than a boolean, so a new src gets a fresh attempt\n  // instead of inheriting the previous one's failure.\n  const [failedSrc, setFailedSrc] = useState<string | null>(null);\n  const showImage = Boolean(src) && failedSrc !== src;\n\n  /**\n   * The server-rendered <img> starts loading before hydration, so a 404 can\n   * fire its error event before React ever attaches onError — leaving a\n   * permanently broken image and no fallback. Re-check the outcome when the\n   * node attaches: complete with no intrinsic width means it failed.\n   */\n  const checkAlreadyFailed = useCallback(\n    (node: HTMLImageElement | null) => {\n      if (node && node.complete && node.naturalWidth === 0 && src) setFailedSrc(src);\n    },\n    [src],\n  );\n\n  return (\n    <span\n      className={[\"echo-avatar\", className].filter(Boolean).join(\" \")}\n      data-size={size}\n      data-status={status}\n      role=\"img\"\n      aria-label={status ? `${name}, ${statusLabel ?? status}` : name}\n      {...rest}\n    >\n      {showImage ? (\n        <img\n          className=\"echo-avatar__image\"\n          ref={checkAlreadyFailed}\n          src={src}\n          alt=\"\"\n          onError={() => setFailedSrc(src ?? null)}\n          draggable={false}\n        />\n      ) : (\n        <span className=\"echo-avatar__initials\" aria-hidden=\"true\">\n          {initials ?? deriveInitials(name)}\n        </span>\n      )}\n      {status ? <span className=\"echo-avatar__led\" aria-hidden=\"true\" /> : null}\n    </span>\n  );\n}\n"
+    },
+    {
+      "path": "avatar/index.ts",
+      "sha256": "04e3fc4817d1fe84e657bd11a42f4122c0cb7df79816d4f663d19fc68268df6c",
+      "content": "export { Avatar } from \"./avatar\";\nexport type { AvatarProps, AvatarSize, AvatarStatus } from \"./avatar\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**One `size` on everything with a height.** `Field`, `Select`, `NumberField`, `OtpField` and `Segmented` take `size=\"sm\" | \"md\" | \"lg\"` (32, 44 or 60px), matching `HardwareButton`, and all of them read a `SizeProvider` around them. `md` is exactly what they were. `Avatar` gains `xs` (inline with a line of text) and `xl` (a profile header)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

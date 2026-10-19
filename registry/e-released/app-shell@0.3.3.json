@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "name": "app-shell",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "AppShell",
+  "description": "The app frame: a molded chassis rail lit from the key angle, a sticky sidebar, and the content between them. Slots, not props — the shell owns the layout, you own the contents. Ships the skip link by construction rather than as an option, and derives the sidebar's sticky offset from the rail's height so the two cannot drift. Below 900px the sidebar column is removed rather than stacked; pair it with a Sheet.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "app-shell/app-shell.css",
+      "sha256": "fb344ec6c86c5bf9c4dcd6d5b2cc865f581955f366f44e09090e397a4d1fa138",
+      "content": "/*\n * AppShell. The app frame:\n * a molded chassis rail lit from the key angle, a sticky sidebar, and the\n * content between them. Composes var(--echo-*) only.\n *\n * The two metrics are custom properties rather than fixed values, because the\n * sidebar's sticky offset MUST equal the rail's height — computing one from\n * the other is what stops a redesign of the rail from silently leaving a\n * 56px dead band at the top of every sidebar.\n */\n.echo-shell {\n  --echo-shell-rail-h: 56px;\n  --echo-shell-side-w: 248px;\n}\n\n.echo-shell__skip {\n  position: absolute;\n  inset-inline-start: -9999px;\n  top: 0;\n  z-index: var(--echo-z-skip, 600);\n  padding: var(--echo-space-5) var(--echo-space-7);\n  border-radius: 0;\n  border-end-end-radius: var(--echo-radius-md);\n  background: var(--echo-cap);\n  color: var(--echo-text);\n  border: var(--echo-border-hairline, 1px) solid var(--echo-accent-glow);\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-xs);\n  text-decoration: none;\n}\n.echo-shell__skip:focus {\n  inset-inline-start: 0;\n}\n\n/* --- the rail: a chassis bar, lit from the key angle --------------------- */\n\n.echo-shell__rail {\n  position: sticky;\n  top: 0;\n  z-index: var(--echo-z-sticky, 100);\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-10);\n  /*\n   * The hairline below counts inside the height, so the rail is exactly --echo-shell-rail-h tall\n   * whatever the page's own box-sizing: everything placed by the variable (the sidebar's sticky top,\n   * its max height, a page's own offsets) meets it, never a pixel under it.\n   */\n  box-sizing: border-box;\n  height: var(--echo-shell-rail-h);\n  padding: 0 var(--echo-space-9);\n  background: color-mix(in srgb, var(--echo-surface) 92%, transparent);\n  backdrop-filter: blur(12px) saturate(1.08);\n  /* Bottom edge = the Divider's seam: dark groove, faint light lip. */\n  border-bottom: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n  box-shadow:\n    inset 0 1px 0 color-mix(in srgb, var(--echo-cap-highlight) 32%, transparent),\n    0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));\n}\n\n.echo-shell__brand {\n  /*\n   * Deliberately NOT shrinkable. This is a wrapper around the\n   * wordmark rather than a text node, so `text-overflow` never applies to it —\n   * adding `min-width: 0` here only let it shrink below its own content and\n   * clip the logo. A product name is not long content.\n   */\n  flex-shrink: 0;\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-5);\n  white-space: nowrap;\n}\n\n.echo-shell__railnav {\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-1);\n  margin-inline-start: auto;\n  overflow-x: auto;\n  scrollbar-width: none;\n}\n.echo-shell__railnav::-webkit-scrollbar {\n  display: none;\n}\n\n/* --- the body: sidebar + content ---------------------------------------- */\n\n.echo-shell:not([data-bare]) {\n  display: grid;\n  grid-template-columns: var(--echo-shell-side-w) minmax(0, 1fr);\n  align-items: start;\n}\n\n/*\n * The rail spans both columns. Without this it lands in the sidebar column and\n * the content starts beside it.\n */\n.echo-shell__rail {\n  grid-column: 1 / -1;\n}\n\n.echo-shell[data-bare] {\n  display: block;\n}\n\n.echo-shell__side {\n  position: sticky;\n  top: var(--echo-shell-rail-h);\n  /*\n   * border-box, or the padding below lands ON TOP of the max-height: the\n   * column measured 664 + 24 + 64 = 752px in a 664px space, so its last 88px\n   * hung below the window — the bottom of the list could not be seen or\n   * scrolled to without scrolling the page instead.\n   */\n  box-sizing: border-box;\n  max-height: calc(100dvh - var(--echo-shell-rail-h));\n  overflow-y: auto;\n  padding: var(--echo-space-10) var(--echo-space-7) var(--echo-space-12);\n  /* The Divider's seam, stood on end: a dark groove with a faint light lip,\n     the same rule Table rows and the rail's bottom edge draw. */\n  border-inline-end: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n  box-shadow: 1px 0 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));\n  scrollbar-width: thin;\n  scrollbar-color: var(--echo-cap) transparent;\n}\n\n/* Its own sidebar only: a shell embedded inside a bare one keeps its sidebar. */\n.echo-shell[data-bare] > .echo-shell__side {\n  display: none;\n}\n\n.echo-shell__content {\n  min-width: 0;\n}\n\n/*\n * Focus is scrolled CLEAR of the rail, not under it (WCAG 2.4.11 Focus Not\n * Obscured).\n *\n * Tabbing backwards up a long page scrolls the newly focused element to the top\n * of the scrollport — which is behind a rail that is `position: sticky; top: 0`.\n * `scroll-margin` is how an element asks for room above itself when something\n * scrolls it into view, and the room it needs is exactly the rail's height, so\n * it is read from the same custom property the sidebar's offset comes from.\n * The three cannot drift apart, which is the reason the metrics are properties\n * at all (see the note at the top of this file).\n *\n * WHY IT IS HERE AND NOT `scroll-padding` ON `:root`. That is the canonical\n * fix and it was tried and looked like a WebKit limitation. It is not:\n * `--echo-shell-rail-h` is declared on `.echo-shell`, so on the root element\n * the `var()` is out of scope, the `calc()` is invalid at computed-value time,\n * and the whole declaration silently computes to `auto` — on every engine, with\n * no error anywhere. Declared inside the subtree that owns the property, it\n * resolves, and a consumer who retunes `--echo-shell-rail-h` moves this with it.\n *\n * `__content` and not the whole shell: the sidebar is its own scrollport\n * starting BELOW the rail, so nothing in it can land underneath. The content\n * element carries it too, because the skip link scrolls to `<main>` itself.\n */\n.echo-shell__content,\n.echo-shell__content :is(a[href], button, input, select, textarea, summary, [tabindex]) {\n  scroll-margin-block-start: calc(var(--echo-shell-rail-h) + var(--echo-space-4));\n}\n\n/*\n * Below this width the sidebar column is gone entirely — NOT collapsed to a\n * scrolling block above the content, which pushes every screen down by half a\n * phone and makes the nav something you scroll past to read anything. The\n * consumer puts the same list in a Sheet behind a toggle in the rail; that is\n * what echo-sheet is for.\n */\n@media (max-width: 900px) {\n  .echo-shell:not([data-bare]) {\n    grid-template-columns: minmax(0, 1fr);\n  }\n  .echo-shell__side {\n    display: none;\n  }\n}\n\n@media (max-width: 560px) {\n  .echo-shell__rail {\n    gap: var(--echo-space-5);\n    padding: 0 var(--echo-space-6);\n  }\n}\n\n/*\n * Coarse-pointer targets. The skip link measured\n * 138x36: past 2.5.8's 24px, under the 44px platform guideline. Touch only,\n * so the desktop rendering does not move.\n */\n@media (pointer: coarse) {\n  .echo-shell__skip {\n    min-height: 44px;\n  }\n}\n\n/*\n * Default link skin for the rail and the sidebar (2026-09-18).\n *\n * The docs site's frame IS AppShell, and its links were the best-looking nav\n * in the library — but that look lived in the site's stylesheet, so a\n * consumer installing AppShell got bare, underlined links. It ships here now.\n * Every selector is wrapped in :where(), so it has zero specificity: any class\n * you put on your own links wins without a fight.\n *\n * The current page is marked the way every \"you are here\" is in the library:\n * the label goes to full text colour and a lit rail sits beside it (under it,\n * in the rail). Never accent-coloured text — accent on the chassis is under AA.\n */\n/*\n * The rail nav fills the rail's height so the lit rail can sit ON the bar's\n * bottom edge, exactly where Tabs puts its indicator. It used to be a boxed\n * pill with a short underline floating inside it — a third \"you are here\"\n * mark that matched neither Tabs nor the sidebar (2026-09-18).\n */\n.echo-shell__railnav {\n  align-self: stretch;\n}\n\n:where(.echo-shell__railnav) :where(a) {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  height: 100%;\n  padding: 0 var(--echo-space-5);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  font-weight: var(--echo-weight-semibold, 600);\n  color: var(--echo-text-dim);\n  text-decoration: none;\n  white-space: nowrap;\n  transition: color var(--echo-duration-swap) ease;\n}\n\n@media (hover: hover) {\n  :where(.echo-shell__railnav) :where(a:hover) {\n    color: var(--echo-text);\n  }\n}\n\n:where(.echo-shell__railnav) :where(a[aria-current=\"page\"]) {\n  color: var(--echo-text);\n}\n\n/*\n * The lit rail. Emissive, so it is the bright accent with a glow — the same\n * mark as the sidebar's bar and Tabs' indicator. A 2px rule is non-text\n * (1.4.11, 3:1), so the \"accent text is under AA\" limit does not apply.\n *\n * Not on a key: a HardwareButton link's `::after` is its hit area,\n * and this rule shrank it to 2px and painted it as a line across the cap. A\n * key in the rail says where you are by its own press, not the rail's mark.\n */\n:where(.echo-shell__railnav) :where(a[aria-current=\"page\"]:not(.echo-hw__cap))::after {\n  content: \"\";\n  position: absolute;\n  inset-inline-start: var(--echo-space-5);\n  inset-inline-end: var(--echo-space-5);\n  bottom: -1px;\n  height: 2px;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-accent-glow);\n  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));\n}\n\n/* Sidebar links: the docs site's own sidebar, which is the reference. */\n:where(.echo-shell__side) :where(a) {\n  position: relative;\n  display: block;\n  padding: var(--echo-space-3) var(--echo-space-5);\n  border-radius: var(--echo-radius-md);\n  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n  text-decoration: none;\n}\n\n@media (hover: hover) {\n  :where(.echo-shell__side) :where(a:hover) {\n    color: var(--echo-text);\n    background: color-mix(in srgb, var(--echo-cap) 30%, transparent);\n  }\n}\n\n:where(.echo-shell__side) :where(a[aria-current=\"page\"]) {\n  color: var(--echo-text);\n  background: color-mix(in srgb, var(--echo-cap) 38%, transparent);\n}\n\n:where(.echo-shell__side) :where(a[aria-current=\"page\"])::before {\n  content: \"\";\n  position: absolute;\n  inset-inline-start: 0;\n  top: var(--echo-space-3);\n  bottom: var(--echo-space-3);\n  width: 2px;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-accent-glow);\n  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));\n}\n\n:where(.echo-shell__railnav, .echo-shell__side) :where(a:focus-visible) {\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 2px;\n}\n"
+    },
+    {
+      "path": "app-shell/app-shell.tsx",
+      "sha256": "46e5f56e624a09f85b25fd3cd43922b9c72446f3175603d1330602ff4a314d9d",
+      "content": "\"use client\";\n\n/**\n * AppShell. The frame every\n * app screen sits in: a top rail, a sidebar, and the content between them.\n *\n * This one has a built-in honesty test. `apps/www` hand-rolled exactly this\n * shell before this item existed and has been running it ever since, so the item is not\n * finished until the docs site can delete its own version and render this\n * instead. Anything the site still needs afterwards is a gap in the component,\n * not a special case — which is why the parts below are slots rather than\n * props: the shell owns the LAYOUT, the consumer owns the contents.\n *\n *   <AppShell>\n *     <AppShell.Rail brand={…}>…</AppShell.Rail>\n *     <AppShell.Sidebar label=\"Components\">…</AppShell.Sidebar>\n *     <AppShell.Content>…</AppShell.Content>\n *   </AppShell>\n *\n * The sidebar is `position: sticky` under the rail rather than `fixed`, so it\n * scrolls its own overflow without the content jumping — and so a page with a\n * short sidebar does not leave a tall empty column.\n */\nimport { createContext, useContext, type HTMLAttributes, type ReactNode } from \"react\";\nimport \"./app-shell.css\";\n\nconst cx = (...c: (string | undefined)[]) => c.filter(Boolean).join(\" \");\n\nexport interface AppShellProps extends HTMLAttributes<HTMLDivElement> {\n  children?: ReactNode;\n  /**\n   * Hide the sidebar column. For screens that are all content — a login, a\n   * settings page reached from elsewhere — where an empty rail is just a\n   * margin pretending to be navigation.\n   */\n  bare?: boolean;\n  /**\n   * This shell is rendered INSIDE another one — a preview on a design-system\n   * page, an embedded editor frame. Drops the skip link and demotes the\n   * landmarks to plain elements, because a page gets one `<main>` and one\n   * skip target, and a second of either is an accessibility defect rather\n   * than a nicety. The layout is identical.\n   *\n   * Never set this on the shell that owns the page.\n   */\n  embedded?: boolean;\n}\n\n/**\n * Landmarks are the shell's job, so they travel down rather than being passed\n * to each part by the consumer — who would then be the one who forgets.\n */\nconst EmbeddedContext = createContext(false);\n\n/**\n * The skip link is not optional and not a prop. Every keyboard user of every\n * screen built on this shell has to be able to get past the navigation, and\n * making it opt-in guarantees that someone ships without it.\n */\nexport function AppShellRoot({ children, bare, embedded, className, ...rest }: AppShellProps) {\n  return (\n    <EmbeddedContext.Provider value={Boolean(embedded)}>\n      <div className={cx(\"echo-shell\", className)} data-bare={bare ? \"\" : undefined} {...rest}>\n        {!embedded && (\n          <a className=\"echo-shell__skip\" href=\"#echo-shell-content\">\n            Skip to content\n          </a>\n        )}\n        {children}\n      </div>\n    </EmbeddedContext.Provider>\n  );\n}\n\nexport interface AppShellRailProps extends HTMLAttributes<HTMLElement> {\n  /** The wordmark end — a logo, a product name, a home link. */\n  brand?: ReactNode;\n  /** Navigation and controls, pushed to the trailing edge. */\n  children?: ReactNode;\n  /** Landmark name. Two navs on a page need distinct names to be navigable. */\n  label?: string;\n}\n\nexport function AppShellRail({ brand, children, label = \"Main\", className, ...rest }: AppShellRailProps) {\n  const embedded = useContext(EmbeddedContext);\n  const Bar = embedded ? \"div\" : \"header\";\n  const Nav = embedded ? \"div\" : \"nav\";\n  return (\n    <Bar className={cx(\"echo-shell__rail\", className)} {...rest}>\n      {brand != null ? <div className=\"echo-shell__brand\">{brand}</div> : null}\n      <Nav className=\"echo-shell__railnav\" aria-label={embedded ? undefined : label}>\n        {children}\n      </Nav>\n    </Bar>\n  );\n}\n\nexport interface AppShellSidebarProps extends HTMLAttributes<HTMLElement> {\n  /**\n   * Landmark name. Required in practice — \"navigation\" twice on one page tells\n   * a screen-reader user nothing about which is which.\n   */\n  label: string;\n  children?: ReactNode;\n}\n\nexport function AppShellSidebar({ label, children, className, ...rest }: AppShellSidebarProps) {\n  const embedded = useContext(EmbeddedContext);\n  const Side = embedded ? \"div\" : \"nav\";\n  return (\n    <Side\n      className={cx(\"echo-shell__side\", className)}\n      aria-label={embedded ? undefined : label}\n      {...rest}\n    >\n      {children}\n    </Side>\n  );\n}\n\nexport function AppShellContent({ children, className, ...rest }: HTMLAttributes<HTMLElement>) {\n  const embedded = useContext(EmbeddedContext);\n  // <main> and the skip target are the same element, so the link lands on the\n  // landmark rather than next to it.\n  const Content = embedded ? \"div\" : \"main\";\n  return (\n    <Content\n      id={embedded ? undefined : \"echo-shell-content\"}\n      className={cx(\"echo-shell__content\", className)}\n      {...rest}\n    >\n      {children}\n    </Content>\n  );\n}\n\n// The compound `AppShell` (AppShell.Rail, …) is assembled in index.ts, which is\n// not a client module: parts attached here don't survive a server component's\n// import, so AppShell.Rail was undefined in a server layout.\n"
+    },
+    {
+      "path": "app-shell/index.ts",
+      "sha256": "931385d0e71c7abef98fd89a87137671fbcefd1201861a9d23341975d990dc4f",
+      "content": "/**\n * AppShell's entry point, deliberately NOT a client module: the parts are\n * attached here, from named client exports. Attached inside app-shell.tsx\n * (\"use client\"), they didn't survive a server component's import: in a\n * Next.js layout, AppShell.Rail was undefined and the build failed.\n */\nimport { AppShellContent, AppShellRail, AppShellRoot, AppShellSidebar } from \"./app-shell\";\n\nexport const AppShell = Object.assign(AppShellRoot, {\n  Rail: AppShellRail,\n  Sidebar: AppShellSidebar,\n  Content: AppShellContent,\n});\nexport type { AppShellProps, AppShellRailProps, AppShellSidebarProps } from \"./app-shell\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.1",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**AppShell's rail is as tall as `--echo-shell-rail-h` says** (`app-shell`). Its hairline was drawn outside the declared height on a page without a border-box reset: a 57px rail for 56px, so the sidebar's sticky top, its max height and anything a page placed by the variable sat a pixel under it. The hairline now counts inside the height."
+    },
+    {
+      "version": "0.3.1",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**A key in AppShell's rail keeps its hit area when it's the current page** (`app-shell`). The rail lit its current link with a mark drawn in the link's `::after`, and a HardwareButton link uses its `::after` as its hit area: marked `aria-current=\"page\"`, the key's hit area shrank to 2px and showed as a glowing line across the top of the cap. The rail's mark now leaves keys alone."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit**. A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**An `AppShell` inside a `bare` one keeps its own sidebar**. The bare shell's rule that hides its sidebar reached every shell inside it, so an `embedded` screen framed on a bare page (a template in a landing page, say) lost its sidebar and its content fell into the sidebar's narrow column. The rule now applies to the bare shell's own sidebar only."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Focus is scrolled clear of the rail, not under it** (WCAG 2.4.11 Focus Not Obscured). Tabbing backwards up a long page scrolled the newly focused element to the top of the scrollport, which is behind a rail that is `position: sticky; top: 0` — so on a long docs page the thing you had just tabbed to was invisible. `echo-app-shell` now sets `scroll-margin-block-start` on `.echo-shell__content` and its focusables, derived from `--echo-shell-rail-h`, so a consumer who retunes the rail's height moves the offset with it."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**Examples that did not compile.** The motion example passed strings to `useTactile` instead of `{ motion }` phases; the `useGsapPresence` example omitted the `actionsRef` cast Base UI needs; the `Command` keywords example and the `AppShell` metrics example were not valid code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**45 components** across controls, overlays, structure, surfaces, primitives, navigation and texture — including `Command` (a dot-matrix command palette), `AppShell`, `Sheet` (on Base UI's Drawer, with swipe-to-dismiss), `AlertDialog`, `Menu` + `ContextMenu`, `Textarea`, and `Chart`."
+    }
+  ]
+}

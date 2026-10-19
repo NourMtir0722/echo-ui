@@ -1,0 +1,206 @@
+/*
+ * Textarea. Field's recessed
+ * well, multi-line. Deliberately the SAME well — a text box that types
+ * differently depending on how many lines it holds would be two materials for
+ * one job. Composes var(--echo-*) only.
+ */
+.echo-textarea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--echo-space-4);
+}
+
+/* The guarded role, not a wash of --echo-text — see field.css for the why. */
+.echo-textarea__label {
+  /* Long content wraps rather than pushing its container open. */
+  overflow-wrap: anywhere;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  transition: color var(--echo-duration-swap) var(--echo-ease-swap);
+}
+/* The label wakes with its field, as Field's does. */
+.echo-textarea:focus-within .echo-textarea__label {
+  color: var(--echo-text);
+}
+
+.echo-textarea__well {
+  padding: var(--echo-space-6) var(--echo-space-8);
+  border-radius: var(--echo-radius-xl);
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  transition: box-shadow var(--echo-duration-swap) ease;
+  /* useWellMotion moves the well and sets --well-depth; it never needs
+     a transform from here. The floor and the drawn caret sit inside it. */
+  position: relative;
+  isolation: isolate;
+}
+
+/* The floor of the well: shade that deepens as the well is pressed in and
+   struck. Nothing at rest, so an idle textarea looks as it always has. */
+.echo-textarea__floor {
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-base, 0);
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 calc(1px + 3px * var(--well-depth, 0)) calc(3px + 8px * var(--well-depth, 0))
+    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  opacity: min(1, var(--well-depth, 0));
+}
+
+/* The drawn caret: shown only while useWellMotion is placing it (line by
+   line, with a mirror of the text), otherwise the native caret. */
+.echo-textarea__caret {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  z-index: var(--echo-z-top, 2);
+  width: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  display: none;
+}
+.echo-textarea__well[data-caret="drawn"] .echo-textarea__caret {
+  display: block;
+}
+.echo-textarea__well[data-caret="drawn"] .echo-textarea__input {
+  caret-color: transparent;
+}
+
+.echo-textarea__well:focus-within {
+  /* Drawn only in forced colors, which drops the lit inner edge. */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow:
+    /* The ring first, so the well's top shadow doesn't darken it. */
+    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+.echo-textarea__input {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: none;
+  padding: 0;
+  background: transparent;
+  color: var(--echo-text);
+  caret-color: var(--echo-accent-glow);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-body, 1.55);
+  /*
+   * The manual grip fights the autosize measurement — the element would carry
+   * an inline height the effect then overwrites on the next keystroke. Vertical
+   * space is the component's job here.
+   */
+  resize: none;
+}
+
+.echo-textarea__input--mono {
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-md);
+}
+
+.echo-textarea__input::placeholder {
+  color: var(--echo-text-dim);
+}
+
+.echo-textarea[data-disabled] {
+  opacity: 0.45;
+}
+.echo-textarea[data-disabled] .echo-textarea__input {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-textarea__well {
+    transition: none;
+  }
+}
+
+/* Coarse-pointer target. Touch only. */
+@media (pointer: coarse) {
+  .echo-textarea__input {
+    min-height: 44px;
+  }
+}
+
+/*
+ * Description and error. Both are linked to the control by Base
+ * UI, so a screen reader reads them after the name. The error doesn't rely on
+ * hue: it's the words, a square pip (the danger shape Banner uses), and the
+ * well's inner edge lit the way focus lights it.
+ */
+.echo-textarea__description,
+.echo-textarea__error {
+  margin: 0;
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-snug, 1.4);
+  overflow-wrap: anywhere;
+}
+.echo-textarea__description {
+  color: var(--echo-text-dim);
+}
+.echo-textarea__error {
+  display: flex;
+  gap: var(--echo-space-3);
+  align-items: baseline;
+  color: var(--echo-text);
+}
+.echo-textarea__error::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--echo-radius-xs);
+  background: var(--echo-primary-cap-mid);
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+}
+.echo-textarea[data-invalid] .echo-textarea__well {
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 1.5px color-mix(in oklch, var(--echo-primary-cap-mid) 80%, transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the recessed well's gradient and
+ * shadows, which is its whole edge: without a border an input, and above all
+ * an empty one, isn't visible at all. System colors only, so focus still shows.
+ */
+@media (forced-colors: active) {
+  .echo-textarea__error::before {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+  .echo-textarea__well {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  /* The system draws the caret here, in the user's colours. */
+  .echo-textarea__caret,
+  .echo-textarea__well[data-caret="drawn"] .echo-textarea__caret {
+    display: none;
+  }
+  .echo-textarea__well[data-caret="drawn"] .echo-textarea__input {
+    caret-color: auto;
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "name": "tabs",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Tabs",
+  "description": "Base UI Tabs (roving focus, arrow-key nav, a11y) marked with the library's one \"you are here\": a 2px lit rail slides under the open tab, over a hairline baseline. Labels stay on the chassis. sound.select on change. Compound API.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "gsap": "^3.13.0",
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "size"
+  ],
+  "files": [
+    {
+      "path": "tabs/tabs.css",
+      "sha256": "9f3c9a64fa0263c96122bbd37cca1df999935eeadd1e7aa5487220b5f85fb2e9",
+      "content": "/**\n * Tabs. A hardware segmented control: molded segments\n * in a recessed well, a lit cap sliding under the active tab. Composes\n * var(--echo-*). The indicator reads Base UI's --active-tab-* vars.\n */\n.echo-tabs__list {\n  /* One size scale (sm/md/lg): a tab is as tall as a control of its size. */\n  --tab-h: var(--echo-control-default);\n  --tab-px: var(--echo-space-6);\n  --tab-font: var(--echo-text-sm);\n  position: relative;\n  display: flex;\n  gap: var(--echo-space-2);\n  /* A hairline baseline the lit rail rides on. */\n  box-shadow: inset 0 -1px 0 var(--echo-seam);\n}\n.echo-tabs__list[data-size=\"sm\"] {\n  --tab-h: var(--echo-control-compact);\n  --tab-px: var(--echo-space-4);\n  --tab-font: var(--echo-text-xs);\n}\n.echo-tabs__list[data-size=\"lg\"] {\n  --tab-h: var(--echo-control-large);\n  --tab-px: var(--echo-space-8);\n  --tab-font: var(--echo-text-md);\n}\n\n.echo-tabs__tab {\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: var(--echo-space-3);\n  box-sizing: border-box;\n  min-block-size: var(--tab-h);\n  border: 0;\n  padding-block: 0;\n  padding-inline: var(--tab-px);\n  border-radius: var(--echo-radius-md) var(--echo-radius-md) 0 0;\n  cursor: pointer;\n  background: transparent;\n  color: var(--echo-text-dim);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--tab-font);\n  font-weight: var(--echo-weight-semibold, 600);\n  transition:\n    color var(--echo-duration-swap) ease,\n    background var(--echo-duration-tick) ease;\n}\n\n@media (hover: hover) {\n  .echo-tabs__tab:hover {\n    color: var(--echo-text);\n    background: color-mix(in oklab, var(--echo-cap) 30%, transparent);\n  }\n}\n\n/*\n * Base UI marks the open tab with `data-active`. This rule used to target\n * `[data-selected]`, which Base UI never sets — so the \"selected\" label was\n * never applied and the open tab stayed at 53% text on a lit primary cap.\n */\n.echo-tabs__tab[data-active] {\n  color: var(--echo-text);\n}\n\n.echo-tabs__tab:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: -2px;\n  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow)));\n}\n\n/*\n * The open tab is marked by a lit rail under its label — the site's top nav\n * and the install box use the same mark. It used to be a raised primary cap in a\n * well, which made Tabs a copy of Segmented; they are different controls\n * (Tabs switch what you see, Segmented sets a value) and should not look the\n * same. The label stays on the chassis, so its contrast is text-on-surface.\n */\n.echo-tabs__indicator {\n  position: absolute;\n  z-index: var(--echo-z-top, 2);\n  bottom: 0;\n  left: var(--active-tab-left);\n  width: var(--active-tab-width);\n  height: 2px;\n  border-radius: var(--echo-radius-full);\n  /* Emissive: the same lit accent + glow as AppShell's rails. */\n  background: var(--echo-accent-glow);\n  box-shadow: var(--echo-shadow-glow, 0 0 7px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));\n  transition:\n    left var(--echo-duration-sweep) cubic-bezier(0.2, 0.8, 0.2, 1),\n    width var(--echo-duration-sweep) cubic-bezier(0.2, 0.8, 0.2, 1);\n}\n\n/*\n * The moving rail (tabs.tsx, echo-ui-core's liquid engine). Once placed it\n * sets data-light on the list and takes over from Base UI's indicator. The\n * glow is a drop shadow on the outer box so it follows the rail's outline.\n */\n.echo-tabs__rail {\n  position: absolute;\n  z-index: var(--echo-z-top, 2);\n  bottom: 0;\n  height: 2px;\n  visibility: hidden;\n  pointer-events: none;\n  filter: drop-shadow(0 0 3.5px color-mix(in srgb, var(--echo-accent-glow) 70%, transparent));\n  will-change: transform, left, width;\n}\n.echo-tabs__rail-shape {\n  position: absolute;\n  inset: 0;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-accent-glow);\n}\n.echo-tabs__list[data-light] .echo-tabs__rail {\n  visibility: visible;\n}\n.echo-tabs__list[data-light] .echo-tabs__indicator {\n  visibility: hidden;\n}\n/* Each label is lit by how much of the rail is under it (--on, 0–1). */\n.echo-tabs__list[data-light] .echo-tabs__tab {\n  color: color-mix(in oklab, var(--echo-text) calc(var(--on, 0) * 100%), var(--echo-text-dim));\n  transition: background var(--echo-duration-tick) ease;\n}\n.echo-tabs__list[data-light] .echo-tabs__tab[data-active] {\n  /* The open tab is lit at once; the others brighten as the rail passes. */\n  color: var(--echo-text);\n}\n@media (hover: hover) {\n  .echo-tabs__list[data-light] .echo-tabs__tab:hover {\n    color: var(--echo-text);\n  }\n}\n\n.echo-tabs__panel {\n  padding: var(--echo-space-9) var(--echo-space-2);\n  color: var(--echo-text);\n}\n.echo-tabs__panel:focus-visible {\n  /* The panel takes focus when it has nothing focusable inside, so it needs\n     a visible ring like everything else that does. */\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 2px;\n  border-radius: var(--echo-radius-sm);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-tabs__indicator {\n    transition: none;\n  }\n}\n\n/* Coarse-pointer target. Touch only. */\n@media (pointer: coarse) {\n  .echo-tabs__list[data-size=\"sm\"] {\n    --tab-h: 44px;\n  }\n}\n\n/*\n * Forced colors (Windows High Contrast) drops gradients and shadows, which is\n * everything that draws this control's state. System colors draw it instead;\n * nothing here sets forced-color-adjust: none, so focus outlines still show.\n */\n@media (forced-colors: active) {\n  .echo-tabs__rail {\n    display: none;\n  }\n  .echo-tabs__list[data-light] .echo-tabs__indicator {\n    visibility: visible;\n  }\n  .echo-tabs__list {\n    border-bottom: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-tabs__indicator {\n    background: Highlight;\n    height: 3px;\n  }\n  .echo-tabs__tab[data-active],\n  .echo-tabs__list[data-light] .echo-tabs__tab[data-active] {\n    color: Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "tabs/tabs.tsx",
+      "sha256": "71241db904bdcc6ea65523c739ceed7ada77075a6f9fa9fb883a2234c9891dce",
+      "content": "\"use client\";\n\n/**\n * Tabs. Base UI Tabs behavior (roving focus,\n * arrow-key nav, a11y) skinned as a hardware segmented control, with a lit cap\n * that slides under the active tab and sound.select on change.\n *\n * Compound API: <Tabs><Tabs.List><Tabs.Tab/></Tabs.List><Tabs.Panel/></Tabs>.\n * The sliding Indicator is rendered inside Tabs.List automatically.\n *\n * The lit rail is one part that moves (echo-ui-core's liquid engine): it\n * springs to the tab you open, drawing out with speed, leans toward a tab the\n * pointer is over, and each label brightens as the rail slides under it.\n * Base UI's own indicator draws the rail until the moving one is placed, and\n * in forced colors.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport {\n  useCallback,\n  useLayoutEffect,\n  useRef,\n  type ComponentProps,\n  type PointerEvent,\n  type MutableRefObject,\n} from \"react\";\nimport gsap from \"gsap\";\nimport { Tabs as BaseTabs } from \"@base-ui/react/tabs\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { springs } from \"echo-ui-core/motion\";\nimport { createLiquid, timing, useReducedMotionRef, type Liquid } from \"echo-ui-core/tactile\";\nimport { useControlSize, type ControlSize } from \"../size\";\nimport \"./tabs.css\";\n\nconst cx = (...c: (string | undefined)[]) => c.filter(Boolean).join(\" \");\n\n/** Narrow Base UI's string-or-function className to a plain string for skinning. */\ntype Skin<T> = Omit<T, \"className\"> & { className?: string };\n\nfunction TabsRoot({ onValueChange, ...props }: ComponentProps<typeof BaseTabs.Root>) {\n  const sound = useSoundOptional();\n  return (\n    <BaseTabs.Root\n      onValueChange={(value, eventDetails) => {\n        sound?.play(\"select\");\n        onValueChange?.(value, eventDetails);\n      }}\n      {...props}\n    />\n  );\n}\n\ntype TabsListProps = Skin<ComponentProps<typeof BaseTabs.List>> & {\n  /** How tall each tab is: `sm` 32, `md` 44, `lg` 60px, the control heights. Defaults to the surrounding `SizeProvider`, else `md`. */\n  size?: ControlSize;\n};\n\nfunction TabsList({ className, children, ref, size: ownSize, ...props }: TabsListProps) {\n  const size = useControlSize(ownSize);\n  const reduced = useReducedMotionRef();\n  const list = useRef<HTMLDivElement | null>(null);\n  const rail = useRef<HTMLSpanElement | null>(null);\n  const shape = useRef<HTMLSpanElement | null>(null);\n  const liquid = useRef<Liquid | null>(null);\n\n  const setList = useCallback(\n    (node: HTMLDivElement | null) => {\n      list.current = node;\n      if (typeof ref === \"function\") ref(node);\n      else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = node;\n    },\n    [ref],\n  );\n\n  useLayoutEffect(() => {\n    const l = list.current;\n    const el = rail.current;\n    const sh = shape.current;\n    if (!l || !el || !sh) return;\n    const tabs = () => [...l.querySelectorAll<HTMLElement>('[role=\"tab\"]')];\n    const cap = createLiquid({\n      el,\n      shape: sh,\n      // A 2px rail has no room to taper, so it says speed by drawing out.\n      stretch: 0.6,\n      restRadius: () => 1,\n      onDraw: ({ start, size }) => {\n        for (const t of tabs()) {\n          const w = t.offsetWidth;\n          const covered = Math.max(0, Math.min(start + size, t.offsetLeft + w) - Math.max(start, t.offsetLeft));\n          t.style.setProperty(\"--on\", (w ? covered / w : 0).toFixed(3));\n        }\n      },\n    });\n    liquid.current = cap;\n    let placed = false;\n    const place = (animate: boolean) => {\n      const t = l.querySelector<HTMLElement>('[role=\"tab\"][data-active]');\n      if (!t) return;\n      const box = { start: t.offsetLeft, size: t.offsetWidth };\n      if (!animate || !placed || reduced.current) {\n        cap.place(box, \"instant\");\n        placed = true;\n        l.setAttribute(\"data-light\", \"\");\n        return;\n      }\n      cap.place(box, springs.snappy);\n    };\n    place(false);\n    const changed = new MutationObserver(() => place(true));\n    changed.observe(l, { subtree: true, attributes: true, attributeFilter: [\"data-active\"] });\n    const resized = new ResizeObserver(() => place(false));\n    resized.observe(l);\n    return () => {\n      changed.disconnect();\n      resized.disconnect();\n      cap.destroy();\n      liquid.current = null;\n      gsap.killTweensOf(el);\n    };\n  }, [reduced]);\n\n  /* The rail notices the pointer: it leans toward the tab you are over. */\n  const lean = (e: PointerEvent<HTMLDivElement>) => {\n    const el = rail.current;\n    const cap = liquid.current;\n    if (!el || !cap || e.pointerType !== \"mouse\" || reduced.current) return;\n    const t = (e.target as Element).closest<HTMLElement>('[role=\"tab\"]');\n    const d = t ? t.offsetLeft + t.offsetWidth / 2 - cap.centre : 0;\n    gsap.to(el, { ...timing(\"follow\"), overwrite: \"auto\", x: Math.max(-10, Math.min(10, d * 0.08)) });\n  };\n\n  return (\n    <BaseTabs.List\n      ref={setList}\n      className={cx(\"echo-tabs__list\", className)}\n      data-size={size}\n      onPointerMove={lean}\n      onPointerLeave={() => {\n        const el = rail.current;\n        if (el && !reduced.current) gsap.to(el, { ...timing(\"rebound\"), overwrite: \"auto\", x: 0 });\n      }}\n      {...props}\n    >\n      {children}\n      <BaseTabs.Indicator className=\"echo-tabs__indicator\" />\n      <span ref={rail} className=\"echo-tabs__rail\" aria-hidden>\n        <span ref={shape} className=\"echo-tabs__rail-shape\" />\n      </span>\n    </BaseTabs.List>\n  );\n}\n\nfunction TabsTab({ className, ...props }: Skin<ComponentProps<typeof BaseTabs.Tab>>) {\n  return <BaseTabs.Tab className={cx(\"echo-tabs__tab\", className)} {...props} />;\n}\n\nfunction TabsPanel({ className, ...props }: Skin<ComponentProps<typeof BaseTabs.Panel>>) {\n  return <BaseTabs.Panel className={cx(\"echo-tabs__panel\", className)} {...props} />;\n}\n\n// Assembled into `Tabs` in index.ts, which isn't a client module (BUG-10).\nexport { TabsRoot, TabsList, TabsTab, TabsPanel };\n"
+    },
+    {
+      "path": "tabs/index.ts",
+      "sha256": "4f158fe8bb39a8b1c3956896754fa45578badaa483139ad43582a54e7a056552",
+      "content": "/**\n * The entry point for Tabs, deliberately NOT a client module: the parts are\n * attached here, from named client exports. Attached inside the \"use client\"\n * file, they didn't survive a server component's import, so Tabs.List was\n * undefined in a Next.js page or layout and the build failed (BUG-10).\n */\nimport { TabsRoot, TabsList, TabsTab, TabsPanel } from \"./tabs\";\n\nexport const Tabs = Object.assign(TabsRoot, {\n  List: TabsList,\n  Tab: TabsTab,\n  Panel: TabsPanel,\n});\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "select"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`Tabs` join the size scale.** `size` on `Tabs.List` makes each tab 32, 44 or 60px tall, the same as a field or a button of that size, and it follows a surrounding `SizeProvider`. The default is 44px, a full target; `sm` suits a card's own views and grows to 44px on a touch screen."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`echo-tabs` is fully documented** — usage, composition, accessibility, motion & sound and a one-line feel — the first item written to the new component page template."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Descriptions that described an older look.** `Tabs` (a lit rail, not a lit cap), `Select` (CSS fades, not a GSAP exit), and `Badge`, `Segmented`, `Select` and `Field`, which named the default seed's raspberry instead of the accent."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

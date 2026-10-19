@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "name": "magnetic",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Magnetic",
+  "description": "The HardwareButtons inside it feel your hand before you touch them: each leans toward the pointer and comes up a little, the nearest most, and springs home when you move away. It moves the button as a whole, never the cap, so pressing still presses.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button"
+  ],
+  "files": [
+    {
+      "path": "magnetic/magnetic.css",
+      "sha256": "e342eb5a9184ce4a25634a638cd47d09299f872bd0b3797400dde11930961848",
+      "content": "/**\n * Magnetic. A row of buttons with room to lean; the one being pulled comes\n * forward and its label takes a little of the accent.\n */\n.echo-magnetic {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  justify-content: center;\n  gap: var(--echo-space-9);\n  padding: var(--echo-space-9);\n}\n.echo-magnetic .echo-hw {\n  position: relative;\n  will-change: translate, scale;\n}\n.echo-magnetic .echo-hw__cap {\n  color: color-mix(in oklch, var(--echo-text), var(--echo-accent-glow) calc(var(--echo-magnetic-pull, 0) * 60%));\n}\n"
+    },
+    {
+      "path": "magnetic/magnetic.tsx",
+      "sha256": "8debae50b5480175c7db4d1161680ed7e5d1a0feaaf9f5f845ff01512206b4ea",
+      "content": "\"use client\";\n\n/**\n * Magnetic. The HardwareButtons inside it feel your hand before you touch\n * them: each leans toward the pointer and comes up a little, the nearest\n * most, and springs home when you move away. It moves the button as a whole\n * (never the cap, whose press is its own), so pressing still presses.\n *\n * Pointer only: touch has no hover, and under reduced motion nothing leans.\n */\nimport { useEffect, useRef, type ReactNode } from \"react\";\nimport { createSpring, type Spring } from \"echo-ui-core/tactile\";\nimport \"./magnetic.css\";\n\nexport interface MagneticProps {\n  /** HardwareButtons, usually icon-only ones in a row. */\n  children: ReactNode;\n  /** How far away a button starts to feel the hand, px. Default 130. */\n  radius?: number;\n  /** How far it leans, as a share of the distance to the hand. Default 0.4. */\n  strength?: number;\n  className?: string;\n}\n\nexport function Magnetic({ children, radius = 130, strength = 0.4, className }: MagneticProps) {\n  const root = useRef<HTMLDivElement>(null);\n  const opts = useRef({ radius, strength });\n  opts.current = { radius, strength };\n\n  useEffect(() => {\n    const el = root.current!;\n    if (typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches) return;\n    const bouncy = { duration: 0.5, bounce: 0.3 };\n    type Lean = { hw: HTMLElement; x: Spring; y: Spring; k: Spring };\n    let leans: Lean[] = [];\n    const build = () => {\n      leans.forEach((l) => [l.x, l.y, l.k].forEach((s) => s.stop()));\n      leans = [...el.querySelectorAll<HTMLElement>(\".echo-hw\")].map((hw) => {\n        const v = { x: 0, y: 0, k: 0 };\n        const draw = () => {\n          hw.style.translate = `${v.x.toFixed(2)}px ${v.y.toFixed(2)}px`;\n          hw.style.scale = (1 + 0.12 * v.k).toFixed(3);\n          hw.style.setProperty(\"--echo-magnetic-pull\", v.k.toFixed(3));\n        };\n        return {\n          hw,\n          x: createSpring(0, bouncy, (n) => ((v.x = n), draw())),\n          y: createSpring(0, bouncy, (n) => ((v.y = n), draw())),\n          k: createSpring(0, bouncy, (n) => ((v.k = n), draw())),\n        };\n      });\n    };\n    build();\n    const mo = new MutationObserver(build);\n    mo.observe(el, { childList: true, subtree: true });\n\n    const move = (e: PointerEvent) => {\n      if (e.pointerType === \"touch\") return;\n      const { radius: R, strength: S } = opts.current;\n      const c = { duration: 0.3, bounce: 0.2 };\n      for (const l of leans) {\n        const r = l.hw.getBoundingClientRect();\n        // Measured from where it rests, not where it has leaned to.\n        const dx = e.clientX - (r.left + r.width / 2 - l.x.value);\n        const dy = e.clientY - (r.top + r.height / 2 - l.y.value);\n        const d = Math.hypot(dx, dy);\n        const pull = d < R ? (1 - d / R) ** 2 : 0;\n        l.x.to(dx * S * pull, { config: c });\n        l.y.to(dy * S * pull, { config: c });\n        l.k.to(pull, { config: c });\n      }\n    };\n    const leave = () => leans.forEach((l) => [l.x, l.y, l.k].forEach((s) => s.to(0, { config: bouncy })));\n    el.addEventListener(\"pointermove\", move);\n    el.addEventListener(\"pointerleave\", leave);\n    return () => {\n      mo.disconnect();\n      leans.forEach((l) => {\n        [l.x, l.y, l.k].forEach((s) => s.stop());\n        l.hw.style.translate = \"\";\n        l.hw.style.scale = \"\";\n        l.hw.style.removeProperty(\"--echo-magnetic-pull\");\n      });\n      el.removeEventListener(\"pointermove\", move);\n      el.removeEventListener(\"pointerleave\", leave);\n    };\n  }, []);\n\n  return (\n    <div ref={root} className={[\"echo-magnetic\", className].filter(Boolean).join(\" \")}>\n      {children}\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "magnetic/index.ts",
+      "sha256": "f8813eb20b98def11ecd377ea0654f04bbe3d7f367d3b45b70c9804b694facf7",
+      "content": "export { Magnetic } from \"./magnetic\";\nexport type { MagneticProps } from \"./magnetic\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six other kinds of physics.** `PullCord` is a switch you pull: the cord stretches, clicks at a detent and changes as you let go. `SplitFlap` is a readout that turns over flap by flap. `LightSource` makes your pointer the light the HardwareButtons inside it are lit by. `Magnetic` makes the buttons inside lean toward your hand before you touch them. `ThrowStack` is a stack of Panels you flick away with the speed you gave them. `Ripple` is a surface that sends a wave from where you press. All of them are built from Echo's own caps, panels and roles, have a keyboard path, and hold still under reduced motion."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

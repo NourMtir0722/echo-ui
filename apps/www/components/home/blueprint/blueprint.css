@@ -1,0 +1,444 @@
+/* The homepage's close: Echo's anatomy on a blueprint (blueprint/Blueprint.tsx). */
+
+/*
+ * The section: on the white the ChatGPT moment ends in (the page's, while the white goes on: WhiteRun.tsx;
+ * its own where nothing paints it, without JavaScript or under reduced motion), the title and the key on
+ * the page's grid, and the blue sheet centred, never taller than the window under the site's bar.
+ */
+/*
+ * The drawing's width: the column, the window's height and 1240px allow, and never wider than the paper's
+ * flat face less a margin each side, the face being the section less 28px a side (EXTRA, Blueprint.tsx) with
+ * 6% of it wound at each end (ENDS, ScrollPaper.tsx). Without that last, from 768 to 1024px wide the labels
+ * at the drawing's edges were written over the rolls.
+ * The height it allows is the paper's, not just the drawing's: the room under the bar less the paper's 28px
+ * over and under the drawing, and 2.5rem of air each side, the top's for Echo perched on the paper's edge.
+ * Sized to the drawing alone, on a laptop the paper ran under the bar and off the window's foot, and Echo
+ * stood under the bar.
+ */
+.bp {
+  --bp-ink: #ffffff;
+  --stage-w: min(100cqw - 2rem, calc((100svh - var(--echo-shell-rail-h, 56px) - 56px - 5rem) * 1200 / 800), 1240px, (100cqw - 56px) * 0.88 - 2rem);
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  padding: clamp(5rem, 9vw, 8rem) 0 clamp(4rem, 7vw, 6rem);
+  overflow: clip;
+}
+/* The title and the key: the page's column, as every section's. */
+.bp__col {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
+}
+/*
+ * The hold (Blueprint.tsx): with the script, a track one held push taller than the sheet, the sheet staying
+ * where it's framed (--bp-top) while the push draws it; the two stops are where it's framed, and a push on.
+ */
+.bp__hold {
+  position: relative;
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+.bp__hold[data-held] {
+  height: calc(var(--bp-h) + var(--bp-draw));
+}
+.bp__hold[data-held] > .bp__frame {
+  position: sticky;
+  top: var(--bp-top);
+}
+/*
+ * The title's stop (Blueprint.tsx): a window's room tall from just over the title, so the page frames it with
+ * the title and its line under the bar and the closed scroll under them.
+ */
+.bp__title-at {
+  position: absolute;
+  left: 0;
+  top: clamp(-2.5rem, -3vw, -1.5rem);
+  width: 1px;
+  height: var(--bp-room, 100svh);
+  pointer-events: none;
+}
+.bp__at {
+  position: absolute;
+  left: 0;
+  top: calc(var(--bp-draw) * var(--at));
+  width: 1px;
+  height: var(--bp-h);
+  pointer-events: none;
+}
+.bp__frame {
+  position: relative;
+  width: var(--stage-w);
+  margin: 0 auto;
+  /* The paper hangs past the frame to the section's edges, for the section to clip. */
+  --echo-clip: decorative;
+}
+.bp__frame > * {
+  --echo-clip: none;
+}
+.bp__stop {
+  position: absolute;
+  z-index: 6;
+  top: calc(var(--guide-size) * -1 + 10px);
+  right: 8%;
+  --guide-size: 76px;
+}
+/*
+ * The paper (ScrollPaper.tsx): the section's whole width, a little taller than the drawing, with room round
+ * it for the rolls; under the drawing. Once it's there, its own grid is the sheet's, and the page's steps aside.
+ */
+.bp__paperbox {
+  position: absolute;
+  z-index: 0;
+  left: calc(50% - 50cqw);
+  width: 100cqw;
+  top: calc(-1 * var(--room));
+  bottom: calc(-1 * var(--room));
+  pointer-events: none;
+}
+.bp__paper {
+  position: absolute !important;
+  inset: 0;
+}
+
+/*
+ * The drawing: its own coordinates (1200 × 800), everything in it placed in shares of them. 3:2, so the bare
+ * sheet round the drawing is about as deep over and under it as it is beside it.
+ */
+.bp__board {
+  z-index: 1;
+  /* Finished until the script rewinds it to play: without JavaScript, the whole sheet is there. */
+  --p: 1;
+  position: relative;
+  aspect-ratio: 1200 / 800;
+  container-type: inline-size;
+  color: var(--bp-ink);
+}
+
+/* The drawing's own coordinates: the whole sheet on a desktop, cropped round Echo on a phone. */
+.bp__view,
+.bp__zoom {
+  position: absolute;
+  inset: 0;
+}
+.bp__zoom {
+  container-type: inline-size;
+}
+/* The phone's list of the ways in: only on a phone. */
+.bp__list,
+.bp__list-note {
+  display: none;
+}
+
+/* Echo: the scribble's construction fades once the white is in; the white and the printed eyes stay. */
+.bp__construct {
+  opacity: calc(1 - clamp(0, (var(--p) - 0.36) / 0.12, 1));
+}
+.bp__fill {
+  fill: #fff;
+}
+.bp__pencil .bp__stroke {
+  stroke: #a9c6f5;
+}
+.bp__eyes {
+  fill: #d9e5fa;
+  opacity: clamp(0, (var(--p) - 0.38) / 0.08, 1);
+}
+.bp__eyes .bp__pupil {
+  fill: #0b1a44;
+}
+
+.bp__ink {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+/* A stroke draws from its start to its end between --from and --to of the board's progress. */
+.bp__stroke {
+  fill: none;
+  stroke: var(--bp-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--p) - var(--from)) / (var(--to) - var(--from)), 1));
+}
+.bp__stroke[data-dashed] {
+  stroke-dasharray: 0.018 0.014;
+  stroke-dashoffset: 0;
+  opacity: calc(0.6 * clamp(0, (var(--p) - var(--from)) / (var(--to) - var(--from)), 1));
+}
+
+/* The lettering: hand-drawn capitals, glowing a little, as chalk on blue does. */
+.bp__label {
+  position: absolute;
+  z-index: 4;
+  margin: 0;
+  text-shadow: 0 0 1cqw rgb(255 255 255 / 0.35);
+  text-transform: uppercase;
+}
+/* A letter at a time: it lands with a little drop and turn, as a hand puts it down. */
+.bp__ch {
+  --a: clamp(0, (var(--p) - var(--at) - var(--i) * 0.0045) * 45, 1);
+  display: inline-block;
+  opacity: var(--a);
+  transform: translateY(calc((1 - var(--a)) * -0.35em)) rotate(calc((1 - var(--a)) * -12deg)) scale(calc(0.6 + var(--a) * 0.4));
+  transform-origin: 50% 80%;
+}
+.bp__word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.bp__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.bp__label p {
+  margin: 0;
+}
+/* A note under Echo is centred on its arrow. */
+.bp__label[data-align="centre"] {
+  transform: translateX(-50%);
+  text-align: center;
+}
+/* Labels on Echo's left hang from their right edge, against their arrows. */
+.bp__label[data-align="left"] {
+  transform: translateX(-100%);
+  text-align: right;
+}
+.bp__name {
+  font-size: 2.35cqw;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+}
+.bp__say {
+  margin-top: 0.35cqw !important;
+  font-size: 1.25cqw;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  opacity: 0.82;
+}
+.bp__note {
+  font-size: 1.75cqw;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+.bp__note--small {
+  font-size: 1.2cqw;
+  opacity: 0.85;
+}
+/*
+ * The key: centred under the sheet, on Echo's axis, as the sheet's object is. Clear of the paper,
+ * which reaches 28px past the drawing (EXTRA in Blueprint.tsx), its rolls a hair further.
+ */
+.bp__keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: calc(28px + clamp(2rem, 4vw, 3.5rem));
+}
+
+/*
+ * A phone: the sheet fits the window under the bar, so it's held and drawn by the scroll as on a desktop
+ * (a sheet taller than the window showed its lower half blank, waiting to be written on). The paper runs
+ * nearly edge to edge (Blueprint.tsx PHONE_SIDE) and the drawing keeps to its flat face, between the rolls
+ * (ENDS, 6% of the paper each side). Echo is cropped wide and zoomed in, so its scribble, its white and its
+ * eyes play as on a desktop; the arrows and labels give way to a list of the ways in under it, a sketch,
+ * a name and its line each, drawn and written in the same rhythm.
+ */
+@media (max-width: 47.99rem) {
+  .bp {
+    --stage-w: calc((100cqw - 16px) * 0.88 - 1rem);
+  }
+  .bp__board {
+    aspect-ratio: auto;
+    /* Room under the legend's rule (Blueprint.tsx LEGEND_PAD). */
+    padding-bottom: 1rem;
+  }
+  /*
+   * The crop hides only drawing (the arrows and labels are off on a phone, the list below says them), so
+   * it says so for the layout tests (tests/helpers/layout.ts); what's inside is still measured.
+   */
+  .bp__view {
+    position: relative;
+    inset: auto;
+    aspect-ratio: 100 / 62;
+    overflow: hidden;
+    --echo-clip: decorative;
+  }
+  .bp__view > * {
+    --echo-clip: none;
+  }
+  /*
+   * 1.91 times the view's width, so Echo (292 of the drawing's 1200 across) is three quarters of the view's
+   * height; Echo's middle (600, 400 of 1200 by 800) in the view's middle.
+   */
+  .bp__zoom {
+    inset: auto;
+    width: 191%;
+    aspect-ratio: 1200 / 800;
+    left: -45.5%;
+    top: -52.69%;
+  }
+  .bp__label,
+  .bp__ways-ink,
+  .bp__notes-ink {
+    display: none;
+  }
+  /*
+   * The ways in, one under another, in a legend: the list as wide as its longest line, centred under Echo,
+   * and the paper printed plain under it with a rule round it (paper-face.ts), so the chalk is read on blue,
+   * not across the grid's lines. Room left either side for the rule.
+   */
+  .bp__list {
+    display: grid;
+    grid-template-columns: minmax(0, max-content);
+    gap: 0.75rem;
+    width: max-content;
+    max-width: calc(100% - 2.5rem);
+    margin: 1.4rem auto 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bp__list li {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.8rem;
+  }
+  .bp__list-sketch {
+    grid-row: span 2;
+    width: 2.25rem;
+    height: 2.25rem;
+    overflow: visible;
+  }
+  /* A line that wraps wraps evenly, never leaving one word on a line of its own ("…IN THE / CHAT"). */
+  .bp__list p {
+    margin: 0;
+    text-wrap: balance;
+  }
+  /* Chalk, a little glow round it, but crisp: a wide glow at this size blurred the letters into each other. */
+  .bp__list,
+  .bp__list-note {
+    text-transform: uppercase;
+    text-shadow: 0 0 0.3rem rgb(255 255 255 / 0.28);
+  }
+  .bp__list .bp__name {
+    font-size: 1.15rem;
+    line-height: 1.1;
+  }
+  /* Each way's line at full white and a readable size: dimmed and at 12px, its thin chalk was lost. */
+  .bp__list .bp__say {
+    margin-top: 0.15rem !important;
+    font-size: 0.875rem;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    opacity: 1;
+  }
+  .bp__list-note {
+    display: block;
+    width: max-content;
+    max-width: calc(100% - 2.5rem);
+    margin: 1.1rem auto 0;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+  /* Without the paper: the same squares, ten across. */
+  .bp:not([data-paper]) .bp__board {
+    background-size: calc(var(--stage-w) / 10) calc(var(--stage-w) / 10);
+  }
+}
+
+/*
+ * A short phone (360 × 640): Echo cropped flatter and the list a little closer, so the sheet still fits the
+ * room and is held. 1.47 times the view's width keeps Echo about three quarters of the view's height.
+ */
+@media (max-width: 47.99rem) and (max-height: 42rem) {
+  .bp__view {
+    aspect-ratio: 100 / 44;
+  }
+  .bp__zoom {
+    width: 146.8%;
+    left: -23.4%;
+    top: -61.21%;
+  }
+  .bp__list {
+    gap: 0.5rem;
+    margin-top: 1.1rem;
+  }
+  .bp__list-note {
+    margin-top: 0.8rem;
+  }
+}
+
+/*
+ * The white: the section's own where nothing paints it (no JavaScript, reduced motion: the moment above is
+ * still and white too), none while the page's white goes on under it. The title in ink; the blue paper
+ * casts a soft shadow that widens as it opens; without WebGL, a flat blue sheet with the same grid.
+ */
+.bp {
+  background: var(--white-ground);
+}
+.home-lit[data-white-run] .bp {
+  background: none;
+}
+.bp .big-title {
+  --echo-text: #0e1324;
+  --echo-text-dim: rgb(14 19 36 / 0.66);
+}
+/*
+ * The paper's shadow on the white: a soft shape the size of what's seen of the paper (its face between the
+ * rolls, and the rolls), under it and a little lower, so only its blur shows round the paper. It gathers as
+ * the paper rises to face you and widens as it opens. (A box-shadow on an empty box the sheet's full width
+ * showed as a second, paler sheet behind the paper: the wound ends make the paper narrower than its sheet.)
+ */
+.bp__shadow {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 6px;
+  bottom: -18px;
+  width: calc(var(--bp-face, 90cqw) + 36px);
+  translate: -50% 0;
+  border-radius: 14px;
+  background: rgb(16 32 84 / 0.55);
+  filter: blur(26px);
+  /* Leaning back, the paper is shorter, further off and lower: the shadow comes only as it stands up. */
+  transform: translateY(calc((1 - var(--lift, 1)) * 3rem)) scaleX(calc(0.06 + 0.94 * var(--open, 1))) scaleY(calc(0.72 + 0.28 * var(--lift, 1)));
+  opacity: calc(0.65 * clamp(0, (var(--lift, 1) - 0.55) / 0.45, 1));
+  pointer-events: none;
+}
+.bp:not([data-paper]) .bp__board {
+  transform: translateY(calc((1 - var(--lift, 1)) * 2.5rem)) scale(calc(0.9 + 0.1 * var(--lift, 1)));
+  opacity: calc(0.2 + 0.8 * var(--lift, 1));
+  border-radius: 6px;
+  background-color: var(--bp-sheet);
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.3) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.3) 1.5px, transparent 1.5px);
+  background-size: 6.25% 9.375%;
+  background-position: 50% 50%;
+  box-shadow:
+    0 38px 70px -30px rgb(16 32 84 / 0.42),
+    0 12px 26px -14px rgb(16 32 84 / 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp__board {
+    --p: 1 !important;
+  }
+}
+@media (forced-colors: active) {
+  .bp__shadow {
+    display: none;
+  }
+}

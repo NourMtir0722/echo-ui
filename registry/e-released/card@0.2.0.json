@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "name": "card",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Card",
+  "description": "A Panel with an anatomy, so every card is spaced the same way: media flush to the edges, a header (title, description, one action), a body, and a footer whose controls are sm. With href or onClick the whole card is pressable: the title becomes the link or button stretched over the card, it presses a pixel into the surface and sends Panel's ripple, and its own action and footer controls stay separate targets. Closed: slots are props, spacing is size.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "panel",
+    "size"
+  ],
+  "files": [
+    {
+      "path": "card/card.tsx",
+      "sha256": "e15a9b14c5b7afd4f42b170621303575a79e756b0bd4b7457405eed8efc0be39",
+      "content": "\"use client\";\n\n/**\n * Card. A Panel with an anatomy, so every card in a product is spaced the\n * same way: optional media flush to the edges, a header (title, description,\n * one action on the right), a body, and a footer whose controls are `sm`.\n *\n * Give it `href` or `onClick` and the whole card is pressable: the title\n * becomes the link or button, stretched over the card, so a screen reader\n * hears one name and the card has one focus ring. It presses a pixel into\n * the surface and sends Panel's ripple from where you pressed; the header\n * action and the footer's controls stay their own targets on top.\n *\n * Closed: the slots are props, the spacing is `size` (sm/md/lg padding\n * steps), and there is no className. Built on Panel's material and\n * useRippleSurface.\n */\nimport { useRef, type MouseEventHandler, type ReactNode } from \"react\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { useRippleSurface } from \"../panel\";\nimport { SizeProvider, type ControlSize } from \"../size\";\nimport \"./card.css\";\n\nexport interface CardProps {\n  /** The card's name. With `href` or `onClick`, it's also the link or button. */\n  title: ReactNode;\n  /** A line under the title. */\n  description?: ReactNode;\n  /** One control at the header's end: a menu, a toggle, a small button. */\n  action?: ReactNode;\n  /** An image, chart or preview across the top, flush to the edges. */\n  media?: ReactNode;\n  /** The body. */\n  children?: ReactNode;\n  /** Actions along the bottom; their controls default to `sm`. */\n  footer?: ReactNode;\n  /** `raised` plastic (default), or a `screen` well for a readout. */\n  variant?: \"raised\" | \"screen\";\n  /** Padding and gaps: `sm` for dense dashboards, `md` (default), `lg` for a feature. */\n  size?: ControlSize;\n  /** The whole card goes here. */\n  href?: string;\n  /** The whole card does this. */\n  onClick?: MouseEventHandler<HTMLElement>;\n  /** The title's heading level. Default 3. */\n  headingLevel?: 2 | 3 | 4;\n}\n\nexport function Card({\n  title,\n  description,\n  action,\n  media,\n  children,\n  footer,\n  variant = \"raised\",\n  size = \"md\",\n  href,\n  onClick,\n  headingLevel = 3,\n}: CardProps) {\n  const interactive = href !== undefined || onClick !== undefined;\n  const root = useRef<HTMLDivElement>(null);\n  const canvas = useRef<HTMLCanvasElement>(null);\n  const sound = useSoundOptional();\n  useRippleSurface(root, canvas, { enabled: interactive });\n  const Heading = `h${headingLevel}` as const;\n  const press: MouseEventHandler<HTMLElement> = (e) => {\n    sound?.play(\"tap\");\n    onClick?.(e);\n  };\n\n  const name = !interactive ? (\n    title\n  ) : href !== undefined ? (\n    <a className=\"echo-card__link\" href={href} onClick={onClick ? press : () => sound?.play(\"tap\")}>\n      {title}\n    </a>\n  ) : (\n    <button type=\"button\" className=\"echo-card__link\" onClick={press}>\n      {title}\n    </button>\n  );\n\n  return (\n    <div\n      ref={root}\n      className=\"echo-panel echo-card\"\n      data-variant={variant}\n      data-size={size}\n      data-interactive={interactive ? \"\" : undefined}\n    >\n      {interactive ? <canvas ref={canvas} className=\"echo-panel__ripple\" aria-hidden=\"true\" /> : null}\n      <div className=\"echo-card__inner\">\n        {media ? <div className=\"echo-card__media\">{media}</div> : null}\n        <div className=\"echo-card__header\">\n          <div className=\"echo-card__heading\">\n            <Heading className=\"echo-card__title\">{name}</Heading>\n            {description ? <p className=\"echo-card__description\">{description}</p> : null}\n          </div>\n          {action ? <div className=\"echo-card__action\">{action}</div> : null}\n        </div>\n        {children ? <div className=\"echo-card__body\">{children}</div> : null}\n        {footer ? (\n          <SizeProvider size=\"sm\">\n            <div className=\"echo-card__footer\">{footer}</div>\n          </SizeProvider>\n        ) : null}\n      </div>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "card/card.css",
+      "sha256": "8bcfe912193ef8b7ad4a3e73c5fdef475ae4645b34b7b95f953ce209cb4df96e",
+      "content": "/**\n * Card. Panel's material with a fixed anatomy. Padding and gaps are the\n * `size` steps; media runs to the edges; an interactive card presses a pixel\n * into the surface. The root is a Panel (panel.css gives the material).\n */\n.echo-card {\n  --card-pad: var(--echo-space-9);\n  --card-gap: var(--echo-space-6);\n  /* A column the inner layer fills, so a card stretched by its grid row is\n     pressable (and ringed) all the way down. */\n  display: flex;\n  flex-direction: column;\n  /* The padding is the inner layer's, so the stretched link covers the\n     whole card from inside it without reaching past any box. */\n  padding: 0;\n  min-width: 0;\n  color: var(--echo-text);\n}\n.echo-card[data-size=\"sm\"] {\n  --card-pad: var(--echo-space-7);\n  --card-gap: var(--echo-space-4);\n}\n.echo-card[data-size=\"lg\"] {\n  --card-pad: var(--echo-space-11);\n  --card-gap: var(--echo-space-8);\n}\n.echo-card__inner {\n  flex: 1;\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  display: flex;\n  flex-direction: column;\n  gap: var(--card-gap);\n  min-width: 0;\n  padding: var(--card-pad);\n  border-radius: inherit;\n}\n.echo-card__media {\n  margin: calc(-1 * var(--card-pad)) calc(-1 * var(--card-pad)) 0;\n  overflow: hidden;\n}\n.echo-card__media > :is(img, video, svg, canvas) {\n  display: block;\n  width: 100%;\n  height: auto;\n}\n.echo-card__header {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n  min-width: 0;\n}\n.echo-card__heading {\n  display: grid;\n  gap: var(--echo-space-2);\n  min-width: 0;\n}\n.echo-card__title {\n  margin: 0;\n  overflow-wrap: anywhere;\n  font-size: var(--echo-text-lg);\n  font-weight: var(--echo-weight-semibold, 600);\n  line-height: var(--echo-leading-snug, 1.4);\n  color: var(--echo-text);\n}\n.echo-card[data-size=\"sm\"] .echo-card__title {\n  font-size: var(--echo-text-md);\n}\n.echo-card[data-size=\"lg\"] .echo-card__title {\n  font-size: var(--echo-text-xl);\n}\n.echo-card__description {\n  margin: 0;\n  overflow-wrap: anywhere;\n  font-size: var(--echo-text-sm);\n  line-height: var(--echo-leading-body, 1.55);\n  color: var(--echo-text-dim);\n}\n.echo-card__body {\n  min-width: 0;\n  font-size: var(--echo-text-md);\n  line-height: var(--echo-leading-body, 1.55);\n  color: var(--echo-text-dim);\n}\n.echo-card__footer {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  justify-content: flex-end;\n  gap: var(--echo-space-4);\n  padding-block-start: var(--card-gap);\n  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n\n/* Interactive: the title is the link, stretched over the whole card. */\n.echo-card__link {\n  all: unset;\n  cursor: pointer;\n  color: inherit;\n}\n.echo-card__link::after {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  z-index: var(--echo-z-raised, 1);\n  border-radius: inherit;\n}\n/* The header action and the footer's controls stay their own targets. */\n.echo-card__action,\n.echo-card__footer {\n  position: relative;\n  z-index: var(--echo-z-top, 2);\n}\n.echo-card[data-interactive] {\n  cursor: pointer;\n  transition:\n    transform var(--echo-duration-tick) ease,\n    box-shadow var(--echo-duration-swap) ease;\n}\n/* Reached for, it lifts toward the light; pressed, it sinks a pixel. */\n@media (hover: hover) {\n  .echo-card[data-interactive][data-variant=\"raised\"]:hover {\n    box-shadow: var(\n      --echo-shadow-lifted,\n      0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))),\n      0 10px 22px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent)\n    );\n  }\n}\n.echo-card[data-interactive]:active:not(:has(.echo-card__action:active, .echo-card__footer:active)) {\n  transform: translateY(1px);\n}\n.echo-card[data-interactive]:has(.echo-card__link:focus-visible) {\n  outline: 2px solid transparent;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-card[data-interactive] {\n    transition: none;\n  }\n  .echo-card[data-interactive]:active {\n    transform: none;\n  }\n}\n@media (forced-colors: active) {\n  .echo-card {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-card[data-interactive]:has(.echo-card__link:focus-visible) {\n    outline: 2px solid Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "card/index.ts",
+      "sha256": "5861e1217cc3fa6d0b2c9589ccb89c2db21e967dea0aa517802e5287cadf2d34",
+      "content": "export { Card } from \"./card\";\nexport type { CardProps } from \"./card\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six containers: `Card`, `Item`, `Stack` & `Grid`, `Collapsible`, `ScrollArea` and `Link`.** The pieces every screen is laid out with, so nobody spaces a card by hand. All six are closed: their slots and spacing are props, not a `className`. - **`Card`** is a Panel with an anatomy (media, a header with one action, a body, a footer whose controls are `sm`) and `size` for its padding. With `href` or `onClick` the whole card is one link or button, named by its title, with one focus ring; it lifts as you reach for it, sinks a pixel as you press and sends Panel's ripple out from your finger. - **`Item`** is the list row: media, title, description, trailing content, ruled by a hairline. `swipeActions` sit behind it: swipe it and they slide into view, and Tab reaches each one, sliding the row open the same way, so the gesture is never the only way in. - **`Stack` & `Grid`** (`echo-layout`) take gaps as steps on the space scale; a row wraps and a Grid's columns never get wider than the screen. - **`Collapsible`** is one disclosure on its own, in Accordion's ruled style; closed content stays findable with find-in-page, which opens it. - **`ScrollArea`** scrolls inside itself with a groove and a molded thumb, shades whichever edge has more to see, and is a named region the keyboard can scroll. - **`Link`** keeps the words in the text colour and draws the accent as the underline (accent text on the chassis is under AA); `external` says it opens a new tab; `render` takes your router's link."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "name": "widget-grid",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "WidgetGrid",
+  "description": "Widgets at fixed footprints (1×1, 2×1, 2×2, 4×2) on a grid people arrange for themselves: a dashboard, a home screen, a panel of gauges. Each widget is your own content; the grid gives it a place. Arrange it and each widget gets a Move key and, if you allow it, a Remove key: drag a widget by its Move key and the others slide out of its way, or use the arrow keys and the new place is said.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0",
+    "gsap": "^3.13.0"
+  },
+  "items": [
+    "hardware-button"
+  ],
+  "files": [
+    {
+      "path": "widget-grid/widget-grid.tsx",
+      "sha256": "2d0763d8396e8f1673b3285df65171d64537cc24344a1c9d4a5585e482d4c349",
+      "content": "\"use client\";\n\n/**\n * WidgetGrid. Widgets at fixed footprints on a grid: a dashboard people\n * arrange for themselves, a home screen, a panel of gauges. Each widget is\n * your own content (a Card, a StatTile, a Tuner); the grid gives it a place.\n *\n * Edit it and each widget gets a Move key and, when you allow it, a Remove\n * key. Drag a widget by its Move key and the others slide out of its way; or\n * focus the key and use the arrow keys, and the new place is said. Done puts\n * the keys away.\n */\nimport { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from \"react\";\nimport gsap from \"gsap\";\nimport { timing, useReducedMotionRef } from \"echo-ui-core/tactile\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { moveBy, moveTo, reconcile } from \"./order\";\nimport \"./widget-grid.css\";\n\nexport type WidgetSize = \"1x1\" | \"2x1\" | \"2x2\" | \"4x2\";\n\nexport interface WidgetGridItem {\n  id: string;\n  /** Its name: how the Move and Remove keys and the announcements say which widget. */\n  label: string;\n  /** Columns × rows it takes. Default \"1x1\". */\n  size?: WidgetSize;\n  content: ReactNode;\n}\n\nexport interface WidgetGridProps {\n  /** What the grid is: its accessible name (\"Home\"). */\n  label: string;\n  items: readonly WidgetGridItem[];\n  /** The order, by id (controlled). */\n  order?: readonly string[];\n  defaultOrder?: readonly string[];\n  onOrderChange?: (order: string[]) => void;\n  /** Showing the Move and Remove keys (controlled). */\n  editing?: boolean;\n  defaultEditing?: boolean;\n  onEditingChange?: (editing: boolean) => void;\n  /** Lets a widget be removed; called with its id. */\n  onRemove?: (id: string) => void;\n  /** Columns on a wide screen. Default 4; the grid narrows to 2 on a phone. */\n  columns?: 2 | 3 | 4;\n}\n\nconst glyph = (d: string) => (\n  <svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.8\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden=\"true\">\n    <path d={d} />\n  </svg>\n);\n/**\n * Where a widget sits in the grid, without the slide it may be part-way\n * through. getBoundingClientRect includes the transform a slide is animating,\n * so a widget that has just moved still reads as being where it came from.\n */\nfunction layoutBox(el: HTMLElement) {\n  const r = el.getBoundingClientRect();\n  const x = Number(gsap.getProperty(el, \"x\")) || 0;\n  const y = Number(gsap.getProperty(el, \"y\")) || 0;\n  return { left: r.left - x, top: r.top - y, right: r.right - x, bottom: r.bottom - y };\n}\n\nconst MOVE = glyph(\"M8 2v12M2 8h12M8 2 6 4M8 2l2 2M8 14l-2-2M8 14l2-2M2 8l2-2M2 8l2 2M14 8l-2-2M14 8l-2 2\");\nconst REMOVE = glyph(\"M4 4l8 8M12 4l-8 8\");\n\nexport function WidgetGrid({\n  label,\n  items,\n  order: orderProp,\n  defaultOrder,\n  onOrderChange,\n  editing: editingProp,\n  defaultEditing = false,\n  onEditingChange,\n  onRemove,\n  columns = 4,\n}: WidgetGridProps) {\n  const ids = items.map((i) => i.id);\n  const [innerOrder, setInnerOrder] = useState<readonly string[]>(defaultOrder ?? ids);\n  const order = reconcile(orderProp ?? innerOrder, ids);\n  const [innerEditing, setInnerEditing] = useState(defaultEditing);\n  const editing = editingProp ?? innerEditing;\n  const [said, setSaid] = useState(\"\");\n  const sound = useSoundOptional();\n  const reduced = useReducedMotionRef();\n  const slots = useRef(new Map<string, HTMLElement>());\n  const before = useRef(new Map<string, DOMRect>());\n  /**\n   * The widget being carried. `over` is the one it last swapped with: it isn't\n   * swapped with again until the hand has left it, so two widgets of different\n   * sizes can't trade places back and forth under a hand that holds still.\n   */\n  const drag = useRef<{ id: string; dx: number; dy: number; x: number; y: number; over: string | null } | null>(null);\n  const uid = useId();\n\n  const byId = new Map(items.map((i) => [i.id, i]));\n  const nameOf = (id: string) => byId.get(id)?.label ?? id;\n\n  const setOrder = (next: string[]) => {\n    // Where everything is now, so the ones that move can slide from there.\n    before.current = new Map([...slots.current].map(([id, el]) => [id, el.getBoundingClientRect()]));\n    if (orderProp === undefined) setInnerOrder(next);\n    onOrderChange?.(next);\n  };\n  const setEditing = (next: boolean) => {\n    if (editingProp === undefined) setInnerEditing(next);\n    onEditingChange?.(next);\n    sound?.play(\"tap\");\n  };\n\n  /*\n   * The widgets that moved slide from where they were (FLIP); a dragged one\n   * stays under the hand. \"Where they were\" is where they showed, slide and\n   * all; where they go is their new place in the grid, without the slide, so\n   * one moved again mid-slide carries on from where it is.\n   */\n  useLayoutEffect(() => {\n    const was = before.current;\n    before.current = new Map();\n    if (!was.size) return;\n    for (const [id, el] of slots.current) {\n      const from = was.get(id);\n      if (!from) continue;\n      const to = layoutBox(el);\n      if (drag.current?.id === id) {\n        const d = drag.current;\n        gsap.set(el, { x: d.x - d.dx - to.left, y: d.y - d.dy - to.top });\n        continue;\n      }\n      const x = from.left - to.left;\n      const y = from.top - to.top;\n      if ((!x && !y) || reduced.current) continue;\n      gsap.fromTo(el, { x, y }, { x: 0, y: 0, ...timing(\"travel\"), overwrite: \"auto\" });\n    }\n  });\n\n  const announce = (id: string, next: string[]) => setSaid(`${nameOf(id)} moved to place ${next.indexOf(id) + 1} of ${next.length}`);\n\n  const onMoveKey = (id: string) => (e: KeyboardEvent) => {\n    const by =\n      e.key === \"ArrowLeft\" || e.key === \"ArrowUp\" ? -1 : e.key === \"ArrowRight\" || e.key === \"ArrowDown\" ? 1 : e.key === \"Home\" ? -order.length : e.key === \"End\" ? order.length : 0;\n    if (!by) return;\n    e.preventDefault();\n    const next = moveBy(order, id, by);\n    if (next.join() === order.join()) return;\n    setOrder(next);\n    announce(id, next);\n    sound?.play(\"select\");\n  };\n\n  /*\n   * Dragging by the Move key: the widget follows the hand, and the grid\n   * reorders under it. The move and the release are heard on the window, so\n   * the hand can go anywhere while it carries the widget.\n   */\n  const orderRef = useRef(order);\n  orderRef.current = order;\n  const onPointerDown = (id: string) => (e: PointerEvent<HTMLButtonElement>) => {\n    if (e.button !== 0) return;\n    const el = slots.current.get(id);\n    if (!el) return;\n    const r = el.getBoundingClientRect();\n    drag.current = { id, dx: e.clientX - r.left, dy: e.clientY - r.top, x: e.clientX, y: e.clientY, over: null };\n    el.setAttribute(\"data-lifted\", \"\");\n    const move = (ev: globalThis.PointerEvent) => {\n      const d = drag.current;\n      if (!d) return;\n      const box = slots.current.get(d.id);\n      if (!box) return;\n      d.x = ev.clientX;\n      d.y = ev.clientY;\n      const b = layoutBox(box);\n      gsap.set(box, { x: d.x - d.dx - b.left, y: d.y - d.dy - b.top });\n      // Over another widget's place in the grid: take it.\n      const inside = (o: ReturnType<typeof layoutBox>) => d.x > o.left && d.x < o.right && d.y > o.top && d.y < o.bottom;\n      const was = d.over ? slots.current.get(d.over) : undefined;\n      if (was && inside(layoutBox(was))) return;\n      d.over = null;\n      for (const [other, slot] of slots.current) {\n        if (other === d.id || !inside(layoutBox(slot))) continue;\n        const now = orderRef.current;\n        const next = moveTo(now, d.id, now.indexOf(other));\n        if (next.join() !== now.join()) {\n          d.over = other;\n          setOrder(next);\n          sound?.play(\"tap\");\n        }\n        break;\n      }\n    };\n    const up = () => {\n      window.removeEventListener(\"pointermove\", move);\n      window.removeEventListener(\"pointerup\", up);\n      window.removeEventListener(\"pointercancel\", up);\n      const d = drag.current;\n      drag.current = null;\n      if (!d) return;\n      const box = slots.current.get(d.id);\n      if (!box) return;\n      box.removeAttribute(\"data-lifted\");\n      if (reduced.current) gsap.set(box, { x: 0, y: 0 });\n      else gsap.to(box, { x: 0, y: 0, ...timing(\"travel\"), overwrite: \"auto\" });\n      announce(d.id, orderRef.current);\n    };\n    window.addEventListener(\"pointermove\", move);\n    window.addEventListener(\"pointerup\", up);\n    window.addEventListener(\"pointercancel\", up);\n  };\n\n  return (\n    <section className=\"echo-widget-grid\" aria-label={label} data-editing={editing || undefined} data-columns={columns}>\n      <div className=\"echo-widget-grid__bar\">\n        <HardwareButton size=\"sm\" variant={editing ? \"primary\" : \"neutral\"} onClick={() => setEditing(!editing)} aria-label={editing ? `Done arranging ${label}` : `Arrange ${label}`}>\n          {editing ? \"Done\" : \"Arrange\"}\n        </HardwareButton>\n      </div>\n      <ul className=\"echo-widget-grid__grid\">\n        {order.map((id) => {\n          const item = byId.get(id);\n          if (!item) return null;\n          return (\n            <li\n              key={id}\n              ref={(el) => {\n                if (el) slots.current.set(id, el);\n                else slots.current.delete(id);\n              }}\n              className=\"echo-widget-grid__slot\"\n              data-size={item.size ?? \"1x1\"}\n            >\n              <div className=\"echo-widget-grid__content\">{item.content}</div>\n              {editing ? (\n                <div className=\"echo-widget-grid__keys\">\n                  <HardwareButton\n                    size=\"sm\"\n                    iconOnly\n                    icon={MOVE}\n                    aria-label={`Move ${item.label}`}\n                    aria-describedby={`${uid}-help`}\n                    onKeyDown={onMoveKey(id)}\n                    onPointerDown={onPointerDown(id)}\n                  />\n                  {onRemove ? (\n                    <HardwareButton size=\"sm\" iconOnly icon={REMOVE} aria-label={`Remove ${item.label}`} onClick={() => onRemove(id)} />\n                  ) : null}\n                </div>\n              ) : null}\n            </li>\n          );\n        })}\n      </ul>\n      <span id={`${uid}-help`} className=\"echo-widget-grid__sr\">\n        Arrow keys move it; Home and End to the first or last place.\n      </span>\n      <span className=\"echo-widget-grid__sr\" role=\"status\">\n        {said}\n      </span>\n    </section>\n  );\n}\n"
+    },
+    {
+      "path": "widget-grid/widget-grid.css",
+      "sha256": "c119845a306fd679a966f5068d729126a653649626363399c5346bf1c71fc849",
+      "content": "/**\n * WidgetGrid. A grid of fixed footprints. Editing, each widget carries its\n * keys at its top corner; a widget being carried lifts off the grid. The\n * widgets bring their own surfaces. Composes var(--echo-*).\n */\n.echo-widget-grid {\n  --wg-cell: var(--echo-control-large, 60px);\n  container-type: inline-size;\n  display: grid;\n  gap: var(--echo-space-6);\n  min-inline-size: 0;\n}\n.echo-widget-grid__bar {\n  display: flex;\n  justify-content: flex-end;\n}\n.echo-widget-grid__grid {\n  --wg-columns: 4;\n  display: grid;\n  grid-template-columns: repeat(var(--wg-columns), minmax(0, 1fr));\n  grid-auto-rows: minmax(calc(var(--wg-cell) * 2), auto);\n  grid-auto-flow: dense;\n  gap: var(--echo-space-6);\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n.echo-widget-grid[data-columns=\"3\"] .echo-widget-grid__grid {\n  --wg-columns: 3;\n}\n.echo-widget-grid[data-columns=\"2\"] .echo-widget-grid__grid {\n  --wg-columns: 2;\n}\n/* A phone's width: two columns, whatever it was given. */\n@container (max-width: 480px) {\n  .echo-widget-grid .echo-widget-grid__grid {\n    --wg-columns: 2;\n  }\n}\n\n.echo-widget-grid__slot {\n  position: relative;\n  display: grid;\n  min-inline-size: 0;\n  will-change: transform;\n}\n.echo-widget-grid__slot[data-size=\"2x1\"] {\n  grid-column: span 2;\n}\n.echo-widget-grid__slot[data-size=\"2x2\"] {\n  grid-column: span 2;\n  grid-row: span 2;\n}\n.echo-widget-grid__slot[data-size=\"4x2\"] {\n  grid-column: 1 / -1;\n  grid-row: span 2;\n}\n.echo-widget-grid__content {\n  display: grid;\n  min-inline-size: 0;\n}\n.echo-widget-grid__content > * {\n  min-inline-size: 0;\n}\n\n/* Carried: lifted off the grid, over the others, casting its shadow further. */\n.echo-widget-grid__slot[data-lifted] {\n  z-index: var(--echo-z-raised, 1);\n  filter: drop-shadow(0 18px 24px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent));\n  scale: 1.03;\n}\n\n.echo-widget-grid__keys {\n  position: absolute;\n  inset-block-start: calc(-1 * var(--echo-space-4));\n  inset-inline-end: calc(-1 * var(--echo-space-4));\n  z-index: var(--echo-z-raised, 1);\n  display: flex;\n  gap: var(--echo-space-2);\n}\n.echo-widget-grid__keys .echo-hw__cap {\n  touch-action: none;\n  cursor: grab;\n}\n\n.echo-widget-grid__sr {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n"
+    },
+    {
+      "path": "widget-grid/order.ts",
+      "sha256": "fc1af168e0e5facd985a05e876945e3408ae1691f693f1723496736d49d2906f",
+      "content": "/**\n * The order of a WidgetGrid. Pure: no React, no DOM.\n */\n\n/** The order with `id` moved to `to` (clamped to the ends). */\nexport function moveTo(order: readonly string[], id: string, to: number): string[] {\n  const from = order.indexOf(id);\n  if (from < 0) return [...order];\n  const next = order.filter((x) => x !== id);\n  const at = Math.max(0, Math.min(next.length, to));\n  next.splice(at, 0, id);\n  return next;\n}\n\n/** The order with `id` moved by `by` places. */\nexport function moveBy(order: readonly string[], id: string, by: number): string[] {\n  return moveTo(order, id, order.indexOf(id) + by);\n}\n\n/** The ids in `order` that still exist, then any new ones in the order they're given. */\nexport function reconcile(order: readonly string[], ids: readonly string[]): string[] {\n  const known = order.filter((id) => ids.includes(id));\n  return [...known, ...ids.filter((id) => !known.includes(id))];\n}\n"
+    },
+    {
+      "path": "widget-grid/index.ts",
+      "sha256": "c11c5516a1c7e1508b4023f99586126206b588cd6c7043affd65666aee0a41f6",
+      "content": "export { WidgetGrid } from \"./widget-grid\";\nexport type { WidgetGridProps, WidgetGridItem, WidgetSize } from \"./widget-grid\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "travel"
+  ],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`WidgetGrid`: widgets people arrange.** Fixed footprints (1×1, 2×1, 2×2, 4×2) on a grid that narrows to two columns on a phone. Arrange it and each widget gets a Move key (drag it, or use the arrow keys, and the new place is said) and, with `onRemove`, a Remove key; the others slide out of the way."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

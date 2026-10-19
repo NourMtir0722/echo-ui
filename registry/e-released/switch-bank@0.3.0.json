@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "name": "switch-bank",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "SwitchBank",
+  "description": "Settings that come in a grid (notifications by event and channel, permissions by role and resource, a schedule by day) as a bank of Switches in a Table, one where each row meets each column. A Checkbox in each column header flips the whole column and shows a dash when it's mixed. A real table, so every Switch is read with its row and column.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "table",
+    "switch",
+    "checkbox"
+  ],
+  "files": [
+    {
+      "path": "switch-bank/switch-bank.tsx",
+      "sha256": "98d65030106e4bb83d31bf332a82f50a18a1e7e689deea3425eaaf0b6f316b46",
+      "content": "\"use client\";\n\n/**\n * SwitchBank. Settings that come in a grid (notifications by event and\n * channel, permissions by role and resource, a schedule by day) as a bank of\n * Switches in a Table: a column header for each channel, a row header for\n * each event, and one Switch where they cross. A Checkbox in each column's\n * header flips the whole column, and shows a dash when the column is mixed.\n *\n * It's a real table, so a screen reader reads each Switch with its row and\n * column, and every Switch is also named with both (\"Push, Mentions\").\n */\nimport { forwardRef, useState } from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { Table } from \"../table\";\nimport { Switch } from \"../switch\";\nimport { Checkbox } from \"../checkbox\";\nimport \"./switch-bank.css\";\n\nexport interface SwitchBankAxis {\n  value: string;\n  label: string;\n}\n\n/** Which switches are on, as \"row:column\" keys: \"mentions:push\". */\nexport type SwitchBankValue = readonly string[];\n\nexport interface SwitchBankProps extends EchoInterop {\n  /** What the bank sets: the table's caption (\"Notifications\"). */\n  label: string;\n  /** Hide the caption visually; it still names the table. */\n  hideLabel?: boolean;\n  /** The columns: the channels, roles or days. */\n  columns: readonly SwitchBankAxis[];\n  /** The rows: the events, resources or times. */\n  rows: readonly SwitchBankAxis[];\n  /** What's on, as \"row:column\" keys (controlled). */\n  value?: SwitchBankValue;\n  defaultValue?: SwitchBankValue;\n  onValueChange?: (value: string[]) => void;\n}\n\nconst keyOf = (row: string, column: string) => `${row}:${column}`;\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on\n * the first Switch, where a form library puts focus.\n */\nexport const SwitchBank = forwardRef<HTMLButtonElement, SwitchBankProps>(function SwitchBank(\n  { label, hideLabel, columns, rows, value, defaultValue, onValueChange, disabled, name, ...interop },\n  ref,\n) {\n  const [inner, setInner] = useState<SwitchBankValue>(defaultValue ?? []);\n  const on = new Set(value ?? inner);\n  const set = (next: Set<string>) => {\n    const list = [...next];\n    if (value === undefined) setInner(list);\n    onValueChange?.(list);\n  };\n  const flip = (key: string, to: boolean) => {\n    const next = new Set(on);\n    if (to) next.add(key);\n    else next.delete(key);\n    set(next);\n  };\n  const flipColumn = (column: string, to: boolean) => {\n    const next = new Set(on);\n    for (const row of rows) {\n      if (to) next.add(keyOf(row.value, column));\n      else next.delete(keyOf(row.value, column));\n    }\n    set(next);\n  };\n\n  return (\n    <div className=\"echo-switch-bank\" {...interop}>\n      <Table caption={label} hideCaption={hideLabel}>\n        <Table.Head>\n          <Table.Row>\n            <Table.HeaderCell>\n              <span className=\"echo-switch-bank__corner\">{label}</span>\n            </Table.HeaderCell>\n            {columns.map((column) => {\n              const count = rows.filter((row) => on.has(keyOf(row.value, column.value))).length;\n              return (\n                <Table.HeaderCell key={column.value} align=\"start\">\n                  <span className=\"echo-switch-bank__column\">\n                    <Checkbox\n                      checked={count === rows.length}\n                      indeterminate={count > 0 && count < rows.length}\n                      onCheckedChange={(checked) => flipColumn(column.value, checked)}\n                      disabled={disabled}\n                      aria-label={`All ${column.label}`}\n                    />\n                    <span>{column.label}</span>\n                  </span>\n                </Table.HeaderCell>\n              );\n            })}\n          </Table.Row>\n        </Table.Head>\n        <Table.Body>\n          {rows.map((row, r) => (\n            <Table.Row key={row.value}>\n              <Table.HeaderCell scope=\"row\">{row.label}</Table.HeaderCell>\n              {columns.map((column, c) => {\n                const key = keyOf(row.value, column.value);\n                return (\n                  <Table.Cell key={column.value}>\n                    <Switch\n                      ref={r === 0 && c === 0 ? ref : undefined}\n                      checked={on.has(key)}\n                      onCheckedChange={(checked) => flip(key, checked)}\n                      disabled={disabled}\n                      aria-label={`${column.label}, ${row.label}`}\n                    />\n                  </Table.Cell>\n                );\n              })}\n            </Table.Row>\n          ))}\n        </Table.Body>\n      </Table>\n      {name ? [...on].map((key) => <input key={key} type=\"hidden\" name={name} value={key} />) : null}\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "switch-bank/switch-bank.css",
+      "sha256": "876a6370e847c178e60bcb0d4f9022a8067bac56c09f19fa65c77e4edc63ec1d",
+      "content": "/**\n * SwitchBank. A Table of Switches: the column headers carry a Checkbox that\n * flips the column; the corner repeats nothing a reader needs, so it's kept\n * quiet. Composes var(--echo-*).\n */\n.echo-switch-bank {\n  max-inline-size: 100%;\n  min-inline-size: 0;\n}\n.echo-switch-bank__corner {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n.echo-switch-bank__column {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-4);\n  white-space: nowrap;\n  flex-shrink: 0;\n}\n"
+    },
+    {
+      "path": "switch-bank/index.ts",
+      "sha256": "39d340c051dbc7020406c21062741c233202ae2780f68fe807576dc8227f3a77",
+      "content": "export { SwitchBank } from \"./switch-bank\";\nexport type { SwitchBankProps, SwitchBankAxis, SwitchBankValue } from \"./switch-bank\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`SwitchBank`: settings that come in a grid.** A `Table` of `Switch`es, one where each row meets each column (notifications by channel, permissions by role), with a `Checkbox` in each column's header that flips the whole column and shows a dash when it's mixed. Every Switch is named by its column and row."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

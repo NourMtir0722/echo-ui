@@ -1,0 +1,78 @@
+/**
+ * Panel. Raised molded plastic or a recessed dark screen — the two halves
+ * of the device material law. Composes var(--echo-*).
+ */
+.echo-panel {
+  position: relative;
+  /* Padding counts inside a width a consumer sets, rather than on top of it. */
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: var(--echo-space-9);
+  border-radius: var(--echo-radius-2xl);
+}
+
+.echo-panel[data-variant="raised"] {
+  background: var(--echo-cap);
+  box-shadow: var(
+    --echo-shadow-panel,
+    0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+
+/* Top rim light — the 145° key light catching the molded edge. */
+.echo-panel[data-variant="raised"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / calc(0.18 * var(--echo-gloss, 1))), transparent);
+}
+
+.echo-panel[data-variant="screen"] {
+  /* Drawn, the glass is flat: there's no light to sheen it. */
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+
+/*
+ * pressable: the wave is drawn on a canvas under the content (useRippleSurface),
+ * and the content sits in one layer above it that takes the Panel's layout.
+ */
+.echo-panel[data-pressable] {
+  touch-action: manipulation;
+}
+.echo-panel__ripple {
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-base, 0);
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+}
+.echo-panel__content {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: inherit;
+  flex-direction: inherit;
+  flex-wrap: inherit;
+  grid-template-columns: inherit;
+  grid-template-rows: inherit;
+  place-items: inherit;
+  place-content: inherit;
+  gap: inherit;
+  min-block-size: 100%;
+}
+
+@media (forced-colors: active) {
+  .echo-panel__ripple {
+    display: none;
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "name": "item",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Item",
+  "description": "The row every list is made of: media to recognise it by, a title and a line under it, and what trails it. Consecutive Items are ruled by a hairline. href or onClick makes the whole row one target. swipeActions sit behind the row: swipe it toward the start and they slide into view, and Tab reaches each one, sliding the row open the same way.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "item/item.tsx",
+      "sha256": "2d84cd4bcfda7a5afdd8fc3a95460f2220ffb500cb8c9147030319713f2ddf05",
+      "content": "\"use client\";\n\n/**\n * Item. The row every list is made of: something to recognise it by\n * (an Avatar, an icon), a title and a line under it, and what trails it (a\n * time, a count, a control). Member lists, file lists, notifications,\n * settings rows. Consecutive Items are ruled by a hairline.\n *\n * `href` or `onClick` makes the row one target (the title is the link,\n * stretched over the row), like an interactive Card.\n *\n * `swipeActions` sit behind the row: swipe it toward the start and they\n * come into view, each a real button. Swipe past the last and let go, and the\n * row springs to hold them open; tap elsewhere or swipe back and it closes.\n * They are never only a gesture: Tab reaches each one, and focusing one\n * slides the row open the same way.\n *\n * Closed: slots are props, `size` is the padding step.\n */\nimport {\n  useCallback,\n  useEffect,\n  useRef,\n  type MouseEvent,\n  type MouseEventHandler,\n  type PointerEvent,\n  type ReactNode,\n} from \"react\";\nimport { createSpring, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport \"./item.css\";\n\nexport interface ItemAction {\n  /** The button's words. Say what it does: \"Archive\", \"Delete file\". */\n  label: string;\n  onSelect: () => void;\n}\n\nexport interface ItemProps {\n  title: ReactNode;\n  /** A line under the title. */\n  description?: ReactNode;\n  /** What you recognise it by, at the start: an Avatar, an icon, or one small control (a done Checkbox), which stays its own target. */\n  media?: ReactNode;\n  /** What trails it at the end: a time, a CountBadge, a Switch. */\n  trailing?: ReactNode;\n  /** The whole row goes here. */\n  href?: string;\n  /** The whole row does this. */\n  onClick?: MouseEventHandler<HTMLElement>;\n  /** Actions behind the row, revealed by a swipe or by Tab. */\n  swipeActions?: ItemAction[];\n  /** `sm` for dense lists, `md` (default). */\n  size?: \"sm\" | \"md\";\n  /** `li` inside a list (`<Stack as=\"ul\">`), `div` otherwise. Default `div`. */\n  as?: \"div\" | \"li\";\n}\n\nconst settle = { duration: 0.42, bounce: 0.18 };\n\nexport function Item({\n  title,\n  description,\n  media,\n  trailing,\n  href,\n  onClick,\n  swipeActions,\n  size = \"md\",\n  as: As = \"div\",\n}: ItemProps) {\n  const sound = useSoundOptional();\n  const surface = useRef<HTMLDivElement>(null);\n  const tray = useRef<HTMLDivElement>(null);\n  const spring = useRef<Spring | null>(null);\n  const openRef = useRef(false);\n  const hasActions = !!swipeActions?.length;\n  const interactive = href !== undefined || onClick !== undefined;\n\n  const reduced = () => typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n  // Toward the start: left in left-to-right, right in right-to-left.\n  const dir = () => (surface.current && getComputedStyle(surface.current).direction === \"rtl\" ? 1 : -1);\n  const width = () => tray.current?.offsetWidth ?? 0;\n\n  useEffect(() => {\n    const el = surface.current;\n    if (!el || !hasActions) return;\n    const row = el.parentElement!;\n    spring.current = createSpring(0, settle, (x) => {\n      el.style.translate = Math.abs(x) < 0.3 ? \"\" : `${x.toFixed(1)}px 0`;\n      // The tray shows only in the strip the row has slid away from.\n      row.style.setProperty(\"--item-reveal\", `${Math.abs(x).toFixed(1)}px`);\n    });\n    // An action focused before this ran (a fast Tab while the page was still\n    // hydrating, focus restored by the browser) opens the row now.\n    if (tray.current?.contains(document.activeElement)) {\n      openRef.current = true;\n      spring.current.set(dir() * width());\n    }\n    return () => spring.current?.stop();\n  }, [hasActions]);\n\n  const moveTo = useCallback((open: boolean, velocity = 0) => {\n    openRef.current = open;\n    const to = open ? dir() * width() : 0;\n    if (reduced()) spring.current?.set(to);\n    else spring.current?.to(to, { config: settle, velocity });\n  }, []);\n\n  // A swipe: follows the finger (rubber-banding past the tray), then holds\n  // open or springs shut depending on how far and how fast it went.\n  const drag = useRef<{ x: number; y: number; base: number; t: number; lx: number; v: number; sideways: boolean | null } | null>(null);\n  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {\n    if (!hasActions || e.button !== 0) return;\n    drag.current = {\n      x: e.clientX,\n      y: e.clientY,\n      base: spring.current?.value ?? 0,\n      t: performance.now(),\n      lx: e.clientX,\n      v: 0,\n      sideways: null,\n    };\n  };\n  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {\n    const d = drag.current;\n    if (!d) return;\n    const dx = e.clientX - d.x;\n    const dy = e.clientY - d.y;\n    if (d.sideways === null && Math.hypot(dx, dy) > 6) {\n      d.sideways = Math.abs(dx) > Math.abs(dy);\n      if (d.sideways) e.currentTarget.setPointerCapture(e.pointerId);\n    }\n    if (!d.sideways) return;\n    const now = performance.now();\n    d.v = d.v * 0.6 + ((e.clientX - d.lx) / Math.max(1, now - d.t)) * 1000 * 0.4;\n    d.t = now;\n    d.lx = e.clientX;\n    const max = width();\n    let x = d.base + dx;\n    const open = dir() * max;\n    // Free between shut and open; past either, it gives less and less.\n    const lo = Math.min(0, open);\n    const hi = Math.max(0, open);\n    if (x < lo) x = lo - Math.sqrt(lo - x) * 3;\n    if (x > hi) x = hi + Math.sqrt(x - hi) * 3;\n    spring.current?.set(x);\n  };\n  const onPointerUp = () => {\n    const d = drag.current;\n    drag.current = null;\n    if (!d?.sideways) return;\n    const x = spring.current?.value ?? 0;\n    const flung = d.v * dir() > 500;\n    const shut = d.v * dir() < -500;\n    const open = !shut && (flung || Math.abs(x) > width() / 2);\n    if (open !== openRef.current) sound?.play(\"tap\");\n    moveTo(open, d.v);\n  };\n  // A swipe that became a drag isn't also a click on the row.\n  const onClickCapture = (e: MouseEvent) => {\n    if (Math.abs(spring.current?.value ?? 0) > 4 && !openRef.current) e.stopPropagation();\n  };\n\n  // Closes when focus or a tap goes elsewhere.\n  const root = useRef<HTMLElement | null>(null);\n  useEffect(() => {\n    if (!hasActions) return;\n    const away = (e: Event) => {\n      if (openRef.current && root.current && !root.current.contains(e.target as Node)) moveTo(false);\n    };\n    document.addEventListener(\"pointerdown\", away);\n    document.addEventListener(\"focusin\", away);\n    return () => {\n      document.removeEventListener(\"pointerdown\", away);\n      document.removeEventListener(\"focusin\", away);\n    };\n  }, [hasActions, moveTo]);\n\n  const name = !interactive ? (\n    title\n  ) : href !== undefined ? (\n    <a className=\"echo-item__link\" href={href} onClick={onClick}>\n      {title}\n    </a>\n  ) : (\n    <button type=\"button\" className=\"echo-item__link\" onClick={onClick}>\n      {title}\n    </button>\n  );\n\n  return (\n    <As\n      ref={(node: HTMLElement | null) => {\n        root.current = node;\n      }}\n      className=\"echo-item\"\n      data-size={size}\n      data-interactive={interactive ? \"\" : undefined}\n    >\n      {hasActions ? (\n        <div ref={tray} className=\"echo-item__tray\">\n          {swipeActions!.map((a) => (\n            <button\n              key={a.label}\n              type=\"button\"\n              className=\"echo-item__action\"\n              onFocus={() => moveTo(true)}\n              onClick={() => {\n                sound?.play(\"tap\");\n                a.onSelect();\n                moveTo(false);\n              }}\n            >\n              {a.label}\n            </button>\n          ))}\n        </div>\n      ) : null}\n      <div\n        ref={surface}\n        className=\"echo-item__surface\"\n        onPointerDown={onPointerDown}\n        onPointerMove={onPointerMove}\n        onPointerUp={onPointerUp}\n        onPointerCancel={onPointerUp}\n        onClickCapture={onClickCapture}\n      >\n        {media ? <div className=\"echo-item__media\">{media}</div> : null}\n        <div className=\"echo-item__text\">\n          <span className=\"echo-item__title\">{name}</span>\n          {description ? <span className=\"echo-item__description\">{description}</span> : null}\n        </div>\n        {trailing ? <div className=\"echo-item__trailing\">{trailing}</div> : null}\n      </div>\n    </As>\n  );\n}\n"
+    },
+    {
+      "path": "item/item.css",
+      "sha256": "5df9f50580ed82d227c6ae2f32fc9a64318ffb1aeea8d40e4dae5cbfa88d750b",
+      "content": "/**\n * Item. A ruled row: media, title and description, trailing content. The\n * surface slides over a tray of actions when swiped. Composes var(--echo-*).\n */\n.echo-item {\n  --item-py: var(--echo-space-7);\n  --item-px: var(--echo-space-3);\n  position: relative;\n  display: block;\n  overflow: hidden;\n  list-style: none;\n  min-width: 0;\n}\n.echo-item[data-size=\"sm\"] {\n  --item-py: var(--echo-space-4);\n}\n.echo-item + .echo-item {\n  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n.echo-item__surface {\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  display: grid;\n  grid-template-columns: auto minmax(0, 1fr) auto;\n  align-items: center;\n  gap: var(--echo-space-7);\n  padding: var(--item-py) var(--item-px);\n  touch-action: pan-y;\n}\n.echo-item__surface:not(:has(.echo-item__media)) {\n  grid-template-columns: minmax(0, 1fr) auto;\n}\n.echo-item__media {\n  display: flex;\n  align-items: center;\n}\n/* A control at the start (a done box) is its own target, above the row's\n   stretched link, like trailing controls. Media that is only a picture stays\n   under it, so pressing an avatar still opens the row. */\n.echo-item__media:has(button, input, a, [role=\"checkbox\"], [role=\"switch\"]) {\n  position: relative;\n  z-index: var(--echo-z-top, 2);\n}\n.echo-item__text {\n  display: grid;\n  gap: var(--echo-space-1);\n  min-width: 0;\n}\n.echo-item__title {\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  font-size: var(--echo-text-md);\n  font-weight: var(--echo-weight-semibold, 600);\n  color: var(--echo-text);\n}\n.echo-item__description {\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n.echo-item__trailing {\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-4);\n  position: relative;\n  z-index: var(--echo-z-top, 2);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n\n/* Interactive: the title is the link, stretched over the row. */\n.echo-item__link {\n  all: unset;\n  cursor: pointer;\n}\n.echo-item__link::after {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  z-index: var(--echo-z-raised, 1);\n}\n.echo-item[data-interactive] .echo-item__surface {\n  transition: background var(--echo-duration-tick) ease;\n}\n@media (hover: hover) {\n  .echo-item[data-interactive] .echo-item__surface:hover {\n    background: color-mix(in oklab, var(--echo-cap) 28%, transparent);\n  }\n}\n.echo-item:has(.echo-item__link:focus-visible) .echo-item__surface {\n  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow)));\n}\n\n/* The tray: behind the row at its end, the actions as small neutral caps. */\n.echo-item__tray {\n  position: absolute;\n  inset-block: 0;\n  inset-inline-end: 0;\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-3);\n  padding-inline: var(--echo-space-4);\n  background: var(--echo-well);\n  box-shadow: inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent);\n  /* Only the strip the row has slid away from: the row itself stays on\n     whatever ground it sits on. */\n  clip-path: inset(0 0 0 calc(100% - var(--item-reveal, 0px)));\n}\n.echo-item__tray:dir(rtl) {\n  clip-path: inset(0 calc(100% - var(--item-reveal, 0px)) 0 0);\n}\n.echo-item__action {\n  box-sizing: border-box;\n  min-height: var(--echo-control-compact);\n  padding: 0 var(--echo-space-6);\n  border: 0;\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  color: var(--echo-text);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-2xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-wider, 0.12em);\n  text-transform: uppercase;\n  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 55%, var(--echo-cap-shadow) 100%);\n  box-shadow: var(\n    --echo-shadow-key,\n    inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),\n    0 2px 0 var(--echo-seam)\n  );\n}\n.echo-item__action:focus-visible {\n  outline: 2px solid transparent;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n.echo-item__action:active {\n  transform: translateY(1px);\n}\n@media (pointer: coarse) {\n  .echo-item__action {\n    min-height: 44px;\n  }\n}\n@media (forced-colors: active) {\n  .echo-item + .echo-item {\n    border-color: CanvasText;\n  }\n  .echo-item__action {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-item:has(.echo-item__link:focus-visible) .echo-item__surface {\n    outline: 2px solid Highlight;\n    outline-offset: -2px;\n  }\n}\n"
+    },
+    {
+      "path": "item/index.ts",
+      "sha256": "70ea55e3856b2c7b884ccf2124fb532ce5644b9979b52d9abc22dd5723f924b3",
+      "content": "export { Item } from \"./item\";\nexport type { ItemProps, ItemAction } from \"./item\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six containers: `Card`, `Item`, `Stack` & `Grid`, `Collapsible`, `ScrollArea` and `Link`.** The pieces every screen is laid out with, so nobody spaces a card by hand. All six are closed: their slots and spacing are props, not a `className`. - **`Card`** is a Panel with an anatomy (media, a header with one action, a body, a footer whose controls are `sm`) and `size` for its padding. With `href` or `onClick` the whole card is one link or button, named by its title, with one focus ring; it lifts as you reach for it, sinks a pixel as you press and sends Panel's ripple out from your finger. - **`Item`** is the list row: media, title, description, trailing content, ruled by a hairline. `swipeActions` sit behind it: swipe it and they slide into view, and Tab reaches each one, sliding the row open the same way, so the gesture is never the only way in. - **`Stack` & `Grid`** (`echo-layout`) take gaps as steps on the space scale; a row wraps and a Grid's columns never get wider than the screen. - **`Collapsible`** is one disclosure on its own, in Accordion's ruled style; closed content stays findable with find-in-page, which opens it. - **`ScrollArea`** scrolls inside itself with a groove and a molded thumb, shades whichever edge has more to see, and is a named region the keyboard can scroll. - **`Link`** keeps the words in the text colour and draws the accent as the underline (accent text on the chassis is under AA); `external` says it opens a new tab; `render` takes your router's link."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**A control at the start of an `Item` can be pressed.** A done box in `media` sat under the row's link, so pressing it opened the row instead. It is now its own target, like a control in `trailing`; an avatar or icon there still opens the row."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

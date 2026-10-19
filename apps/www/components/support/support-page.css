@@ -1,0 +1,604 @@
+/*
+ * /support: the ask on Echo's island, the video every supporter's Echo makes,
+ * the questions. On the landing's column (home.css `.home`: 1240px and its
+ * gutter), so its edges are the homepage's. Roles only, so it relights with
+ * the seed.
+ */
+.sp {
+  --sp-gutter: clamp(1.25rem, 4vw, 3rem);
+  /* The page's edge: the gutter, or the margin of the landing's 1240px column on a wide screen. */
+  --sp-edge: max(var(--sp-gutter), calc((100% - 1240px) / 2));
+}
+
+/* --- the ask, alone ---------------------------------------------------------- */
+
+/*
+ * The first screen: the words on the left, the price panel on the right, and
+ * at its foot the key that asks what happens next, with Echo hopping on it.
+ * It's the top of the island's night (`.sp-sky`, the island's own sky drawn
+ * once behind both screens), so the ask and the island are one place.
+ */
+.sp-sky {
+  position: relative;
+}
+.sp-hero {
+  position: relative;
+  /* Over the island's sky, which runs up behind it (.sp-island__stage), and over its beams. */
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: clamp(1rem, 2vw, 2rem);
+  align-items: center;
+  min-height: max(36rem, calc(100svh - var(--echo-shell-rail-h, 56px)));
+  box-sizing: border-box;
+  padding: clamp(2rem, 6vh, 4rem) var(--sp-edge) clamp(1.5rem, 4vh, 2.5rem);
+}
+.sp-hero__words {
+  grid-column: 1 / span 6;
+}
+.sp-hero__panel {
+  grid-column: 8 / -1;
+}
+.sp-hero__title {
+  margin: 0;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(3rem, 7.4vw, 7.25rem);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+}
+.sp-hero__line {
+  max-width: 28rem;
+  margin: clamp(1rem, 3vh, 1.75rem) 0 0;
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+  line-height: 1.55;
+  color: var(--echo-text-dim);
+  text-wrap: pretty;
+}
+.sp-hero__line strong {
+  font-weight: 600;
+  color: var(--echo-text);
+}
+/* The panel alone, its column's width. */
+.donate--alone {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}
+.sp-hero .donate__panel {
+  gap: clamp(0.85rem, 1.8vh, 1.25rem);
+  padding: clamp(1.25rem, 3vh, 2rem) clamp(1.25rem, 2.4vw, 2rem);
+}
+.sp-hero .donate__amount {
+  font-size: clamp(3rem, 6vh, 4.5rem);
+}
+
+/* The way down: Echo on the key, in the middle of the screen's foot. */
+.sp-hero__cue {
+  grid-column: 1 / -1;
+  justify-self: center;
+  padding-top: clamp(1.5rem, 4vh, 2.5rem);
+}
+.sp-cue {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+/* Echo stands on the cap's top edge, a little right of its middle, the way the landing's guide perches. */
+.sp-cue__echo {
+  position: relative;
+  width: 4.5rem;
+  height: 3.6rem;
+  margin-bottom: -0.35rem;
+  pointer-events: none;
+}
+.sp-cue__body {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 4.5rem;
+  translate: -50% 0;
+  transform-origin: 50% 100%;
+}
+.sp-cue__photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The photograph has room round Echo: its feet are 79% of the way down. */
+  margin-bottom: -0.95rem;
+}
+.sp-cue__flat {
+  display: grid;
+  justify-items: center;
+}
+.sp-cue__shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -0.15rem;
+  width: 2.6rem;
+  height: 0.5rem;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--echo-cast-ink, black) 55%, transparent), transparent);
+}
+/* A hop: a crouch, up, a squash as it lands on the cap (the key goes down then, WhatHappens.tsx), a settle. */
+@keyframes sp-hop {
+  0% {
+    translate: -50% 0;
+    scale: 1 1;
+  }
+  12% {
+    translate: -50% 0;
+    scale: 1.07 0.9;
+  }
+  30% {
+    translate: -50% -1.9rem;
+    scale: 0.95 1.06;
+  }
+  42% {
+    translate: -50% -2.2rem;
+    scale: 1 1;
+  }
+  56% {
+    translate: -50% 0;
+    scale: 1.1 0.88;
+  }
+  70% {
+    translate: -50% -0.2rem;
+    scale: 0.98 1.03;
+  }
+  84%,
+  100% {
+    translate: -50% 0;
+    scale: 1 1;
+  }
+}
+@keyframes sp-hop-shadow {
+  0%,
+  12%,
+  56%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  42% {
+    scale: 0.55;
+    opacity: 0.45;
+  }
+}
+.sp-cue__body[data-hop] {
+  animation: sp-hop 0.9s cubic-bezier(0.3, 0.6, 0.35, 1) 3;
+}
+.sp-cue__shadow[data-hop] {
+  animation: sp-hop-shadow 0.9s cubic-bezier(0.3, 0.6, 0.35, 1) 3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-cue__body[data-hop],
+  .sp-cue__shadow[data-hop] {
+    animation: none;
+  }
+}
+
+/* --- what happens: the island ------------------------------------------------ */
+
+.sp-isle {
+  position: relative;
+}
+/* The night is the two screens' (`.sp-sky`): the island draws none of its own. */
+.sp-sky .sp-island {
+  background: none;
+}
+.sp-isle__h {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/*
+ * The screen: the island over the sentence that says what it shows, in a band of its own, so no word ever
+ * stands on the island (its rock is dark on a light device, and the words are too).
+ */
+.sp-isle > .sp-island {
+  display: flex;
+  flex-direction: column;
+}
+.sp-isle > .sp-island,
+.sp-island .sw-island__view {
+  overflow: visible;
+}
+.sp-island .sw-island__view {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+/*
+ * The canvas runs up behind the ask by --sp-above (SupportIsland.tsx), so the beams carry on up through it.
+ * Its top and its foot fade into the night: no edge cuts a beam or a rock.
+ */
+.sp-island__stage {
+  position: absolute;
+  inset: calc(var(--sp-above, 0px) * -1) 0 0;
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 86%, transparent);
+}
+.sp-island__foot {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: clamp(0.9rem, 2.2vh, 1.4rem);
+  padding: 0.25rem var(--sp-gutter) clamp(1.5rem, 5vh, 3rem);
+}
+.sp-island__say {
+  max-width: 40rem;
+  margin: 0;
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+  line-height: 1.55;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--echo-text-dim);
+}
+.sp-island__say strong {
+  font-weight: 600;
+  color: var(--echo-text);
+}
+
+/* "Your Echo" on theirs, in the display face, the number it would have under it. */
+.sp-you {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 16px 7px;
+  border-radius: 1rem;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--echo-accent-glow, var(--echo-accent)) 45%, transparent),
+    0 0 26px color-mix(in oklch, var(--echo-accent-glow, var(--echo-accent)) 45%, transparent),
+    0 10px 20px -10px color-mix(in oklab, var(--echo-cast-ink, black) 80%, transparent);
+}
+.sp-you__name {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sp-you__no {
+  font: 600 0.65rem/1 var(--site-font-mono), ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+/* No WebGL: their Echo drawn flat, in the middle of the sky, with its tag. */
+.sp-island__flat {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+}
+.sp-island__flat .sp-you {
+  position: static;
+}
+
+/* --- post your spot: the landing's way --------------------------------------- */
+
+/*
+ * A section of the landing's: the giant title, then one panel the column's
+ * width (the motion buttons' plate: one molded surface, cells divided by its
+ * seams), on the road's light rising round it from below.
+ */
+.sp-place {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(5rem, 11vw, 10rem) var(--sp-edge) clamp(3rem, 6vw, 5rem);
+}
+.sp-place > :not(.sp-place__light) {
+  position: relative;
+  z-index: 1;
+}
+.sp-place__light {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.sp-place__light-field {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Over the light, the title's quieter half and the sentence are a pale tint of the seed (as on the road). */
+.sp-place > .big-title .big-title__dim,
+.sp-place > .big-title .big-title__lede {
+  color: color-mix(in oklch, var(--echo-text) 58%, var(--family-seed-light, var(--echo-accent-glow, var(--echo-accent))));
+}
+.sp-place > .big-title .big-title__lede strong {
+  color: var(--echo-text);
+}
+
+/* The panel: the card's two steps stacked on the left, the post on a phone on the right, whole on one screen. */
+.sp-show {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  height: clamp(30rem, calc(100svh - var(--echo-shell-rail-h, 56px) - 7rem), 38rem);
+  border-radius: clamp(1.25rem, 2.4vw, 1.75rem);
+  background: linear-gradient(165deg, var(--echo-cap) 0%, var(--echo-surface) 42%, var(--echo-surface) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 1px) var(--echo-line, var(--echo-seam)),
+    0 40px 80px -48px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+  /* The phone runs off the panel's foot. */
+  overflow: clip;
+}
+.sp-show__cell {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 0.6rem;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(1.5rem, 3vw, 3rem);
+}
+.sp-show__cell--make {
+  grid-area: 1 / 1;
+}
+.sp-show__cell--post {
+  grid-area: 2 / 1;
+  box-shadow: inset 0 1px 0 var(--echo-seam);
+}
+.sp-show__cell--phone {
+  grid-area: 1 / 2 / span 2;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 0;
+  padding: clamp(2rem, 5vh, 3rem) 1.25rem 0;
+  box-shadow: inset 1px 0 0 var(--echo-seam);
+}
+/* Each step in the titles' voice, a step down, with one line under it. */
+.sp-show__name {
+  margin: 0;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+}
+.sp-show__line {
+  max-width: 24rem;
+  margin: 0;
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+}
+/* The video's own key, where the landing's cards keep theirs: the top right corner. */
+.sp-show__key {
+  position: absolute;
+  top: clamp(0.9rem, 1.6vw, 1.25rem);
+  right: clamp(0.9rem, 1.6vw, 1.25rem);
+  z-index: 2;
+}
+
+/* The phone: Echo's material round its glass (the road's Build card), standing in its cell and running off its foot. */
+.sp-phone {
+  width: min(100%, 22rem);
+  height: calc(100% + 4rem);
+  padding: 0.45rem;
+  box-sizing: border-box;
+  border-radius: 2.4rem;
+  background: linear-gradient(160deg, var(--echo-cap), var(--echo-surface));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.1 * var(--echo-gloss, 1))),
+    inset 0 0 0 1px var(--echo-seam),
+    0 24px 40px -20px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 80%, transparent);
+}
+.sp-phone__glass {
+  height: 100%;
+  overflow: hidden;
+  border-radius: 2rem;
+  background: var(--echo-well);
+  color: var(--echo-text);
+}
+/* X's dark screen: its mark over the post, the post in its own type sizes. */
+.sp-x__bar {
+  display: grid;
+  place-items: center;
+  height: 2.9rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--echo-text) 12%, transparent);
+}
+.sp-x__post {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem 0.9rem;
+}
+.sp-x__who {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.sp-x__face {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.sp-x__names {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.25;
+}
+.sp-x__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.sp-x__handle {
+  font-size: 0.82rem;
+  color: var(--echo-text-dim);
+}
+.sp-x__text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.sp-x__link {
+  color: var(--site-link, var(--echo-accent-ink, var(--echo-accent)));
+}
+.sp-x__video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 0.9rem;
+  background: var(--echo-surface);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--echo-text) 10%, transparent);
+}
+.sp-x__actions {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0 0.4rem;
+  list-style: none;
+  color: var(--echo-text-dim);
+}
+
+/* --- the questions, and the ask again -------------------------------------- */
+
+/* The landing's grammar again: the title across, the questions from the 7th of 12 columns, where its sentences sit. */
+.sp-faq {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(1rem, 2vw, 2rem);
+  align-items: start;
+  padding: clamp(5rem, 11vw, 10rem) var(--sp-edge) clamp(5rem, 10vw, 8rem);
+}
+.sp-faq > .big-title {
+  grid-column: 1 / -1;
+}
+.sp-faq > .echo-accordion,
+.sp-faq__ask {
+  grid-column: 7 / -1;
+}
+.sp-faq__answer {
+  margin: 0;
+  font-size: var(--echo-text-md);
+  line-height: 1.6;
+  color: var(--echo-text-dim);
+}
+.sp-faq__answer a {
+  color: var(--site-link, var(--echo-accent));
+}
+.sp-faq__ask {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  margin-top: clamp(1.5rem, 4vh, 2.5rem);
+}
+.sp-faq__note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--echo-text-dim);
+}
+
+/* --- narrower: one column ---------------------------------------------------- */
+
+@media (max-width: 64rem) {
+  .sp-hero {
+    display: block;
+    min-height: 0;
+    padding: clamp(1.75rem, 6vw, 2.5rem) 0 clamp(2rem, 6vw, 3rem);
+  }
+  .sp-hero__words,
+  .sp-hero__panel {
+    max-width: 34rem;
+    margin-inline: auto;
+    padding-inline: var(--sp-gutter);
+  }
+  .sp-hero__panel {
+    margin-top: clamp(1.5rem, 5vw, 2rem);
+  }
+  .sp-hero__cue {
+    display: grid;
+    justify-content: center;
+    padding-inline: var(--sp-gutter);
+  }
+  /* The island, then the sentence under it: over it, the sentence would cover the Echos it's about. */
+  .sp-isle > .sp-island {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 2rem;
+  }
+  .sp-island .sw-island__view {
+    flex: none;
+    height: min(70svh, 34rem);
+    min-height: 22rem;
+  }
+  /* A phone sees the whole island small: the tag keeps to its Echo's size, and leaves Noor's in view. */
+  .sp-island .sp-you {
+    padding: 4px 11px 5px;
+  }
+  .sp-island .sp-you__name {
+    font-size: 0.9rem;
+  }
+  .sp-island .sp-you__no {
+    font-size: 0.58rem;
+  }
+  .sp-island__say {
+    max-width: 34rem;
+  }
+  .sp-faq {
+    display: block;
+    min-height: 0;
+    max-width: 34rem;
+    margin-inline: auto;
+    padding-inline: var(--sp-gutter);
+  }
+  /* The panel folds into one column: the two steps, then the phone. */
+  .sp-show {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    height: auto;
+  }
+  .sp-show__cell {
+    min-height: 0;
+  }
+  .sp-show__cell--make,
+  .sp-show__cell--post,
+  .sp-show__cell--phone {
+    grid-area: auto;
+  }
+  .sp-show__cell--phone {
+    height: min(36rem, 90svh);
+    box-shadow: inset 0 1px 0 var(--echo-seam);
+  }
+  .sp-faq > .echo-accordion {
+    margin-top: 2rem;
+  }
+}
+
+/* A phone's measure is too short to justify (landing.css says why). */
+@media (max-width: 40rem) {
+  .sp .big-title__lede {
+    text-align: start;
+    hyphens: manual;
+  }
+}
+
+@media (pointer: coarse) {
+  /* Links inside a sentence keep its flow; the lines open up to give them room. */
+  .sp-faq__answer {
+    line-height: 2.75;
+  }
+}

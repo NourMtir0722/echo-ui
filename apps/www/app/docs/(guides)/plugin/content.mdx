@@ -1,0 +1,63 @@
+import { HostedMcpUrl, PluginInstall } from "@/components/guides/live";
+
+# Plugin
+
+Echo's plugin brings Echo to Claude and ChatGPT: the [hosted MCP server](/docs/mcp) and Echo's
+three skills, in one install. It's for the part of the work that happens in a chat. Make your
+style there, from a mood board, then build with it in your code tool.
+
+## The plugin, or the server alone
+
+The server answers questions: which component does a job, what it takes, whether some code is
+right, which style fits. The skills know the workflow: when to read a board, what to ask you
+before writing a style, and when to hand the build to your code tool with the command that sets the
+project up.
+
+| What you get | The MCP server | The plugin |
+| --- | --- | --- |
+| Find and read components, check code, list, fit, check and wear styles | Yes | Yes, the same ten tools |
+| **Echo UI**: knows whether it's in a project with Echo, one without, or a chat, and does what each needs | | Yes |
+| **Design Eye**: reads a mood board into a style, and asks what the board can't settle first | | Yes |
+| **Style Fit**: picks the style a product wears, from Echo's and yours, and says why | | Yes |
+
+In a project with a terminal you don't need either: `init` writes the same skills into the
+project, and the CLI runs the check and the tests ([For AI agents](/docs/ai)). In a project that
+already has Echo, the plugin's Echo UI skill steps back and the project's own skill leads.
+
+## What it does in a chat
+
+1. **Make a style.** Share a mood board and ask for a style. Design Eye reads it as a designer
+   would, asks you what it can't settle, and hands back the style: a foundation document and a
+   `style.json` you keep and reuse.
+2. **Pick one.** Ask which style fits your product. Style Fit places the product on the seven axes,
+   ranks Echo's styles and yours against it, and argues for one.
+3. **Feel it.** Wearing a style gives a link that makes this site wear its colours, every component
+   pressing and moving in them.
+4. **Hand it over.** Code written in the chat is checked with `check_code`, and ends with the
+   commands for your code tool, in order: `npx echo-ui-cli init --style <name>`, then `add` for each
+   component it uses.
+
+## Install it
+
+In ChatGPT, Echo UI is in the plugin directory: add it from there, nothing to download. It isn't in
+Claude's directory yet, so for Claude, and for Codex, install it from here:
+
+<PluginInstall />
+
+ChatGPT on the web takes the server without the skills: add <HostedMcpUrl /> as a custom MCP
+connector, and you get the tools.
+
+## What it sends, runs and writes
+
+The plugin's tools are the hosted server. It receives what a tool is called with: a search, a
+component's name, a style's settings, or code to check. It needs no account and keeps nothing it's
+sent: code is checked and forgotten. A style of your own comes in with the call and is never
+stored. Everything else it reads is what this site publishes. Cloudflare, which hosts the server,
+keeps request logs, including the address a request came from, for up to 7 days.
+
+In a project with a terminal, the skills run `npx echo-ui-cli`, which writes into the project, adds
+Echo's block and check hook for your agent (`agent off` takes them out), and saves your styles in
+your own style library. In a chat, nothing is saved anywhere: styles come back as files to keep.
+
+The [privacy policy](/privacy) has the rest. For help, a privacy question or a security problem,
+see [Contact](/contact).

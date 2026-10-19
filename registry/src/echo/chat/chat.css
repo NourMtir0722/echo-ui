@@ -1,0 +1,224 @@
+/*
+ * The chat screen. Composes var(--echo-*) only.
+ *
+ * The material rule it follows: running text gets no container. Incoming
+ * messages are text on the page's own ground; outgoing messages sit in a
+ * recessed well — the composer's material — and the Send cap is the one
+ * raised, lit object. A bubble per message would be forty molded cards on one
+ * screen.
+ */
+.echo-chat {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 46rem;
+  height: min(100dvh, 48rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem);
+  color: var(--echo-text);
+}
+
+.echo-chat__head {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-6);
+  padding-bottom: var(--echo-space-8);
+  border-bottom: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+
+.echo-chat__who {
+  display: grid;
+  gap: var(--echo-space-1);
+  min-width: 0;
+}
+
+.echo-chat__name {
+  margin: 0;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-lg);
+  font-weight: var(--echo-weight-bold, 700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.echo-chat__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-3);
+  min-width: 0;
+  font-family: var(--echo-font-mono, ui-monospace, monospace);
+  font-size: var(--echo-text-2xs);
+  letter-spacing: var(--echo-tracking-wide, 0.06em);
+  color: var(--echo-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.echo-chat__thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--echo-space-6);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--echo-space-10) var(--echo-space-1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--echo-cap) transparent;
+}
+
+.echo-chat__day {
+  align-self: center;
+  margin: 0 0 var(--echo-space-4);
+  font-family: var(--echo-font-mono, ui-monospace, monospace);
+  font-size: var(--echo-text-3xs);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-chat__msg {
+  display: grid;
+  align-items: end;
+  gap: var(--echo-space-2) var(--echo-space-5);
+  max-width: 86%;
+}
+
+.echo-chat__msg[data-grouped] {
+  margin-top: calc(var(--echo-space-3) * -1);
+}
+
+.echo-chat__msg[data-from="them"] {
+  /* The avatar column is in rem, like the avatar it holds, so both grow
+     together when a reader raises their text size. */
+  grid-template-columns: 2rem minmax(0, 1fr);
+  justify-self: start;
+  align-self: flex-start;
+}
+
+.echo-chat__msg[data-from="me"] {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: end;
+  align-self: flex-end;
+}
+
+.echo-chat__avatar {
+  grid-row: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.echo-chat__bubble {
+  min-width: 0;
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-body, 1.55);
+  /* Long words and URLs wrap inside the column, never open it. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Theirs: no container. Text on the ground. */
+.echo-chat__msg[data-from="them"] .echo-chat__bubble {
+  padding: var(--echo-space-2) 0;
+}
+
+/* Yours: the composer's recessed well, so what you typed keeps its material. */
+.echo-chat__msg[data-from="me"] .echo-chat__bubble {
+  padding: var(--echo-space-5) var(--echo-space-7);
+  border-radius: var(--echo-radius-xl);
+  border-end-end-radius: var(--echo-radius-xs);
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-chat__time {
+  font-family: var(--echo-font-mono, ui-monospace, monospace);
+  font-size: var(--echo-text-3xs);
+  letter-spacing: var(--echo-tracking-wide, 0.06em);
+  color: var(--echo-text-dim);
+}
+
+.echo-chat__msg[data-from="them"] .echo-chat__time {
+  grid-column: 2;
+}
+
+.echo-chat__msg[data-grouped] .echo-chat__time {
+  display: none;
+}
+
+/* Visually hidden speaker name, so the log reads "You: …" / "Echo: …". */
+.echo-chat__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The indicator keeps its row even when empty, so the composer never jumps. */
+.echo-chat__typing {
+  display: flex;
+  align-items: center;
+  min-height: var(--echo-space-10);
+  padding: 0 var(--echo-space-1) var(--echo-space-4);
+}
+
+.echo-chat__composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--echo-space-6);
+  padding-top: var(--echo-space-8);
+  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+
+/*
+ * The composer's textarea has to be able to shrink inside the flex row.
+ *
+ * Reached by descendant selector rather than by handing Textarea a
+ * `className`: Echo components are closed (PRINCIPLES.md), and a parent
+ * styling a child through the child's own documented class is how a template
+ * does layout without reopening the component's API.
+ */
+.echo-chat__composer .echo-textarea {
+  min-width: 0;
+}
+
+.echo-chat__hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-3);
+  margin: var(--echo-space-5) 0 0;
+  font-size: var(--echo-text-2xs);
+  color: var(--echo-text-dim);
+}
+
+@media (max-width: 560px) {
+  .echo-chat__msg {
+    max-width: 100%;
+  }
+  /* A phone has no Enter-to-send convention worth teaching; the cap is it. */
+  .echo-chat__hint {
+    display: none;
+  }
+}
+
+/*
+ * One row of text is 22px — under the 24px target minimum (WCAG 2.5.8) and a
+ * poor tap target. The floor is one default control, which also lines the
+ * composer's well up with the Send cap beside it. Autosize still grows it.
+ */
+.echo-chat__composer .echo-textarea__input {
+  min-height: var(--echo-control-default);
+}

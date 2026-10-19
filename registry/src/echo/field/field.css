@@ -1,0 +1,246 @@
+/**
+ * Field. A mono eyebrow label over a deep recessed well whose inner edge
+ * lights in the accent on focus. Composes var(--echo-*); the well
+ * is a near-black mix off var(--echo-well)/var(--echo-lcd) so it still themes.
+ */
+.echo-field {
+  /* One size scale (sm/md/lg): the well's height is the control height. */
+  --ctl-h: var(--echo-control-default);
+  --ctl-font: var(--echo-text-md);
+  --ctl-px: var(--echo-space-8);
+  --ctl-radius: var(--echo-radius-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--echo-space-4);
+}
+.echo-field[data-size="sm"] {
+  --ctl-h: var(--echo-control-compact);
+  --ctl-font: var(--echo-text-sm);
+  --ctl-px: var(--echo-space-6);
+  --ctl-radius: var(--echo-radius-lg);
+}
+.echo-field[data-size="lg"] {
+  --ctl-h: var(--echo-control-large);
+  --ctl-font: var(--echo-text-lg);
+  --ctl-px: var(--echo-space-9);
+  --ctl-radius: var(--echo-radius-2xl);
+}
+
+.echo-field__label {
+  /* Long content wraps rather than pushing its container open. */
+  overflow-wrap: anywhere;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  /*
+   * The guarded role, NOT a wash of --echo-text. A 47% alpha of text over
+   * --echo-surface lands near 4:1 (4.09:1 on the raspberry seed, 4.05:1 on
+   * an amber one) — under AA for 10px text, on every seed. It escaped notice
+   * for a long time because every page that showed a Field put it on a ground
+   * darker than surface, where the same wash passes; the homepage rail was the
+   * first surface-coloured one. A synthesised alpha bypasses the theme's
+   * contrast guardrail by construction, which is exactly why the roles exist.
+   */
+  color: var(--echo-text-dim);
+  transition: color var(--echo-duration-swap) var(--echo-ease-swap);
+}
+/* The label wakes with its field: focus lights the well and the name over it. */
+.echo-field:focus-within .echo-field__label {
+  color: var(--echo-text);
+}
+
+.echo-field__well {
+  padding: 0 var(--ctl-px);
+  border-radius: var(--ctl-radius);
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  transition: box-shadow var(--echo-duration-swap) ease;
+  /* useWellMotion moves the well and sets --well-depth; it never needs
+     a transform from here. The floor and the drawn caret sit inside it. */
+  position: relative;
+  isolation: isolate;
+}
+
+/* Adornments (start/end): engraved into the well beside the text. */
+.echo-field__well[data-adorned] {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+}
+.echo-field__well[data-adorned] .echo-field__input {
+  flex: 1;
+  min-width: 0;
+}
+.echo-field__adornment {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: var(--echo-space-3);
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ctl-font);
+  color: var(--echo-text-dim);
+  /* Engraved: cut into the floor of the well. */
+  text-shadow: 0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));
+}
+.echo-field__adornment > svg {
+  width: var(--echo-icon-md, 16px);
+  height: var(--echo-icon-md, 16px);
+}
+/* A control at the end sits flush with the well's edge. */
+.echo-field__adornment[data-side="end"]:has(.echo-hw) {
+  margin-inline-end: calc(var(--echo-space-3) - var(--ctl-px));
+}
+
+/* The floor of the well: shade that deepens as the well is pressed in and
+   struck. Nothing at rest, so an idle field looks exactly as it always has. */
+.echo-field__floor {
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-base, 0);
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 calc(1px + 3px * var(--well-depth, 0)) calc(3px + 8px * var(--well-depth, 0))
+    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  opacity: min(1, var(--well-depth, 0));
+}
+
+/* The drawn caret: shown only while useWellMotion is placing it, which it
+   does only where it can place it exactly. Otherwise the native caret. */
+.echo-field__caret {
+  position: absolute;
+  /* useWellMotion places it and sizes it to the line. */
+  top: 0;
+  inset-inline-start: 0;
+  z-index: var(--echo-z-top, 2);
+  width: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  display: none;
+}
+.echo-field__well[data-caret="drawn"] .echo-field__caret {
+  display: block;
+}
+.echo-field__well[data-caret="drawn"] .echo-field__input {
+  caret-color: transparent;
+}
+
+/* The inner edge lights in the accent on focus. Inside the well only, no
+   halo: the library throws no outer glows. */
+.echo-field__well:focus-within {
+  /* Drawn only in forced colors, which drops the lit inner edge. */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow:
+    /* The ring first, so the well's top shadow doesn't darken it. */
+    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+.echo-field__input {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  /* Border-box and none of the browser's own vertical padding, or it's 2px
+     taller than the control scale and than a Select beside it. */
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--ctl-h);
+  padding-block: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--echo-text);
+  caret-color: var(--echo-accent-glow);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ctl-font);
+}
+.echo-field__input--mono {
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ctl-font);
+}
+.echo-field__input::placeholder {
+  color: var(--echo-text-dim);
+}
+
+.echo-field[data-disabled] {
+  opacity: 0.45;
+}
+.echo-field[data-disabled] .echo-field__input {
+  cursor: not-allowed;
+}
+
+/*
+ * Description and error. Both are linked to the control by Base
+ * UI, so a screen reader reads them after the name. The error doesn't rely on
+ * hue: it's the words, a square pip (the danger shape Banner uses), and the
+ * well's inner edge lit the way focus lights it.
+ */
+.echo-field__description,
+.echo-field__error {
+  margin: 0;
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-snug, 1.4);
+  overflow-wrap: anywhere;
+}
+.echo-field__description {
+  color: var(--echo-text-dim);
+}
+.echo-field__error {
+  display: flex;
+  gap: var(--echo-space-3);
+  align-items: baseline;
+  color: var(--echo-text);
+}
+.echo-field__error::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--echo-radius-xs);
+  background: var(--echo-primary-cap-mid);
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+}
+.echo-field[data-invalid] .echo-field__well {
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 1.5px color-mix(in oklch, var(--echo-primary-cap-mid) 80%, transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the recessed well's gradient and
+ * shadows, which is its whole edge: without a border an input, and above all
+ * an empty one, isn't visible at all. System colors only, so focus still shows.
+ */
+@media (forced-colors: active) {
+  .echo-field__error::before {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+  .echo-field__well {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  /* The system draws the caret here, in the user's colours. */
+  .echo-field__caret,
+  .echo-field__well[data-caret="drawn"] .echo-field__caret {
+    display: none;
+  }
+  .echo-field__well[data-caret="drawn"] .echo-field__input {
+    caret-color: auto;
+  }
+}

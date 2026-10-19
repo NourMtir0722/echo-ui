@@ -1,0 +1,401 @@
+import { CliFlags, InitLine, InstallLine, PreRelease } from "@/components/guides/live";
+
+# CLI
+
+<PreRelease />
+
+`echo-ui` installs Echo into your project and does nothing else. It copies files, records what it
+copied, and prints what it cannot do for you. It never edits your source code — not your layout,
+not your global CSS, not a component you have since changed. The one thing it writes into files of
+yours is what an agent reads: a marked Echo block in `CLAUDE.md` or `AGENTS.md` and two hook entries
+in `.claude/settings.json` (the check and the Stop gate), and `agent off` takes them back out.
+
+The npm package is `echo-ui-cli`; the command it installs is `echo-ui`. Every line here names the
+package, so it works in a project that has installed nothing yet.
+
+## init
+
+<InitLine />
+
+Detects the framework, the package manager and whether you keep source in `src/`; installs
+`echo-ui-core`, and `echo-ui-cli` as a dev dependency so `npx echo-ui-cli` runs the project's own
+copy; writes `echo.json`, `echo-lock.json` and `echo-theme.css`; keeps a copy of the catalog in
+`node_modules/.cache/echo-ui/`; writes what an agent reads (a marked Echo block in `CLAUDE.md` or
+`AGENTS.md`, a `DESIGN.md` with this project's look in Echo's terms, a hook that runs `check` after
+each edit, the [Stop gate](#the-stop-gate) that runs Echo's tests before the agent finishes, and
+three skills: building with Echo, Design Eye and Style Fit); prints one line naming everything it
+added, then the three things left for you to paste: the theme import and the page's ground, the
+`"use client"` rule for files that pass a component a function, and `<EchoCheck />`. [Installation](/docs/installation#set-the-project-up)
+covers it in full.
+
+| Flag | What it does |
+| --- | --- |
+| `--dir <path>` | Where components go. Defaults to `src/components/echo`, or `components/echo` without a `src/`. |
+| `--seed <hex>` | Generate `echo-theme.css` and `DESIGN.md` from your own accent colour, and record it in `echo.json`. The whole seed works too, as the generator shows it: `accent,chassis,paper`. |
+| `--style <name>` | Wear a style from the start, yours or Echo's: the same as `style use` right after. Not with `--seed`: a style carries its own. |
+| `--yes` | Write `echo.json` again over an existing one. |
+| `--dry-run` | Say what it would do; write nothing. |
+| `--skip-agent` | Leave out the block, `DESIGN.md`, the hooks and the skills. |
+| `--ci` | Also write `.github/workflows/echo-design.yml`: a GitHub Actions job that builds and starts the app on every pull request and runs [`test`](#test) on it. Never over a file that's already there. |
+
+## agent
+
+```sh
+npx echo-ui-cli agent off   # take the block, DESIGN.md, the hook and the skills out
+npx echo-ui-cli agent on    # put them back, written for this version
+```
+
+`off` takes out everything Echo wrote for agents: the block between `<!-- echo-ui:start -->` and
+`<!-- echo-ui:end -->`, the two hook entries, and the skills. A file it had added to is left as it was
+before, and deleted only if Echo had created it and nothing else was put in it since.
+
+## add
+
+<InstallLine items={["echo-hardware-button", "echo-modal", "echo-tabs"]} />
+
+An item brings the Echo items it needs and the npm packages they import — HardwareButton installs
+`gsap` and pulls in `echo-ui-core`. A template is a whole screen in one command, with every
+component it uses:
+
+<InstallLine items={["echo-console"]} />
+
+Nothing is written until the whole install is planned. Each file is worked out to be one of four
+things:
+
+| What a file is | What happens to it |
+| --- | --- |
+| **new** | You don't have it. It gets written. |
+| **unchanged** | You have it, byte for byte. It is left alone. |
+| **upgrade** | You have the version you installed, and the registry has moved on. It gets written. |
+| **yours** | You have something else — you edited it. The install stops. |
+
+That last one is the point of `echo-lock.json`: the CLI knows the hash of what it wrote, so "you
+edited this" is a fact rather than a guess. It names every file it would have replaced and exits
+without writing any of them. `--overwrite` says to take the registry's version anyway.
+
+`add` also checks your `echo-ui-core` against the range each item declares, and refuses before
+writing if an item needs a newer one.
+
+| Flag | What it does |
+| --- | --- |
+| `--overwrite` | Replace files you have edited. |
+| `--dry-run` | Print the plan; write nothing. |
+| `--skip-install` | Write the files without calling your package manager. |
+
+## which and docs
+
+```sh
+npx echo-ui-cli which "a settings toggle" "confirm a delete"
+npx echo-ui-cli docs switch alert-dialog
+```
+
+The questions an agent asks before it writes UI, answered from the catalog `init` kept, so they
+answer in milliseconds and offline. Both take several at once.
+
+`which` names the item that does each job, with a one-line reason and its install command. When
+nothing in Echo does the job, it says so: "an image slider" gets "A carousel is coming soon", not
+Slider because the two share a word. The MCP server's `search_components` leads with
+the same answer.
+
+`docs` prints each item's props, its smallest working use, what it needs for accessibility and
+what not to do. Imports are written the way your project resolves its Echo folder: through its
+alias (`@/components/echo/switch`), or, with none, relative to the folder your app's files are in,
+`src/` in a Vite app. An item you installed at an older version says so. `add` and `update` refresh the kept catalog; `--refresh`
+fetches it again first.
+
+## check
+
+```sh
+npx echo-ui-cli check
+npx echo-ui-cli check app/settings/page.tsx
+```
+
+What an agent (or anyone) gets wrong about Echo in the project's own code, one line each, with the
+Echo way to do it:
+
+| What | For example |
+| --- | --- |
+| A colour written by hand | "`#8B6FE8` is your accent: use `var(--echo-accent)`", named from your own theme; `text-red-500` |
+| Spacing or a radius off Echo's scale | `padding: 13px` → `var(--echo-space-6)`; `p-[13px]`; page layout past 32px is yours |
+| A shadow drawn by hand | `0 4px 12px rgb(0 0 0 / 0.3)` → a recipe, `var(--echo-shadow-panel)`; a hand-drawn focus ring → `var(--echo-shadow-ring)` |
+| Invented timing, or a second animation library | `transition: opacity 300ms` → `var(--echo-duration-sweep)`; `framer-motion` next to Echo |
+| Restyling Echo from outside | `className` on Switch; `.echo-hw__cap { … }` in your CSS; `--echo-accent` set anywhere but the theme |
+| A raw element where Echo has the component | `<button>`, `<select>`, `<input type="checkbox">`, `role="switch"` |
+| An Echo class on a raw element | `echo-hw__cap` on a `<span>` |
+| A prop the component doesn't take, or a value it doesn't have | `color` on HardwareButton; `variant="destructive"` |
+| A control without the name its type requires | `<Switch>` with neither `aria-label` nor `aria-labelledby` |
+| Markup a keyboard or screen reader can't use | `onClick` on a `div`; an `<img>` without `alt`; an `<input type="date">` with no label; `aria-invalid` with no words; `outline: none` on focus; `tabIndex={2}`; `aria-hidden` on a link |
+| Motion outside Echo's | GSAP used straight beside Echo; an `animation` with no reduced-motion fallback |
+| A screen rule broken | another library's `Button` beside Echo's; two primary caps in one form; "Delete" on one press; `confirmLabel="OK"` |
+| A heavy part loaded with the page | ShaderField (WebGL) imported at the top of a file, instead of with `next/dynamic` or `lazy` |
+| What reads as made by AI (the slop police) | gradient text; an emoji as an icon; the sparkle for "AI"; "Get started"; an arrow stapled to a label; "Jane Doe"; a stripe down one edge of a card; spaced capitals made by hand |
+
+What the style you wear kept on purpose (its `keeps`, which only you add) isn't counted; a stand-in
+name or photo always is, and a number that looks invented is said, not counted. It never reads Echo's
+own folder: those files are the components, and they use raw elements on purpose. Checking the whole project also says which Echo items were edited since they were installed
+and which are behind the registry, without counting either as a problem. Props are checked against the version you installed, read from each component's own
+types, so the check and the compiler agree about which props exist and which names are required.
+
+**Your team's own rules.** Nothing needs configuring. A `check` section in `echo.json` only adds:
+turn a rule `off`, or to `info` (said, not counted); ban an import, in your own words; allow brand
+colours the seed doesn't produce.
+
+```json
+{
+  "check": {
+    "rules": { "space": "info" },
+    "ban": [{ "import": "lucide-react", "message": "our icons are in @/icons." }],
+    "colours": ["#FF5A1F"]
+  }
+}
+```
+
+A rule name that isn't one stops the check and says so, rather than quietly turning nothing off.
+
+It exits **1** when it finds something, so a CI job can run it; nothing requires one. `--hook`
+checks one file, for an agent's editor hook: it reads the hook's JSON on stdin, exits **2** with the
+findings on stderr, and **1** only if the check itself fails, so an agent is never handed the
+check's own bug to fix.
+
+```sh
+npx echo-ui-cli check --url http://localhost:3000/settings
+```
+
+`--url` loads a running page headless and runs the check `<EchoCheck />` runs in development: colours as the browser paints them, controls with no name, text
+under WCAG AA against what's behind it, a missing theme, ground or `SoundProvider`, and the screen
+rules that need a render, and the [design tests](#test). Then axe scans it, as [`test`](#test) does.
+It renders the page in the Chrome already on your machine, or in your project's own Playwright when
+there's no Chrome, and installs nothing; with neither, it says how to get one. Your team's rules
+apply to it too, `--json` gives the findings, and it exits `1` when it finds something. What only a
+person can decide is printed after the findings and never counted.
+
+## test
+
+```sh
+npx echo-ui-cli test
+```
+
+Echo's tests, run on your app's pages the way a test suite runs: each page loaded headless, measured
+for what a designer checks on a screen an agent built, and scanned by axe.
+
+| Rule | What it finds |
+| --- | --- |
+| `contrast` | Text under WCAG AA against what's behind it. |
+| `alignment` | Text cut off with "…"; cards side by side whose actions sit at different heights; a lone action at the end of a footer when the content starts at the other edge; a grid that leaves columns empty. |
+| `depth` | A control that glows at rest (in Echo, light says a state); a raised surface on a raised one with no well between. |
+| `corners` | Parts of one kind with different corners; a corner inside a corner that doesn't follow it (the outer radius less the gap). |
+| `icons` | The icons of one group (a nav, a toolbar, a list) at different sizes or stroke weights, or one filled among outlined ones. |
+| `axe` | [axe-core](https://github.com/dequelabs/axe-core)'s WCAG 2.0, 2.1 and 2.2 A and AA rules, which catch what's written outside Echo's parts: an image with no `alt`, a target under 24px, `aria-hidden` over something a keyboard reaches, an ARIA value that isn't one, a list holding something that isn't an item, a page with no `lang` or `<title>`. Contrast stays Echo's own, and a control with no name is said once, by `name`. |
+
+Each finding says what it measured and the one change that fixes it. A design test's ends with what
+to leave alone, so an agent changes that and nothing else; an axe finding names its rule and its
+WCAG criterion, and says Echo's answer when one of its parts or props is it:
+
+```text
+/pricing  alignment  div.echo-hw "Choose Team": 3 cards side by side have their actions at 2 heights (412px, 388px, 388px from the top of the row). Line them up at the bottom of their cards: put each card's actions last, at `margin-top: auto` (an Echo Card's footer is). Change only the cards' layout, not the actions, the text or the colours.
+/settings  axe  button "Bold": target-size (WCAG 2.5.8, AA): this target is 14px by 14px with 4px of room around it, where WCAG asks for 24px by 24px, or that much room. Echo's parts are 24px and up: use the part (HardwareButton, Toggle, Link) instead of a raw control, or give this one 24px.
+```
+
+Distances have a tolerance of 2px. The pages are the ones you name (`test /pricing /settings`),
+else `test.routes` in `echo.json`, else every route your app has (a page with a `[slug]` needs
+naming). The app is `--url`, else `test.url`, else the port its dev script runs on; when nothing
+answers, it says so. A page that shows the dev server's error overlay instead of itself (Next's or
+Vite's, when it threw) is that page's error, never a pass. `--width` tests at one width; `test.widths` at several. A report with a picture
+of each finding is written to `.echo/report/index.html` (and `report.json`); `.echo/` keeps itself
+out of git. Under each page, the report also lists what only a person can check, never counted and
+never handed to an agent: what axe couldn't decide, each iframe (axe doesn't look inside frames),
+and a note when axe couldn't run on the page. It exits `1` when it finds something, so CI can run
+it (`init --ci` writes the job), and your team's rules apply: `"alignment": "info"` says them
+without counting them.
+
+```json
+{
+  "test": { "url": "http://localhost:3000", "routes": ["/", "/pricing"], "widths": [390, 1280] }
+}
+```
+
+A project that starts with problems axe already finds keeps them rule by rule: one line for each
+axe rule that fires, taken out as that rule is cleared. Those are said without being counted, and
+anything new still counts.
+
+```json
+{
+  "check": { "rules": { "axe:target-size": "info", "axe:image-alt": "info" } }
+}
+```
+
+`"axe": "info"` says everything axe finds without counting it, like Storybook's todo level, but it
+hides every new problem too, which is what the tests are there to catch. `"axe": "off"` turns axe off. An
+`axe:` name that isn't one of the rules it runs stops the tests and says so.
+
+### The Stop gate
+
+In Claude Code, `init` adds a second hook beside `check`'s, which runs these tests when the agent
+tries to finish, on the pages its change touched, and keeps it working until they pass (three
+rounds at most). `check --stop` is that hook. [Checks and tests](/docs/checks#the-stop-gate) has
+when it lets the agent stop, and what it tells you.
+
+## list
+
+```sh
+npx echo-ui-cli list
+```
+
+Everything in the registry, with its version, and — if you have an `echo.json` — what this project
+has and whether it has moved on. It works without one, so you can browse before you commit to
+anything.
+
+## diff
+
+```sh
+npx echo-ui-cli diff                 # one line per installed item
+npx echo-ui-cli diff field           # what actually changed, line by line
+```
+
+Echo's components live in your source tree, which means your copy and Echo's drift apart the
+moment you edit one. `diff` is how you find out what you are missing.
+
+With no names it is a roll call. Every installed item is in one of four states:
+
+| State | What it means |
+| --- | --- |
+| **up to date** | Your copy is what the registry serves. Nothing to do. |
+| **behind** | You haven't touched it and Echo has moved on. `update` takes it. |
+| **edited, up to date** | You changed it, and Echo hasn't. Yours, and current. |
+| **edited, and behind** | You changed it *and* Echo has moved on. The one that needs you. |
+
+Those last two are counted per item, not per file: change `field.tsx` while a fix lands in
+`field.css` and the item is **edited, and behind** — which is the case that would otherwise leave
+the fix sitting there unread.
+
+Name one or more items and it prints the diff itself, in the usual `@@` format: your copy on the
+left, the version the registry serves on the right.
+
+## update
+
+```sh
+npx echo-ui-cli update                      # every item, your edits kept
+npx echo-ui-cli update field                # just this one
+npx echo-ui-cli update field --overwrite    # take Echo's and lose your edits
+```
+
+Moves every item to the version the registry serves. A file you've edited and Echo hasn't stays
+yours; one you've both changed is **merged**: your edits and Echo's change together, against the
+version you installed, which the registry keeps. Nothing you wrote is replaced without
+`--overwrite`.
+
+Where your edits and Echo's change meet in the same lines, nothing is guessed. The item is left
+exactly as it is, and `update` prints those lines between git's conflict markers: yours, as
+installed, and Echo's. Bring Echo's change into your lines, or keep yours where it already does the
+same, then run `update` again: it merges once your file carries Echo's change. If there's no copy of
+the version you installed to merge against, the item is left as it is too, with the two commands
+that resolve it: read the diff, or overwrite.
+
+An item moves whole or not at all. Half of a component at one version and half at another is not a
+state Echo will leave you in, so one conflict holds its whole item.
+
+| Flag | What it does |
+| --- | --- |
+| `--overwrite` | Replace files you have edited. |
+| `--dry-run` | Print what would move, merge or conflict; write nothing. |
+| `--skip-install` | Don't call your package manager for new dependencies. |
+
+If a newer version needs an `echo-ui-core` newer than the one you have, `update` refuses the whole
+run and says so rather than leaving you with components your core cannot serve.
+
+## style
+
+A style is a look your project wears on top of Echo: colours, type, radius, finish and density. It
+never changes the grammar (the light, what each material is for, motion, sound, the accessibility
+floor), so two products in two styles still feel like devices from the same maker.
+
+```sh
+npx echo-ui-cli style list
+npx echo-ui-cli style show <name>
+npx echo-ui-cli style fit --profile "W4 V2 D1 F2 E3 C3 O3" --tolerance "W1 V1 D1 F0 E2 C1 O1"
+npx echo-ui-cli style use <name>
+npx echo-ui-cli style set radius 0.8 finish 0.7
+npx echo-ui-cli style check ~/Documents/styles/<name>/style.json
+```
+
+`style list` shows Echo's own styles and yours. Yours live in your own library, `~/Documents/styles`
+(or wherever `ECHO_STYLES_DIR` points), and stay private to you: a style there is a folder with a
+`style.json`, and a folder that holds only a style's document is listed as needing a new read.
+
+A style gets into your library through Echo's Design Eye, the skill `init` puts beside Echo's own.
+Give your agent a moodboard and ask for the product to look like it: it asks what the product is
+for, if the project doesn't already say, reads each style on the board into a design foundation
+(what it's made of, its rules, where it fits) and a `style.json`, checks it, and saves both to your
+library. Then `style use` puts it on.
+
+Which style a product should wear is Echo's Style Fit's job, the third skill `init` writes. Ask
+your agent: it works out who the product is for and places it on the seven axes styles are placed
+on (warmth, volume, density, formality, era, craft, ornament), each with how far a style may drift
+from it; a tolerance of 0 locks an axis. `style fit` measures every style in your library and
+Echo's against that, in order; the agent reads the best of them, argues for one, saves the decision
+to your library, and wears it. `style show <name>` prints one style in full. A style that's only
+its foundation document, written before Echo, is measured from your library's index and needs its
+Echo part, which Design Eye writes from the document, before it's worn.
+
+`style use` writes the style's seed to `echo.json` and `echo-theme.css`, says what the theme
+corrected for contrast and which fonts to get, and puts the style's rules in `DESIGN.md`, so any
+agent working on the project keeps to them. The style's documents and moodboard stay in your
+library. `style check` says whether a `style.json` is one Echo can apply, listing every problem at
+once.
+
+`style set` moves one setting of this project's seed, or several at once: the change an agent makes
+when it's asked for "rounder" or "denser". The settings are the seed's own: `accent`, `chassis`,
+`paper` and `lcdTint` (hex), `finish` and `radius` (0 to 1), `density` (`compact`, `default`,
+`comfortable`), `render` (`molded` or `drawn`), `pills` (`true` or `false`), and the four font
+stacks. Every value is checked before anything is written, and
+every problem is listed at once. The theme and `DESIGN.md` are written again, contrast is held as
+always, and the output ends with the line that puts it back. `default` gives a setting back to
+Echo, and `style set` alone lists where each one is. A project that wears a style keeps it, marked
+with what moved; `style use` puts the style back whole.
+
+`style sample` is the evidence for reading a style from a moodboard, with no Python: for one image,
+its plate, its dominant values (the real hex, dark to light, with each one's share of the pixels; 8
+of them unless `--swatches` says) and magnified crops of the surfaces a claim rests on (`--zoom`
+times, 6 unless it says). A plate wider than 1600px is kept at that width, or at `--max-width`.
+
+```sh
+npx echo-ui-cli style sample board/poster.jpg --out ~/Documents/styles/<name>/assets --crop 120,340,80,80:grain
+```
+
+A moodboard exported from a canvas is one image holding many references. Give each tile its own
+plate with `--region x,y,w,h`, the tile's box in the board's pixels; crops stay in the board's pixels
+too.
+
+```sh
+npx echo-ui-cli style sample board.png --region 0,0,640,480 --out ~/Documents/styles/<name>/assets/tile-1
+```
+
+## Flags
+
+Every flag the CLI takes, and the commands that read it:
+
+<CliFlags />
+
+The exit codes are part of the contract: **0** it worked, **1** it refused and said why (outside the
+baseline, a file you edited, a hash that didn't match, an `echo.json` that isn't valid JSON),
+**2** the command line was wrong.
+
+`--json` agrees with them: a run that exits 0 prints one `{ "ok": true, … }` object on stdout, and a
+run that doesn't prints `{ "ok": false, "error": … }` on stderr and nothing on stdout.
+
+## Keeping up
+
+`diff` and `update` are the whole story for an item that is already installed. `add` still works —
+it upgrades a file you haven't touched and refuses one you have — but it resolves dependencies and
+installs packages, so `update` is the narrower tool and the one to reach for.
+
+The [Changelog](/docs/changelog) says whether a release can change behaviour. Each item also carries
+its own history in the registry, with breaking and accessibility changes flagged — `--json` on
+`list` shows the versions, and a release marked **Breaking** lists the edits you may need to make.
+
+## What it trusts
+
+The registry is served over https, and nothing else is accepted unless you ask for it by name with
+`--registry`. Every file arrives with a hash, and a file that doesn't match it is refused rather
+than written. Paths are checked before anything is opened, so a registry cannot write outside the
+folder `echo.json` names. Whoever serves the registry does not get your disk.

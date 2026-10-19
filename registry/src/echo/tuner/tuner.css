@@ -1,0 +1,157 @@
+/**
+ * Tuner. A dark screen well holding the reading and a scale printed on the
+ * glass, with a lit needle fixed over it. The needle is the accent because it
+ * emits; the scale is cream print. Composes var(--echo-*) — no hex literals;
+ * the only fixed values are the single-key-light occlusion model.
+ */
+.echo-tuner {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.echo-tuner__screen {
+  display: grid;
+  gap: var(--echo-space-3);
+  padding-block-start: var(--echo-space-6);
+  border-radius: var(--echo-radius-xl);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow: var(
+    --echo-shadow-well-deep,
+    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.9 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  overflow: hidden;
+}
+
+.echo-tuner__label {
+  padding-inline: var(--echo-space-8);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-tuner__reading {
+  display: flex;
+  justify-content: center;
+  padding-inline: var(--echo-space-8);
+}
+
+/* The scale: numbers read left to right in every language. */
+.echo-tuner__scale {
+  position: relative;
+  block-size: 64px;
+  direction: ltr;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  outline: none;
+  border-radius: 0 0 var(--echo-radius-xl) var(--echo-radius-xl);
+}
+.echo-tuner__scale:active {
+  cursor: grabbing;
+}
+.echo-tuner__scale:focus-visible {
+  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow)));
+}
+
+/* The drum: the print fades toward both edges, as a scale turning away does. */
+.echo-tuner__drum {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* The print runs on past the window on purpose: it's a strip, clipped. */
+  --echo-clip: decorative;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, var(--echo-seam) 30%, var(--echo-seam) 70%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, var(--echo-seam) 30%, var(--echo-seam) 70%, transparent 100%);
+}
+.echo-tuner__ticks {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  overflow: visible;
+}
+.echo-tuner__ticks line {
+  stroke: color-mix(in oklab, var(--echo-text) 32%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.echo-tuner__ticks line[data-kind="mid"] {
+  stroke: color-mix(in oklab, var(--echo-text) 55%, transparent);
+}
+.echo-tuner__ticks line[data-kind="major"] {
+  stroke: color-mix(in oklab, var(--echo-text) 85%, transparent);
+}
+.echo-tuner__ticks text {
+  fill: var(--echo-text-dim);
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-xs);
+  font-variant-numeric: tabular-nums;
+  text-anchor: middle;
+}
+
+/* The needle: the one lit thing on the scale. A stem with a round head. */
+.echo-tuner__needle {
+  position: absolute;
+  inset-block-start: 1px;
+  inset-inline-start: 50%;
+  inline-size: 8px;
+  block-size: 34px;
+  margin-inline-start: -4px;
+  pointer-events: none;
+}
+.echo-tuner__needle::before,
+.echo-tuner__needle::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--echo-lcd-glow) 70%, transparent);
+}
+.echo-tuner__needle::before {
+  inset-block: 3px 0;
+  inline-size: 2px;
+  border-radius: var(--echo-radius-full);
+}
+.echo-tuner__needle::after {
+  inset-block-start: 0;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+}
+
+.echo-tuner[data-disabled] {
+  opacity: 0.45;
+}
+.echo-tuner[data-disabled] .echo-tuner__scale {
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  .echo-tuner__screen {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-tuner__ticks line,
+  .echo-tuner__ticks line[data-kind] {
+    stroke: CanvasText;
+  }
+  .echo-tuner__ticks text {
+    fill: CanvasText;
+  }
+  .echo-tuner__needle::before,
+  .echo-tuner__needle::after {
+    background: Highlight;
+    box-shadow: none;
+  }
+  .echo-tuner__scale:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}

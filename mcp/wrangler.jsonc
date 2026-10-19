@@ -1,0 +1,66 @@
+/**
+ * The hosted MCP server: a Cloudflare Worker of its own, at mcp.echo-ui.com.
+ *
+ * WHY NOT INSIDE THE SITE'S WORKER. The site deploys as static files only
+ * (`apps/www/wrangler.jsonc`), and `/e/` — what `npx echo-ui-cli` installs from —
+ * is among them. Running code in that Worker would put a server's bugs in the
+ * path of the registry. Apart, a bad deploy here costs the hosted tools and
+ * nothing else, and the two deploy when each is ready.
+ *
+ * THE ADDRESS IS FOR GOOD. A ChatGPT plugin can't change its server's scheme,
+ * host or port after it's listed (a new address means a new plugin), and
+ * Claude's directory, Lovable, v0 and Bolt all store it in people's settings.
+ *
+ * It reads the catalog and `/e/` from https://echo-ui.com, the same documents
+ * the npm server and the CLI read, so it answers what the site has published.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "echo-ui-mcp",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-11",
+  // `node:crypto` for the registry client's hash checks, and the Node modules
+  // PostCSS asks for when check_code reads CSS.
+  "compatibility_flags": ["nodejs_compat"],
+  // For the `@registry/*` paths: the server's tools are the registry's own functions.
+  "tsconfig": "tsconfig.json",
+  // What an MCP client shows as the server's version. `worker-config.test.ts`
+  // holds it to package.json's.
+  "define": { "__ECHO_MCP_VERSION__": "\"0.3.2\"" },
+
+  // One public address, as on the site: no workers.dev copy, no preview URLs.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "mcp.echo-ui.com", "custom_domain": true }],
+
+  /*
+   * Per address, to stop a runaway script. ChatGPT and Claude reach the server
+   * from their own machines, so one address there can be many people at once;
+   * a conversation sends a few dozen calls, and this ceiling sits far above
+   * what many of them together send in ten seconds.
+   */
+  "ratelimits": [
+    { "name": "LIMITER", "namespace_id": "1001", "simple": { "limit": 300, "period": 10 } },
+    /*
+     * What a call costs is the code it carries, so large bodies have a budget of their own: a unit per
+     * whole 16 KiB (`LARGE_UNIT`, src/worker.ts), 120 a minute per address, about 2 MB of large code. A call
+     * under 16 KiB, nearly every call, never draws on it. Without it, one address at the limit above with
+     * the largest check_code bodies could have cost hundreds of dollars a month in CPU time.
+     */
+    { "name": "LARGE", "namespace_id": "1002", "simple": { "limit": 120, "period": 60 } }
+  ],
+
+  /*
+   * The most CPU one call may take. The largest check_code takes about 100ms on a laptop and a few
+   * times that here; past a second something is wrong, and that call is stopped rather than billed
+   * for up to the plan's thirty seconds.
+   */
+  "limits": { "cpu_ms": 1000 },
+
+  // OpenAI's plugin portal issues this token when the plugin's server is
+  // connected; paste it here and deploy. It's public: it's served to anyone.
+  "vars": { "OPENAI_APPS_CHALLENGE": "e5vT7w71E4B0x6LYekNDlWO8Jbe_RwC_wYJagAcn3co" },
+
+  // Request logs: the path, status and timing, never a body (`src/worker.ts`).
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,272 @@
+/*
+ * Menu. A floating device panel
+ * in the Select vocabulary — same molded cap trigger, same recessed panel, same
+ * lit dot for "this one" — because a dropdown and a select are the same object
+ * to a user's eye and giving them two skins would be two vocabularies for one
+ * thing. Composes var(--echo-*) only.
+ */
+
+/* --- trigger: the same molded cap the Select trigger uses ---------------- */
+
+.echo-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+  height: calc(40px * var(--echo-density, 1));
+  padding: 0 var(--echo-space-8);
+  border: 0;
+  border-radius: var(--echo-radius-lg);
+  cursor: pointer;
+  color: var(--echo-text);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-md);
+  background: linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    color-mix(in oklab, var(--echo-cap-highlight) 50%, var(--echo-cap)) 40%,
+    var(--echo-cap) 62%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    0 calc(4px + 1px * var(--lift, 0) - 3px * var(--press, 0)) 0 var(--echo-seam),
+    0 calc(9px + 5px * var(--lift, 0) - 6px * var(--press, 0)) calc(14px + 10px * var(--lift, 0) - 9px * var(--press, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* useCapPhysics owns the transform: lift, lean, travel onto the seam. */
+}
+
+.echo-menu__trigger:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+/* The cap stays down while its menu is open — the press is still happening. */
+.echo-menu__trigger[data-popup-open] {
+  background: linear-gradient(180deg, var(--echo-cap-shadow) 0%, var(--echo-cap) 100%);
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 1px 0 var(--echo-line-width, 0px) var(--echo-seam);
+}
+
+/* --- the panel ----------------------------------------------------------- */
+
+/*
+ * The layer lives on the positioner: it's the positioned element, so a
+ * z-index on the popup inside it did nothing, and the menu opened behind any
+ * dialog it was in.
+ */
+.echo-menu__positioner {
+  z-index: var(--echo-z-popover, 300);
+}
+
+.echo-menu__popup {
+  /* The flowing highlight is positioned against the panel. */
+  position: relative;
+  box-sizing: border-box;
+  min-width: 190px;
+  max-height: var(--available-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--echo-space-3);
+  border-radius: var(--echo-radius-xl);
+  color: var(--echo-text);
+  background: var(--echo-surface);
+  box-shadow:
+    inset 0 0 0 1px var(--echo-seam),
+    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 30%, transparent),
+    0 30px 60px -20px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+  outline: none;
+  transform-origin: var(--transform-origin);
+  /* It blooms out of its trigger: solid quickly, its size overshooting and
+     settling. Leaving, it is quick and plain. */
+  transition:
+    opacity var(--echo-duration-swap) ease,
+    transform var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-menu__popup[data-ending-style] {
+  transition-duration: var(--echo-duration-swap);
+  transition-timing-function: ease-in;
+}
+
+.echo-menu__popup[data-starting-style],
+.echo-menu__popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.9) translateY(-6px);
+}
+
+/* A menu opening upward should grow upward. */
+.echo-menu__popup[data-side="top"][data-starting-style],
+.echo-menu__popup[data-side="top"][data-ending-style] {
+  transform: scale(0.9) translateY(6px);
+}
+
+/* --- items --------------------------------------------------------------- */
+
+.echo-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-6);
+  padding: var(--echo-space-4) var(--echo-space-6);
+  border-radius: var(--echo-radius-md);
+  cursor: default;
+  user-select: none;
+  outline: none;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+  text-decoration: none;
+}
+
+.echo-menu__item--marked {
+  justify-content: space-between;
+}
+
+.echo-menu__label {
+  min-width: 0;
+}
+
+/*
+ * Highlight is a lift in the plastic, not a colour change: the accent is
+ * reserved for the ONE thing that is on, and in a menu that is the
+ * checked item's dot, not wherever the pointer happens to be.
+ */
+.echo-menu__item[data-highlighted] {
+  background: color-mix(in oklab, var(--echo-text) 8%, transparent);
+  color: var(--echo-text);
+}
+
+.echo-menu__item[data-disabled] {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.echo-menu__item[data-popup-open] {
+  background: color-mix(in oklab, var(--echo-text) 8%, transparent);
+  color: var(--echo-text);
+}
+
+/* --- the lit dot: same indicator the Select uses for its selection -------- */
+
+/*
+ * One mark per kind of item, and no halo: a check (text colour) for a
+ * checkbox item, a lit pip for a radio item — the pip the RadioGroup uses.
+ */
+.echo-menu__indicator {
+  display: inline-flex;
+  flex: none;
+  color: var(--echo-text);
+}
+
+.echo-menu__indicator--check svg {
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+}
+
+.echo-menu__indicator--pip > span {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--echo-radius-full);
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));
+}
+
+.echo-menu__chevron {
+  flex: none;
+  color: var(--echo-text-dim);
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-none, 1);
+}
+
+/* --- groups and seams ---------------------------------------------------- */
+
+.echo-menu__group-label {
+  padding: var(--echo-space-4) var(--echo-space-6) var(--echo-space-3);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+/* A panel seam, matching Divider. */
+.echo-menu__separator {
+  height: 1px;
+  margin: var(--echo-space-3) var(--echo-space-3);
+  background: var(--echo-seam);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 26%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-menu__popup {
+    transition-duration: var(--echo-duration-glitch);
+  }
+  .echo-menu__popup[data-starting-style],
+  .echo-menu__popup[data-ending-style] {
+    transform: none;
+  }
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both
+ * platform guidelines use — a fingertip rather than conformance. Gated on
+ * `@media (pointer: coarse)`, so the desktop rendering does not move.
+ *
+ * Where a control's visual size is the design (a 24px checkbox, a 10px pip),
+ * the target is grown with the same transparent pseudo-element as the 24px minimum,
+ * not by growing the control.
+ */
+@media (pointer: coarse) {
+  .echo-menu__trigger {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/*
+ * The flowing highlight (useLiquidHighlight): one cap that travels to the
+ * hovered item on a spring. Once it shows, the popup has data-glow and the
+ * items drop their own tint.
+ */
+.echo-menu__glow {
+  position: absolute;
+  z-index: var(--echo-z-base, 0);
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform, top, height;
+}
+.echo-menu__glow-shape {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--echo-radius-md);
+  background: color-mix(in oklab, var(--echo-text) 8%, transparent);
+}
+.echo-menu__popup[data-glow] .echo-menu__item[data-highlighted] {
+  background: transparent;
+}
+.echo-menu__item {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+}
+@media (forced-colors: active) {
+  .echo-menu__glow {
+    display: none;
+  }
+}

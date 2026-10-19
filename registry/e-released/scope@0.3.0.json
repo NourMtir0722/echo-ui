@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "name": "scope",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Scope",
+  "description": "Part of the page speaking with its own vocabulary. accent gives what's inside a colour of its own for identity (a category, a filter pad, a person, a creature): the theme engine run on your colour, so its lit caps, glow and LEDs are derived and contrast-checked like your main accent, and every component inside picks them up. It's for telling things apart, never for state. molding=\"soft\" rounds the caps inside and fills them out with a pillow of light. It draws nothing and takes no space.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "scope/scope.tsx",
+      "sha256": "7545fecc8faa697790fdd3edb5b163ca71a09b9f88a1d9d07d5c35004807f63b",
+      "content": "/**\n * Scope. Part of the page speaking with its own vocabulary: a colour of its\n * own, or softer, puffier plastic.\n *\n * `accent` gives what's inside a colour for identity: a category, a filter\n * pad, a person, a creature. It's the same theme engine run on your colour,\n * so the lit caps, the glow and the LEDs are derived and contrast-checked\n * exactly as your main accent is, and every component inside picks them up\n * without a prop of its own. It's for telling things apart, never for state:\n * an error is still said in words.\n *\n * `molding=\"soft\"` rounds the caps inside and fills them out, with a pillow of\n * light across their tops and a deeper shade underneath.\n *\n * It draws nothing itself (it takes no space), so it wraps anything.\n */\nimport type { CSSProperties, ReactNode } from \"react\";\nimport { createEchoTheme } from \"echo-ui-core/theme\";\nimport \"./scope.css\";\n\nexport interface ScopeProps {\n  children: ReactNode;\n  /** A colour of its own for what's inside, as a hex: \"#F2674E\". */\n  accent?: string;\n  /**\n   * Your theme's chassis and paper, when they aren't Echo's defaults: the\n   * accent's caps and glow are checked against them.\n   */\n  seed?: { chassis?: string; paper?: string };\n  /** `soft`: rounder, fuller caps with a pillow of light. */\n  molding?: \"soft\";\n}\n\n/** The roles an accent decides, which a Scope re-derives for its own colour. */\nconst ACCENT_ROLES = [\n  \"accent\",\n  \"accent-highlight\",\n  \"accent-pressed\",\n  \"accent-glow\",\n  \"accent-ink\",\n  \"primary-cap-top\",\n  \"primary-cap-mid\",\n  \"primary-cap-base\",\n  \"primary-cap-ink\",\n  \"pour-top\",\n  \"pour-mid\",\n  \"pour-base\",\n  \"accent-fill-top\",\n  \"accent-fill-base\",\n  \"lcd-glow\",\n] as const;\n\nconst derived = new Map<string, Record<string, string>>();\n\n/** The accent's roles, as the variables components read. Pure, and cached per colour. */\nexport function accentVariables(accent: string, seed: ScopeProps[\"seed\"] = {}): Record<string, string> {\n  const key = `${accent}|${seed.chassis ?? \"\"}|${seed.paper ?? \"\"}`;\n  const hit = derived.get(key);\n  if (hit) return hit;\n  const { values } = createEchoTheme({ accent, ...seed }, { quiet: true });\n  const vars: Record<string, string> = {};\n  for (const role of ACCENT_ROLES) vars[`--echo-${role}`] = values.roles[role];\n  values.accentRamp.forEach((stop, i) => {\n    vars[`--echo-accent-${i + 1}`] = stop;\n  });\n  derived.set(key, vars);\n  return vars;\n}\n\nexport function Scope({ children, accent, seed, molding }: ScopeProps) {\n  // The accent's roles, as variables the stylesheets read.\n  const style = (accent ? accentVariables(accent, seed) : undefined) as CSSProperties | undefined;\n  return (\n    <div className=\"echo-scope\" data-molding={molding} style={style}>\n      {children}\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "scope/scope.css",
+      "sha256": "03248cdf1ac0e512922b8bb45d00e38ba7db438cfdf390737f6d99e6934c242c",
+      "content": "/**\n * Scope, and the vocabulary it carries. A Scope draws nothing: its accent is\n * a set of role variables everything inside reads, and soft molding sets the\n * pillow the caps are built to take.\n *\n * Reflective screens live here too, because they're the same kind of choice:\n * a component that has a screen sets `data-echo-screen=\"reflective\"` on it and\n * imports this sheet. The screen's glass turns to the paper colour, and what's\n * printed on it (digits, labels, the ghost segments) turns to ink: the\n * chassis colour, held to AA on it under every theme. Nothing glows on a\n * reflective screen; lit segments are simply dark.\n *\n * On a light device every screen is already paper glass printed in ink, and\n * the theme says what they are (`--echo-screen-*`): a reflective screen there\n * is the same glass and the same ink. A dark theme resets those values, so\n * the formulas after the commas are what a dark device's reflective screen\n * has always been.\n */\n.echo-scope {\n  display: contents;\n  /*\n   * The shadow recipes that read the accent, declared again with this Scope's\n   * accent. CSS resolves the var()s inside a custom property where it's\n   * declared, so the page's recipes carry the page's accent; these carry the\n   * one set inline on this element.\n   */\n  --echo-shadow-cap-lit:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))), inset 0 -2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent), 0 4px 0 var(--echo-line-width, 0px) var(--echo-lit-edge, var(--echo-accent-6)), 0 calc(8px * (1 - var(--echo-drawn, 0))) calc(20px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-4) 40%, transparent);\n  --echo-shadow-ring: 0 0 0 2px var(--echo-surface), 0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));\n  --echo-shadow-ring-inset: inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow));\n  --echo-shadow-glow: 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);\n}\n\n/* Soft molding: rounder caps, a pillow of light across their tops, deeper shade under them. */\n.echo-scope[data-molding=\"soft\"] {\n  --echo-pillow: 1;\n  --echo-radius-scale: 1.9;\n}\n\n/* Reflective screens: the glass is paper, the print is ink. */\n[data-echo-screen=\"reflective\"] {\n  --echo-well: var(--echo-screen-well, color-mix(in oklab, var(--echo-text) 84%, var(--echo-surface)));\n  --echo-lcd: var(--echo-screen-glass, color-mix(in oklab, var(--echo-text) 93%, var(--echo-surface)));\n}\n[data-echo-screen=\"reflective\"] * {\n  --echo-text: var(--echo-screen-ink, var(--echo-surface));\n  --echo-text-dim: var(--echo-screen-ink-dim, color-mix(in oklab, var(--echo-surface) 72%, var(--echo-lcd)));\n  --echo-accent-glow: var(--echo-screen-ink, var(--echo-surface));\n  --echo-accent-ink: var(--echo-screen-ink, var(--echo-surface));\n  --echo-lcd-glow: transparent;\n  /* The recipes that read the glow, declared again so they read this one. */\n  --echo-shadow-ring: 0 0 0 2px var(--echo-surface), 0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));\n  --echo-shadow-ring-inset: inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow));\n  --echo-shadow-glow: 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);\n}\n"
+    },
+    {
+      "path": "scope/index.ts",
+      "sha256": "3706217f0fa914647ed25f9a7742442e061cc55086f90095a501d9e4ed9044a9",
+      "content": "export { Scope, accentVariables } from \"./scope\";\nexport type { ScopeProps } from \"./scope\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`Scope`: a colour per item, and softer plastic.** `accent` gives what's inside a colour of its own for identity (a category, a filter pad, a person): the theme engine run on your colour, so its lit caps, glow and LEDs are derived and held to AA like your main accent, and every component inside picks them up. It says which one, never how it is. `molding=\"soft\"` rounds the caps inside and fills them out with a pillow of light and a fuller shade; `HardwareButton`, `QuickTile` and `Knob` carry the pillow, and look exactly as before outside a soft Scope."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

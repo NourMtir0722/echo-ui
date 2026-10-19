@@ -1,0 +1,146 @@
+/*
+ * The ruled template index. No fills, no cards: a hairline above each row and
+ * one under the last, so the list reads as one object with divisions rather
+ * than as three separate boxes. Every value is an --echo-* role.
+ */
+.echo-tlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--echo-seam);
+}
+
+.echo-tlist__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--echo-space-10);
+  padding: var(--echo-space-10) var(--echo-space-2);
+  border-top: 1px solid var(--echo-seam);
+  transition: background var(--echo-duration-tick) var(--echo-ease-tick);
+}
+
+.echo-tlist__row:has(.echo-tlist__cmd) {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+
+.echo-tlist__row:hover {
+  background: color-mix(in srgb, var(--echo-cap) 18%, transparent);
+}
+
+.echo-tlist__num {
+  font-family: var(--echo-font-mono);
+  font-size: var(--echo-text-2xs);
+  letter-spacing: 0.14em;
+  color: var(--echo-text-dim);
+}
+
+.echo-tlist__body {
+  display: grid;
+  /* An auto column keeps its content's width; at a doubled text size that
+     pushed the row open. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--echo-space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The whole row is the target; the name is the link that makes it so. */
+.echo-tlist__name {
+  font-family: var(--echo-font-machine, var(--echo-font-sans));
+  font-size: var(--echo-text-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--echo-text);
+  text-decoration: none;
+}
+
+.echo-tlist__name::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.echo-tlist__name:focus-visible {
+  outline: none;
+}
+
+.echo-tlist__row:has(.echo-tlist__name:focus-visible) {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+  border-radius: var(--echo-radius-sm);
+}
+
+.echo-tlist__tag {
+  margin: 0;
+  font-size: var(--echo-text-sm);
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* Above the stretched link, so the command can still be selected and copied. */
+.echo-tlist__cmd {
+  position: relative;
+  z-index: 1;
+  font-family: var(--echo-font-mono);
+  font-size: var(--echo-text-2xs);
+  color: var(--echo-text-dim);
+  white-space: nowrap;
+  user-select: all;
+}
+
+.echo-tlist__go {
+  font-family: var(--echo-font-machine);
+  color: var(--echo-text-dim);
+  transition: transform var(--echo-duration-tick) var(--echo-ease-tick),
+    color var(--echo-duration-tick) var(--echo-ease-tick);
+}
+
+.echo-tlist__row:hover .echo-tlist__go {
+  color: var(--site-link, var(--echo-accent));
+  transform: translateX(3px);
+}
+
+/* Breakpoints in rem, so a reader's larger text reaches them too (WCAG 1.4.4). */
+@media (max-width: 47.5rem) {
+  .echo-tlist__row,
+  .echo-tlist__row:has(.echo-tlist__cmd) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--echo-space-7);
+  }
+  .echo-tlist__cmd {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-tlist__row,
+  .echo-tlist__go {
+    transition: none;
+  }
+}
+
+/* A template on its way: named, not linked, and quieter than the ones that run. */
+.echo-tlist__row[data-soon]:hover {
+  background: none;
+}
+
+.echo-tlist__row[data-soon] .echo-tlist__name {
+  color: var(--echo-text-dim);
+}
+
+.echo-tlist__row[data-soon] .echo-tlist__name::after {
+  content: none;
+}
+
+.echo-tlist__soon {
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  white-space: nowrap;
+}

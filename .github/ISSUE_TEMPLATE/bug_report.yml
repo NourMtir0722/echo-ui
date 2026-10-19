@@ -1,0 +1,94 @@
+name: Bug report
+description: Something Echo does is wrong, and you can show it.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every bug in this project gets a reproduction and a named regression test before it is
+        closed. The more of the reproduction you can hand over, the sooner yours is fixed.
+
+        **Not a bug report:** a security vulnerability. Those go through the Security tab, privately.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where is it?
+      options:
+        - A component, once installed
+        - The CLI (init / add / list / diff / update)
+        - echo-ui-core (theme, sound, motion, tactile, presence)
+        - The registry itself (/e/)
+        - The MCP server
+        - The docs site
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: item
+    attributes:
+      label: Which item, if it is one?
+      description: The name you installed — `field`, `hardware-button`, `chat`.
+      placeholder: field
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens, and what you expected instead
+      description: Two sentences is plenty, as long as both halves are there.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce it
+      description: |
+        Numbered steps, starting from a fresh app if you can. A link to a minimal repository or a
+        StackBlitz beats any description. If it only happens with the keyboard, with a screen
+        reader, or at a particular zoom level, say so — those are easy to miss and easy to fix
+        once named.
+      placeholder: |
+        1. npx echo-ui-cli init --yes
+        2. npx echo-ui-cli add field
+        3. Tab into the field and …
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        `npx echo-ui-cli list --json | head -3` gives the registry and core versions; the rest is
+        from your own project.
+      value: |
+        - echo-ui-core:
+        - echo-ui-cli:
+        - React:
+        - Framework (Next.js / Vite) and version:
+        - Package manager:
+        - Browser and OS:
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: edited
+    attributes:
+      label: Have you edited the copied file?
+      description: |
+        Echo copies components into your source tree, so your copy can differ from Echo's.
+        `npx echo-ui-cli diff <name>` answers this exactly — paste what it prints if it shows
+        anything.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you file
+      options:
+        - label: I searched the open and closed issues for this.
+          required: true
+        - label: This is not a security vulnerability (those go through the Security tab).
+          required: true

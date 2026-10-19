@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "name": "knob",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Knob",
+  "description": "A molded rotary cap in its well with an engraved pointer and a scale that lights up to the value. Drag it up (or around), turn it with the wheel once focused, or use the keys; it clicks at every step, settles onto each detent on a spring, and gives a little past either end. A slider for assistive tech: role=\"slider\" named by label, with every slider key.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "knob/knob.tsx",
+      "sha256": "28e44a9380ee8371e0c528d050092aa45c928db9d47dcf43a96536d02f7ab4e1",
+      "content": "\"use client\";\n\n/**\n * Knob. A molded rotary cap in its well, with a pointer engraved on it and\n * the scale around it. Drag it (up turns it up, or drag around it), turn it\n * with the wheel, or use the keys. It clicks at every step, settles onto each\n * detent on a spring, and past either end it gives a little and springs back.\n *\n * For assistive tech it is a slider: `role=\"slider\"`, named by `label`, with\n * the value (and `formatValue`'s reading) and every slider key: arrows step,\n * Page Up/Down take ten, Home and End go to the ends.\n *\n * The knob is 270° of travel, from -135° to +135°.\n */\nimport {\n  forwardRef,\n  useCallback,\n  useEffect,\n  useRef,\n  useState,\n  type KeyboardEvent,\n  type MutableRefObject,\n  type PointerEvent,\n} from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { createSpring, rubberband, useReducedMotionRef, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport \"./knob.css\";\n\ninterface KnobOwnProps extends EchoInterop {\n  /** What it sets; the visible label and the accessible name. */\n  label: string;\n  value?: number;\n  defaultValue?: number;\n  onValueChange?: (value: number) => void;\n  min?: number;\n  max?: number;\n  step?: number;\n  /** How the value reads, shown under the knob and to assistive tech (\"-6 dB\"). */\n  formatValue?: (value: number) => string;\n  /** Ticks engraved around it. Default 11. */\n  ticks?: number;\n  /** `sm` 40px, `md` 56px (default), `lg` 72px across. */\n  size?: \"sm\" | \"md\" | \"lg\";\n}\n\nexport type KnobProps = KnobOwnProps;\n\nconst SWEEP = 270;\nconst DETENT: SoundRecipe = { wave: \"square\", freq: 2200, decay: 0.012, gain: 0.045 };\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on\n * the slider element, which is what a form library focuses.\n */\nexport const Knob = forwardRef<HTMLDivElement, KnobProps>(function Knob({\n  label,\n  value,\n  defaultValue,\n  onValueChange,\n  min = 0,\n  max = 100,\n  step = 1,\n  formatValue = (v) => String(v),\n  ticks = 11,\n  size = \"md\",\n  disabled = false,\n  name,\n  onKeyDown: onKeyDownProp,\n  ...interop\n}, ref) {\n  const [inner, setInner] = useState(defaultValue ?? min);\n  const current = value ?? inner;\n  const sound = useSoundOptional();\n  const reduced = useReducedMotionRef();\n  const cap = useRef<HTMLDivElement>(null);\n  const spring = useRef<Spring | null>(null);\n  const latest = useRef(current);\n  latest.current = current;\n\n  const angle = (v: number) => ((v - min) / (max - min || 1)) * SWEEP - SWEEP / 2;\n  const clamp = (v: number) => Math.min(max, Math.max(min, v));\n  const snap = (v: number) => clamp(Math.round((v - min) / step) * step + min);\n\n  const commit = useCallback(\n    (next: number) => {\n      const v = snap(next);\n      if (v === latest.current) return;\n      latest.current = v;\n      if (value === undefined) setInner(v);\n      sound?.play(DETENT);\n      onValueChange?.(v);\n    },\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n    [value, onValueChange, sound, min, max, step],\n  );\n\n  // The cap turns on a spring toward the value's angle: each detent lands\n  // with a little settle, a jump swings.\n  useEffect(() => {\n    const el = cap.current;\n    if (!el) return;\n    spring.current = createSpring(angle(latest.current), { duration: 0.35, bounce: 0.35 }, (a) => {\n      el.style.rotate = `${a.toFixed(2)}deg`;\n    });\n    el.style.rotate = `${angle(latest.current)}deg`;\n    return () => spring.current?.stop();\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, []);\n  const over = useRef(0);\n  useEffect(() => {\n    const to = angle(current) + over.current;\n    if (reduced.current) spring.current?.set(to);\n    else spring.current?.to(to);\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [current]);\n\n  // Dragging: up (or right) turns it up; far past an end it gives, rubber-banded.\n  const drag = useRef<{ y: number; x: number; from: number } | null>(null);\n  const range = max - min;\n  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {\n    if (disabled || e.button !== 0) return;\n    e.currentTarget.setPointerCapture(e.pointerId);\n    e.currentTarget.focus();\n    drag.current = { y: e.clientY, x: e.clientX, from: latest.current };\n  };\n  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {\n    const d = drag.current;\n    if (!d) return;\n    // 200px of travel covers the whole range; shift for fine control.\n    const px = d.y - e.clientY + (e.clientX - d.x) * 0.5;\n    const raw = d.from + (px / (e.shiftKey ? 800 : 200)) * range;\n    commit(raw);\n    const past = raw > max ? raw - max : raw < min ? raw - min : 0;\n    over.current = past ? rubberband((past / range) * SWEEP, 12) : 0;\n    if (!reduced.current) spring.current?.to(angle(latest.current) + over.current, { config: { duration: 0.12, bounce: 0 } });\n  };\n  const onPointerUp = () => {\n    drag.current = null;\n    if (over.current) {\n      over.current = 0;\n      spring.current?.to(angle(latest.current));\n    }\n  };\n  // The wheel turns it once it has focus (so a page scroll never grabs it);\n  // a native listener, since React's are passive and couldn't keep the page still.\n  const well = useRef<HTMLDivElement | null>(null);\n  const commitRef = useRef(commit);\n  commitRef.current = commit;\n  useEffect(() => {\n    const el = well.current;\n    if (!el) return;\n    const wheel = (e: WheelEvent) => {\n      if (disabled || document.activeElement !== el) return;\n      e.preventDefault();\n      commitRef.current(latest.current + (e.deltaY < 0 ? step : -step));\n    };\n    el.addEventListener(\"wheel\", wheel, { passive: false });\n    return () => el.removeEventListener(\"wheel\", wheel);\n  }, [disabled, step]);\n  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {\n    // The caller's handler runs first and may take the key for itself.\n    onKeyDownProp?.(e);\n    if (e.defaultPrevented || disabled) return;\n    const big = Math.max(step, (max - min) / 10);\n    const next =\n      e.key === \"ArrowUp\" || e.key === \"ArrowRight\"\n        ? latest.current + step\n        : e.key === \"ArrowDown\" || e.key === \"ArrowLeft\"\n          ? latest.current - step\n          : e.key === \"PageUp\"\n            ? latest.current + big\n            : e.key === \"PageDown\"\n              ? latest.current - big\n              : e.key === \"Home\"\n                ? min\n                : e.key === \"End\"\n                  ? max\n                  : null;\n    if (next === null) return;\n    e.preventDefault();\n    commit(next);\n  };\n\n  const text = formatValue(current);\n  return (\n    <div className=\"echo-knob\" data-size={size} data-disabled={disabled || undefined}>\n      <div className=\"echo-knob__dial\">\n        <svg className=\"echo-knob__scale\" viewBox=\"-50 -50 100 100\" aria-hidden=\"true\">\n          {Array.from({ length: Math.max(2, ticks) }, (_, i) => {\n            const a = ((-SWEEP / 2 + (SWEEP * i) / (Math.max(2, ticks) - 1)) * Math.PI) / 180;\n            const lit = (i / (Math.max(2, ticks) - 1)) * range + min <= current + 1e-9;\n            // Rounded: the server's Math.sin and the browser's differ in the\n            // last digits, which React reports as a hydration mismatch.\n            const at = (r: number, f: (x: number) => number) => Math.round(f(a) * r * 100) / 100;\n            return (\n              <line\n                key={i}\n                x1={at(42, Math.sin)}\n                y1={-at(42, Math.cos)}\n                x2={at(48, Math.sin)}\n                y2={-at(48, Math.cos)}\n                data-lit={lit ? \"\" : undefined}\n              />\n            );\n          })}\n        </svg>\n        <div\n          ref={(node) => {\n            well.current = node;\n            if (typeof ref === \"function\") ref(node);\n            else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = node;\n          }}\n          className=\"echo-knob__well\"\n          role=\"slider\"\n          tabIndex={disabled ? -1 : 0}\n          aria-label={label}\n          aria-valuemin={min}\n          aria-valuemax={max}\n          aria-valuenow={current}\n          aria-valuetext={text}\n          aria-disabled={disabled || undefined}\n          aria-orientation=\"vertical\"\n          {...interop}\n          onPointerDown={onPointerDown}\n          onPointerMove={onPointerMove}\n          onPointerUp={onPointerUp}\n          onPointerCancel={onPointerUp}\n          onKeyDown={onKeyDown}\n        >\n          <div className=\"echo-knob__cap\">\n            {/* The rotor turns, not the cap: a turning box grows its corners\n                past the well, and it's the pointer that has to move. */}\n            <div ref={cap} className=\"echo-knob__rotor\">\n              <span className=\"echo-knob__pointer\" />\n            </div>\n          </div>\n        </div>\n      </div>\n      {name ? <input type=\"hidden\" name={name} value={current} /> : null}\n      <span className=\"echo-knob__label\" aria-hidden=\"true\">\n        {label}\n      </span>\n      <span className=\"echo-knob__value\" aria-hidden=\"true\">\n        {text}\n      </span>\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "knob/knob.css",
+      "sha256": "4f5a74223b10fe3e949be1f9864a5ce760683e20710ccc3b782f05d84b6a41de",
+      "content": "/**\n * Knob. A round molded cap in a recessed well, an engraved pointer on the\n * cap, and the scale around it lit up to the value. The cap turns by\n * `rotate`, driven on a spring (knob.tsx).\n */\n.echo-knob {\n  --knob: 56px;\n  display: inline-grid;\n  justify-items: center;\n  gap: var(--echo-space-2);\n}\n.echo-knob[data-size=\"sm\"] {\n  --knob: 40px;\n}\n.echo-knob[data-size=\"lg\"] {\n  --knob: 72px;\n}\n.echo-knob__dial {\n  position: relative;\n  display: grid;\n  place-items: center;\n  width: calc(var(--knob) * 1.42);\n  height: calc(var(--knob) * 1.42);\n}\n.echo-knob__scale {\n  position: absolute;\n  inset: 0;\n  width: 100%;\n  height: 100%;\n  overflow: visible;\n}\n.echo-knob__scale line {\n  stroke: color-mix(in oklab, var(--echo-text-dim) 55%, transparent);\n  stroke-width: 2.4;\n  stroke-linecap: round;\n}\n.echo-knob__scale line[data-lit] {\n  stroke: var(--echo-accent-glow);\n}\n.echo-knob__well {\n  display: grid;\n  place-items: center;\n  width: calc(var(--knob) + 8px);\n  height: calc(var(--knob) + 8px);\n  border-radius: 50%;\n  cursor: grab;\n  touch-action: none;\n  outline: none;\n  box-shadow:\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.65 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n.echo-knob__well:active {\n  cursor: grabbing;\n}\n.echo-knob__well:focus-visible {\n  box-shadow:\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)),\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.65 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-knob__cap {\n  position: relative;\n  width: var(--knob);\n  height: var(--knob);\n  border-radius: 50%;\n  /* The key light at 145°: a lit top-left, the shadow falling bottom-right. */\n  background:\n    /* Soft molding (a Scope's): a pillow of light across the top. Transparent until --echo-pillow is set. */\n    radial-gradient(115% 85% at 32% 0%, color-mix(in oklab, var(--echo-paper-stock, var(--echo-text)) calc(var(--echo-pillow, 0) * 34%), transparent) 0%, transparent 72%),\n    radial-gradient(circle at 35% 30%, rgb(255 255 255 / calc(0.16 * var(--echo-gloss, 1))), transparent 55%),\n    linear-gradient(160deg, var(--echo-cap-highlight), var(--echo-cap) 50%, var(--echo-cap-shadow));\n  box-shadow:\n    /* Soft molding: the fuller shade under a puffed cap. Nothing until --echo-pillow is set. */\n    inset 0 calc(-10px * var(--echo-pillow, 0)) calc(16px * var(--echo-pillow, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.42 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.35 * var(--echo-gloss, 1))),\n    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),\n    0 3px 0 var(--echo-line-width, 0px) var(--echo-seam),\n    0 8px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);\n}\n/* The rotor: a square small enough that, turned, it stays inside the cap. */\n.echo-knob__rotor {\n  position: absolute;\n  inset: 15%;\n}\n/* The pointer: engraved from near the rim toward the centre. */\n.echo-knob__pointer {\n  position: absolute;\n  top: 0;\n  /* Centred, so the same in either reading direction. */\n  inset-inline-start: calc(50% - 1.5px);\n  width: 3px;\n  height: 36%;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-seam);\n  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.18 * var(--echo-gloss, 1)));\n}\n.echo-knob__label {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n.echo-knob__value {\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-sm);\n  font-variant-numeric: tabular-nums;\n  color: var(--echo-text);\n}\n.echo-knob[data-disabled] {\n  opacity: 0.45;\n}\n.echo-knob[data-disabled] .echo-knob__well {\n  cursor: default;\n}\n@media (forced-colors: active) {\n  .echo-knob__cap {\n    border: var(--echo-border-thick, 2px) solid ButtonText;\n  }\n  .echo-knob__pointer {\n    background: ButtonText;\n  }\n  .echo-knob__scale line {\n    stroke: GrayText;\n  }\n  .echo-knob__scale line[data-lit] {\n    stroke: Highlight;\n  }\n  .echo-knob__well:focus-visible {\n    outline: 2px solid Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "knob/index.ts",
+      "sha256": "21b6b62353851a6ebae5103ac0624388409cdb5de4c15cf0f6cd5f16c29f15d5",
+      "content": "export { Knob } from \"./knob\";\nexport type { KnobProps } from \"./knob\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`Scope`: a colour per item, and softer plastic.** `accent` gives what's inside a colour of its own for identity (a category, a filter pad, a person): the theme engine run on your colour, so its lit caps, glow and LEDs are derived and held to AA like your main accent, and every component inside picks them up. It says which one, never how it is. `molding=\"soft\"` rounds the caps inside and fills them out with a pillow of light and a fuller shade; `HardwareButton`, `QuickTile` and `Knob` carry the pillow, and look exactly as before outside a soft Scope."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The rest of the inputs: `Toggle`, `Toolbar`, `Meter`, `RangeSlider`, and two instruments, `Knob` and `LevelMeter`.** Plus `start` and `end` on `Field`. - **`Toggle` / `ToggleGroup`**: the quiet toolbar key. On is the cap held down in its well, not a light; a group shares one well, with arrow keys between its keys, `multiple` or at most one. - **`Toolbar` / `ButtonGroup`**: caps sharing one long well. A Toolbar is one tab stop with the arrow keys, Home and End along it, and `sm` controls; Toggles and ToggleGroups inside join its order by themselves. A ButtonGroup is the look alone. - **`Field` `start` / `end`**: a search icon or a currency sign engraved into the well before the text; a unit or a small key (clear, show password) after it. - **`Meter`**: a measurement in a range (storage, battery), a tube of lit plastic that settles to its level with a small slosh; `marks` engrave a limit without a second colour. - **`RangeSlider`**: two of Slider's knobs on one rail for a span, named \"…, minimum\" and \"…, maximum\"; they never cross. - **`Knob`**: a rotary cap with a lit scale. Drag it, wheel it once focused, or use the slider keys; it clicks at each step and settles onto each detent on a spring. - **`LevelMeter`**: a live level as LED cells with real ballistics and a held peak. It draws without re-rendering, stops once it's still, and tells a screen reader its level at most once a second."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+/**
+ * Stack and Grid. Gaps come from the space scale through the props; lists
+ * lose their bullets and indent, since a Stack of cards is not prose.
+ */
+.echo-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: var(--stack-align, stretch);
+  justify-content: var(--stack-justify, flex-start);
+  gap: var(--stack-gap, var(--echo-space-6));
+  min-width: 0;
+}
+.echo-stack[data-direction="row"] {
+  flex-direction: row;
+}
+.echo-stack[data-wrap] {
+  flex-wrap: wrap;
+}
+.echo-grid {
+  display: grid;
+  grid-template-columns: var(--grid-template, minmax(0, 1fr));
+  align-items: var(--grid-align, stretch);
+  gap: var(--grid-gap, var(--echo-space-8));
+  min-width: 0;
+}
+:is(ul, ol).echo-stack,
+:is(ul, ol).echo-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "name": "pull-to-refresh",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "PullToRefresh",
+  "description": "A scrolling list you pull down from the top to reload: the content follows your finger with a rubber band, a molded key turns as you pull and clicks at the detent, and the list holds there with the Loader's lights until onRefresh settles. A real Refresh button and one status make it work without the gesture.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "loader"
+  ],
+  "files": [
+    {
+      "path": "pull-to-refresh/pull-to-refresh.css",
+      "sha256": "a47b2e59f3105b41d9a6d2292fb8290e0f9ef6455cf37de5c97b24e8261a63eb",
+      "content": "/*\n * PullToRefresh. The scroller is the region; the content slides down under\n * the finger and a molded key rises in the gap above it. Tokens only.\n */\n.echo-ptr {\n  position: relative;\n  height: 100%;\n  overflow-y: auto;\n  overflow-x: hidden;\n  /* The pull replaces the browser's own bounce and pull-to-reload here. */\n  overscroll-behavior-y: contain;\n}\n\n.echo-ptr__content {\n  position: relative;\n  will-change: translate;\n}\n\n.echo-ptr[data-phase=\"pulling\"],\n.echo-ptr[data-phase=\"armed\"] {\n  cursor: grabbing;\n  user-select: none;\n}\n\n/* --- the key in the gap ------------------------------------------------------ */\n\n.echo-ptr__indicator {\n  position: absolute;\n  inset: 0 0 auto;\n  z-index: var(--echo-z-base, 0);\n  display: grid;\n  justify-items: center;\n  gap: var(--echo-space-3);\n  padding-top: var(--echo-space-5);\n  pointer-events: none;\n}\n\n.echo-ptr__key {\n  --ptr-progress: 0;\n  --ptr-y: 0px;\n  display: grid;\n  place-items: center;\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  color: var(--echo-text-dim);\n  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 70%);\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 50%, transparent),\n    0 6px 14px -6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);\n  /* Rises with the pull and grows into view; never squashed. */\n  opacity: var(--ptr-progress);\n  scale: calc(0.6 + 0.4 * var(--ptr-progress));\n  translate: 0 calc(min(var(--ptr-y), 64px) * 0.25 - 8px);\n}\n\n.echo-ptr__arrow {\n  /* A quarter-turn short of flipped while pulling; flips when armed. */\n  rotate: calc(var(--ptr-progress) * 150deg);\n  transition: rotate var(--echo-duration-tick) ease;\n}\n\n.echo-ptr[data-phase=\"armed\"] .echo-ptr__key,\n.echo-ptr[data-phase=\"refreshing\"] .echo-ptr__key {\n  color: var(--echo-accent-glow);\n  opacity: 1;\n  scale: 1;\n}\n\n.echo-ptr[data-phase=\"armed\"] .echo-ptr__arrow {\n  rotate: 180deg;\n}\n\n.echo-ptr__hint {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n  opacity: var(--ptr-progress, 0);\n}\n\n.echo-ptr[data-phase=\"idle\"] .echo-ptr__hint,\n.echo-ptr[data-phase=\"done\"] .echo-ptr__hint {\n  opacity: 0;\n}\n\n.echo-ptr[data-phase=\"armed\"] .echo-ptr__hint,\n.echo-ptr[data-phase=\"refreshing\"] .echo-ptr__hint {\n  opacity: 1;\n}\n\n/* The content sits over the key; at rest the key is invisible anyway. */\n.echo-ptr__content {\n  z-index: var(--echo-z-raised, 1);\n}\n\n/* --- the non-gesture way ----------------------------------------------------- */\n\n.echo-ptr__button,\n.echo-ptr__status {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n  border: 0;\n}\n\n/* Focused, the Refresh button shows itself at the top of the list. */\n.echo-ptr__button:focus-visible {\n  z-index: var(--echo-z-top, 2);\n  top: var(--echo-space-4);\n  left: 50%;\n  translate: -50% 0;\n  width: auto;\n  height: auto;\n  min-height: 32px;\n  margin: 0;\n  padding: 0 var(--echo-space-8);\n  overflow: visible;\n  clip-path: none;\n  border-radius: var(--echo-radius-full);\n  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 70%);\n  color: var(--echo-text);\n  font: inherit;\n  font-size: var(--echo-text-sm);\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 2px;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-ptr__arrow {\n    transition: none;\n  }\n}\n\n@media (forced-colors: active) {\n  .echo-ptr__key {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "pull-to-refresh/pull-to-refresh.tsx",
+      "sha256": "7883902e237a88947e20926f7b2121274b21125bdd30397a537e4d17c8f706ed",
+      "content": "\"use client\";\n\n/**\n * PullToRefresh. A scrolling list you can pull down from the top to reload:\n * the content follows your finger with the library's rubber band, a molded\n * key appears above it and turns as you pull, clicks when you pass the detent,\n * and holds there with the Loader's lights while `onRefresh` runs. Then the\n * list springs home.\n *\n * The pull is a gesture, so it is never the only way: the region's first stop\n * is a real Refresh button (shown when focused), and what is happening is said\n * in one status that is on the page from the start.\n */\nimport { useCallback, useEffect, useRef, useState, type ReactNode } from \"react\";\nimport { createSpring, rubberband, useReducedMotionRef, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { Loader } from \"../loader\";\nimport \"./pull-to-refresh.css\";\n\nexport interface PullToRefreshProps {\n  /** Reload. The list holds at the detent until the promise settles. */\n  onRefresh: () => Promise<unknown> | void;\n  /** The scrolling content. */\n  children: ReactNode;\n  /** What is refreshed, for the button and the status: \"Refresh tasks\". Default \"list\". */\n  label?: string;\n  /** How far to pull, in px, before letting go refreshes. Default 64. */\n  threshold?: number;\n  /** Turn the gesture off (the button still works). */\n  disabled?: boolean;\n  className?: string;\n}\n\ntype Phase = \"idle\" | \"pulling\" | \"armed\" | \"refreshing\" | \"done\";\n\nconst SLOP = 6;\n\nexport function PullToRefresh({\n  onRefresh,\n  children,\n  label = \"list\",\n  threshold = 64,\n  disabled = false,\n  className,\n}: PullToRefreshProps) {\n  const scroller = useRef<HTMLDivElement>(null);\n  const content = useRef<HTMLDivElement>(null);\n  const key = useRef<HTMLSpanElement>(null);\n  const spring = useRef<Spring | null>(null);\n  const drag = useRef<{ x: number; y: number; engaged: boolean; id: number | \"touch\" } | null>(null);\n  const phaseRef = useRef<Phase>(\"idle\");\n  const [phase, setPhase] = useState<Phase>(\"idle\");\n  const reduced = useReducedMotionRef();\n  const sound = useSoundOptional();\n\n  const draw = useCallback(\n    (y: number) => {\n      const c = content.current;\n      const k = key.current;\n      if (c) c.style.translate = y > 0.5 ? `0 ${y.toFixed(1)}px` : \"\";\n      if (k) {\n        const p = Math.min(1, y / threshold);\n        k.style.setProperty(\"--ptr-progress\", p.toFixed(3));\n        k.style.setProperty(\"--ptr-y\", `${y.toFixed(1)}px`);\n      }\n    },\n    [threshold],\n  );\n\n  useEffect(() => {\n    spring.current = createSpring(0, { duration: 0.42, bounce: 0.18 }, (v) => draw(v));\n    return () => spring.current?.stop();\n  }, [draw]);\n\n  const go = (next: Phase) => {\n    phaseRef.current = next;\n    setPhase(next);\n  };\n\n  const settle = (to: number) => {\n    const s = spring.current;\n    if (!s) return;\n    if (reduced.current) {\n      s.set(to);\n      draw(to);\n    } else s.to(to);\n  };\n\n  const refresh = useCallback(async () => {\n    if (phaseRef.current === \"refreshing\") return;\n    go(\"refreshing\");\n    settle(threshold);\n    try {\n      await onRefresh();\n    } finally {\n      go(\"done\");\n      settle(0);\n      sound?.play(\"notify\");\n    }\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [onRefresh, threshold, sound]);\n\n  // --- the gesture ------------------------------------------------------------\n\n  const begin = (x: number, y: number, id: number | \"touch\") => {\n    if (disabled || phaseRef.current === \"refreshing\") return;\n    if ((scroller.current?.scrollTop ?? 0) > 0) return;\n    spring.current?.stop();\n    drag.current = { x, y, engaged: false, id };\n  };\n\n  /** Returns true when the move is ours (so the page must not scroll). */\n  const move = (x: number, y: number): boolean => {\n    const d = drag.current;\n    if (!d) return false;\n    const dy = y - d.y;\n    const dx = x - d.x;\n    if (!d.engaged) {\n      if (Math.abs(dy) < SLOP && Math.abs(dx) < SLOP) return false;\n      // Sideways (a swipe on a row) or upward (a scroll): not a pull.\n      if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) {\n        drag.current = null;\n        return false;\n      }\n      d.engaged = true;\n      go(\"pulling\");\n    }\n    const pulled = rubberband(Math.max(0, dy), threshold * 2.2, 0.7);\n    spring.current?.set(pulled);\n    draw(pulled);\n    const armed = pulled >= threshold;\n    if (armed && phaseRef.current !== \"armed\") {\n      go(\"armed\");\n      sound?.play(\"select\");\n    } else if (!armed && phaseRef.current === \"armed\") go(\"pulling\");\n    return true;\n  };\n\n  const end = () => {\n    const d = drag.current;\n    drag.current = null;\n    if (!d?.engaged) return;\n    if (phaseRef.current === \"armed\") void refresh();\n    else {\n      go(\"idle\");\n      settle(0);\n    }\n  };\n\n  // Touch moves need a non-passive listener, or the browser scrolls first.\n  useEffect(() => {\n    const el = scroller.current;\n    if (!el) return;\n    const start = (e: TouchEvent) => {\n      const t = e.touches[0];\n      if (t && e.touches.length === 1) begin(t.clientX, t.clientY, \"touch\");\n    };\n    const moveT = (e: TouchEvent) => {\n      const t = e.touches[0];\n      if (t && move(t.clientX, t.clientY) && e.cancelable) e.preventDefault();\n    };\n    el.addEventListener(\"touchstart\", start, { passive: true });\n    el.addEventListener(\"touchmove\", moveT, { passive: false });\n    el.addEventListener(\"touchend\", end);\n    el.addEventListener(\"touchcancel\", end);\n    return () => {\n      el.removeEventListener(\"touchstart\", start);\n      el.removeEventListener(\"touchmove\", moveT);\n      el.removeEventListener(\"touchend\", end);\n      el.removeEventListener(\"touchcancel\", end);\n    };\n  });\n\n  const status =\n    phase === \"refreshing\" ? `Refreshing ${label}…` : phase === \"done\" ? `${label[0]!.toUpperCase()}${label.slice(1)} up to date` : \"\";\n  const hint = phase === \"armed\" ? \"Release to refresh\" : \"Pull to refresh\";\n\n  return (\n    <div\n      ref={scroller}\n      className={className ? `echo-ptr ${className}` : \"echo-ptr\"}\n      data-phase={phase}\n      // A mouse can pull too (a desktop browser in a phone-sized window, a\n      // trackpad click-drag); touch goes through the listeners above.\n      onPointerDown={(e) => {\n        if (e.pointerType !== \"mouse\" || e.button !== 0) return;\n        if ((e.target as HTMLElement).closest(\"input, textarea, select, [contenteditable]\")) return;\n        begin(e.clientX, e.clientY, e.pointerId);\n      }}\n      onPointerMove={(e) => {\n        if (e.pointerType !== \"mouse\" || !drag.current) return;\n        if (move(e.clientX, e.clientY) && !e.currentTarget.hasPointerCapture(e.pointerId)) {\n          e.currentTarget.setPointerCapture(e.pointerId);\n        }\n      }}\n      onPointerUp={(e) => e.pointerType === \"mouse\" && end()}\n      onPointerCancel={(e) => e.pointerType === \"mouse\" && end()}\n      onClickCapture={(e) => {\n        // A pull that ended over a row is not a click on the row.\n        if (phaseRef.current !== \"idle\" && phaseRef.current !== \"done\") e.stopPropagation();\n      }}\n    >\n      <button type=\"button\" className=\"echo-ptr__button\" onClick={() => void refresh()} disabled={phase === \"refreshing\"}>\n        Refresh {label}\n      </button>\n      <span className=\"echo-ptr__status\" role=\"status\">\n        {status}\n      </span>\n      <div className=\"echo-ptr__indicator\" aria-hidden=\"true\">\n        <span ref={key} className=\"echo-ptr__key\">\n          {phase === \"refreshing\" ? (\n            <Loader dot={6} label=\"\" />\n          ) : (\n            <svg className=\"echo-ptr__arrow\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" focusable=\"false\">\n              <path d=\"M8 2.5v10M3.5 8 8 12.5 12.5 8\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.8\" strokeLinecap=\"round\" strokeLinejoin=\"round\" />\n            </svg>\n          )}\n        </span>\n        <span className=\"echo-ptr__hint\">{phase === \"refreshing\" ? \"Refreshing\" : hint}</span>\n      </div>\n      <div ref={content} className=\"echo-ptr__content\">\n        {children}\n      </div>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "pull-to-refresh/index.ts",
+      "sha256": "ebfcc0dded74187503c0e0af1d10d699b40b6d56b35a51785d48a9018f28717c",
+      "content": "export { PullToRefresh } from \"./pull-to-refresh\";\nexport type { PullToRefreshProps } from \"./pull-to-refresh\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "select",
+    "notify"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`PullToRefresh`**: a list you pull down from the top to reload. The content follows your finger on the library's rubber band, a molded key turns as you pull and clicks at the detent, and the list holds there with the Loader's lights until `onRefresh` settles. The gesture is never the only way: the region's first tab stop is a real Refresh button, and one status says what happened."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

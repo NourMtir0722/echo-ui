@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "name": "segment-display",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "SegmentDisplay",
+  "description": "A seven-segment readout drawn the way a real one looks: the segments a reading doesn't light stay faintly visible under the glass, and zeros that only pad a reading out print dim instead of vanishing. For the one number a screen is about: a frequency, a clock, an amount, a counter.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "roll",
+    "scope"
+  ],
+  "files": [
+    {
+      "path": "segment-display/segment-display.tsx",
+      "sha256": "2961c7633fdaea2ade17a0fb53fe185195c58ce159ac5984209e61e15c6a1335",
+      "content": "\"use client\";\n\n/**\n * SegmentDisplay. A seven-segment readout, drawn the way a real one looks:\n * the segments a reading doesn't light stay faintly visible under the glass,\n * and the zeros that only pad it out print dim rather than vanishing, so\n * \"88.5\" on a four-digit face reads as a dim 0 and a lit 88.5.\n *\n * `screen` sits in its own dark well with its label engraved over it;\n * `flush` is the digits alone, for a screen you already have.\n *\n * For assistive technology it is the reading, said once, as it is: the\n * padding and the dark segments are drawing, not text.\n */\nimport type { CSSProperties } from \"react\";\nimport { useRoll } from \"../roll\";\nimport { CELL_H, COLON_DOTS, DP, LEAN, SEGMENTS, SEGMENT_POINTS, layout, place } from \"./segments\";\nimport \"../scope/scope.css\";\nimport \"./segment-display.css\";\n\nexport interface SegmentDisplayProps {\n  /** The reading: digits, a minus, a dot, a colon, and the letters a segment face can draw. */\n  value: string | number;\n  /** What it reads: the accessible name, and engraved over a `screen` display. */\n  label: string;\n  /** Engraved after the digits: \"MHz\", \"kg\". */\n  unit?: string;\n  /** At least this many digit cells. A shorter reading is padded on the left. */\n  digits?: number;\n  /** What fills the padding: dim zeros (`\"0\"`, default), the way a counter shows them, or blanks (`\" \"`). */\n  pad?: \"0\" | \" \";\n  /** Draw the segments a reading doesn't light, faintly, as a real display shows them. Default true. */\n  ghost?: boolean;\n  /** Lit in the accent (default); `false` lights it cream, for a value that isn't live. */\n  glow?: boolean;\n  /** A new reading rolls to its digits, each stepping through the ones in between. */\n  roll?: boolean;\n  /** Digit height: `sm` 24px, `md` 40px (default), `lg` 64px. */\n  size?: \"sm\" | \"md\" | \"lg\";\n  /** `screen` (default) sits in its own dark well; `flush` is the digits alone. */\n  variant?: \"screen\" | \"flush\";\n  /** `emissive` (default): a dark screen that glows. `reflective`: the paper-coloured glass of a pocket calculator, printed in ink. */\n  screen?: \"emissive\" | \"reflective\";\n}\n\nexport function SegmentDisplay({\n  value,\n  label,\n  unit,\n  digits = 0,\n  pad = \"0\",\n  ghost = true,\n  glow = true,\n  roll = false,\n  size = \"md\",\n  variant = \"screen\",\n  screen = \"emissive\",\n}: SegmentDisplayProps) {\n  const text = String(value);\n  const shown = useRoll(text, { enabled: roll });\n  const cells = layout(shown, digits, pad);\n  const { x, width } = place(cells);\n  return (\n    <div\n      className=\"echo-segment-display\"\n      data-variant={variant}\n      data-size={size}\n      data-glow={glow ? \"\" : undefined}\n      data-ghost={ghost ? \"\" : undefined}\n      data-echo-screen={screen === \"reflective\" ? \"reflective\" : undefined}\n      role=\"group\"\n      aria-label={label}\n    >\n      {variant === \"screen\" ? (\n        <span className=\"echo-segment-display__label\" aria-hidden=\"true\">\n          {label}\n        </span>\n      ) : null}\n      <span className=\"echo-segment-display__row\">\n        <svg\n          className=\"echo-segment-display__face\"\n          viewBox={`0 0 ${width} ${CELL_H}`}\n          // The one dynamic value, as a variable the stylesheet reads: the\n          // face's proportions, so its width follows the digit height.\n          style={{ \"--seg-ratio\": (width / CELL_H).toFixed(4) } as CSSProperties}\n          aria-hidden=\"true\"\n          focusable=\"false\"\n        >\n          {cells.map((cell, i) =>\n            cell.kind === \"colon\" ? (\n              <g key={i} transform={`translate(${x[i]} 0) skewX(${-LEAN})`}>\n                {COLON_DOTS.map((dot, j) => (\n                  <circle key={j} cx={dot.cx} cy={dot.cy} r={dot.r} data-state=\"lit\" />\n                ))}\n              </g>\n            ) : (\n              <g key={i} transform={`translate(${x[i]} 0) skewX(${-LEAN})`}>\n                {SEGMENTS.map((s) => (\n                  <polygon\n                    key={s}\n                    points={SEGMENT_POINTS[s]}\n                    data-state={cell.lit.includes(s) ? (cell.pad ? \"dim\" : \"lit\") : \"off\"}\n                  />\n                ))}\n                <circle cx={DP.cx} cy={DP.cy} r={DP.r} data-state={cell.dp ? \"lit\" : \"off\"} />\n              </g>\n            ),\n          )}\n        </svg>\n        {unit ? (\n          <span className=\"echo-segment-display__unit\" aria-hidden=\"true\">\n            {unit}\n          </span>\n        ) : null}\n      </span>\n      <span className=\"echo-segment-display__said\">{unit ? `${text} ${unit}` : text}</span>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "segment-display/segment-display.css",
+      "sha256": "ce36f0101144108b1ce628acb15aa4141c3e694b94dc5405296a69dd8ab9aba7",
+      "content": "/**\n * SegmentDisplay. Lit segments glow in the accent; the dark ones sit faintly\n * under the glass; padding zeros print dim. Composes var(--echo-*) — no hex\n * literals; the only fixed values are the single-key-light occlusion model.\n */\n.echo-segment-display {\n  --seg-h: 40px;\n  display: inline-grid;\n  justify-items: start;\n  gap: var(--echo-space-3);\n  max-width: 100%;\n  min-width: 0;\n}\n.echo-segment-display[data-size=\"sm\"] {\n  --seg-h: 24px;\n}\n.echo-segment-display[data-size=\"lg\"] {\n  --seg-h: 64px;\n}\n\n/* screen: its own dark well, like LcdChip's. */\n.echo-segment-display[data-variant=\"screen\"] {\n  padding: var(--echo-space-5) var(--echo-space-7) var(--echo-space-6);\n  border-radius: var(--echo-radius-lg);\n  background: linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%);\n  box-shadow: var(\n    --echo-shadow-well-screen,\n    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)))\n  );\n}\n\n.echo-segment-display__label,\n.echo-segment-display__unit {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n  line-height: var(--echo-leading-tight, 1.25);\n}\n\n.echo-segment-display__row {\n  display: inline-flex;\n  align-items: flex-end;\n  gap: var(--echo-space-3);\n  max-width: 100%;\n  min-width: 0;\n}\n\n/*\n * Sized by its width, from the digit height it wants: in a narrow column it\n * shrinks, digits and all, rather than pushing the column open.\n */\n.echo-segment-display__face {\n  display: block;\n  flex: 0 1 auto;\n  min-inline-size: 0;\n  inline-size: calc(var(--seg-h) * var(--seg-ratio));\n  max-inline-size: 100%;\n  block-size: auto;\n  aspect-ratio: var(--seg-ratio);\n  overflow: visible;\n}\n\n/* Lit: the accent, emitting. Unlit displays light in cream. */\n.echo-segment-display__face [data-state=\"lit\"] {\n  fill: var(--echo-text);\n}\n.echo-segment-display__face [data-state=\"dim\"] {\n  fill: color-mix(in oklab, var(--echo-text) 28%, transparent);\n}\n.echo-segment-display[data-glow] .echo-segment-display__face {\n  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--echo-lcd-glow) 45%, transparent));\n}\n.echo-segment-display[data-glow] .echo-segment-display__face [data-state=\"lit\"] {\n  fill: var(--echo-accent-ink, var(--echo-accent-glow));\n}\n.echo-segment-display[data-glow] .echo-segment-display__face [data-state=\"dim\"] {\n  fill: color-mix(in oklch, var(--echo-accent-glow) 30%, transparent);\n}\n\n/* The dark segments under the glass. */\n.echo-segment-display__face [data-state=\"off\"] {\n  fill: transparent;\n}\n.echo-segment-display[data-ghost] .echo-segment-display__face [data-state=\"off\"] {\n  fill: color-mix(in oklab, var(--echo-text) 6%, transparent);\n}\n\n/* The reading, said once, as it is. */\n.echo-segment-display__said {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n\n@media (forced-colors: active) {\n  .echo-segment-display[data-variant=\"screen\"] {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-segment-display__face {\n    filter: none;\n  }\n  .echo-segment-display .echo-segment-display__face [data-state=\"lit\"] {\n    fill: CanvasText;\n  }\n  .echo-segment-display .echo-segment-display__face [data-state=\"dim\"] {\n    fill: GrayText;\n  }\n  .echo-segment-display .echo-segment-display__face [data-state=\"off\"] {\n    fill: transparent;\n  }\n}\n"
+    },
+    {
+      "path": "segment-display/segments.ts",
+      "sha256": "06733853aa729e49136941b5a6e455eedb65505c2c1f4e177f3a97032b003295",
+      "content": "/**\n * The seven-segment face. Pure: no React, no DOM, so what lights for a given\n * reading can be tested on its own and shared by everything that draws\n * segments (SegmentDisplay, and the readouts inside Tuner and Keypad).\n *\n *    ─a─\n *   f   b\n *    ─g─\n *   e   c\n *    ─d─   .dp\n *\n * A real segment display never loses the segments it isn't using: they sit\n * dark under the glass, faintly visible. So a cell always draws all seven,\n * and a reading only decides which of them are lit.\n */\n\nexport type Segment = \"a\" | \"b\" | \"c\" | \"d\" | \"e\" | \"f\" | \"g\";\nexport const SEGMENTS: readonly Segment[] = [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"];\n\n/** Which segments each character lights. What a seven-segment face can draw, and nothing it can't. */\nconst FACE: Readonly<Record<string, string>> = {\n  \"0\": \"abcdef\",\n  \"1\": \"bc\",\n  \"2\": \"abdeg\",\n  \"3\": \"abcdg\",\n  \"4\": \"bcfg\",\n  \"5\": \"acdfg\",\n  \"6\": \"acdefg\",\n  \"7\": \"abc\",\n  \"8\": \"abcdefg\",\n  \"9\": \"abcdfg\",\n  \" \": \"\",\n  \"-\": \"g\",\n  _: \"d\",\n  \"°\": \"abfg\",\n  A: \"abcefg\",\n  b: \"cdefg\",\n  C: \"adef\",\n  c: \"deg\",\n  d: \"bcdeg\",\n  E: \"adefg\",\n  F: \"aefg\",\n  G: \"acdef\",\n  H: \"bcefg\",\n  h: \"cefg\",\n  I: \"ef\",\n  J: \"bcde\",\n  L: \"def\",\n  n: \"ceg\",\n  o: \"cdeg\",\n  P: \"abefg\",\n  r: \"eg\",\n  S: \"acdfg\",\n  t: \"defg\",\n  U: \"bcdef\",\n  u: \"cde\",\n  y: \"bcdfg\",\n};\n\n/** The segments a character lights, or null when the face can't draw it. */\nexport function segmentsFor(ch: string): readonly Segment[] | null {\n  const lit = FACE[ch] ?? FACE[ch.toUpperCase()] ?? FACE[ch.toLowerCase()];\n  return lit === undefined ? null : (lit.split(\"\") as Segment[]);\n}\n\n/** Whether every character of `text` can be drawn (a dot and a colon always can). */\nexport function canDraw(text: string): boolean {\n  return [...text].every((ch) => ch === \".\" || ch === \":\" || segmentsFor(ch) !== null);\n}\n\n/**\n * One position on the face.\n *\n * - `digit`: a seven-segment cell; `lit` is what shows, `dp` its decimal point.\n * - `colon`: the two dots between hours and minutes.\n *\n * `pad` marks a cell the reading didn't fill, added to reach `digits`: a\n * padding zero prints dim (a counter's leading zeros), a padding blank shows\n * only its dark segments.\n */\nexport type Cell =\n  | { kind: \"digit\"; lit: readonly Segment[]; dp: boolean; pad: boolean }\n  | { kind: \"colon\" };\n\n/**\n * Lays a reading out on the face: right-aligned, the way a counter's digits\n * are, so a shorter reading gains cells on the left.\n *\n * A dot lights the decimal point of the cell before it (a dot with no cell\n * before it gets a blank one); a colon is its own narrow cell. A character\n * the face can't draw is a blank cell.\n */\nexport function layout(text: string, digits = 0, pad: \"0\" | \" \" = \"0\"): Cell[] {\n  const cells: Cell[] = [];\n  for (const ch of text) {\n    if (ch === \".\") {\n      const last = cells.at(-1);\n      if (last && last.kind === \"digit\" && !last.dp) cells[cells.length - 1] = { ...last, dp: true };\n      else cells.push({ kind: \"digit\", lit: [], dp: true, pad: false });\n      continue;\n    }\n    if (ch === \":\") {\n      cells.push({ kind: \"colon\" });\n      continue;\n    }\n    cells.push({ kind: \"digit\", lit: segmentsFor(ch) ?? [], dp: false, pad: false });\n  }\n  const count = cells.filter((c) => c.kind === \"digit\").length;\n  const fill: Cell[] = [];\n  for (let i = count; i < digits; i++) {\n    fill.push({ kind: \"digit\", lit: pad === \"0\" ? (segmentsFor(\"0\") ?? []) : [], dp: false, pad: true });\n  }\n  // A minus leads its padding zeros (-05, never 0-5); blanks still lead the lot.\n  if (pad === \"0\" && text.startsWith(\"-\")) return [cells[0]!, ...fill, ...cells.slice(1)];\n  return [...fill, ...cells];\n}\n\n/* ---- Geometry, in one cell's units: 60 wide, 100 tall -------------------- */\n\nexport const CELL_W = 60;\nexport const COLON_W = 22;\nexport const CELL_H = 100;\n\nconst L = 10;\nconst R = 46;\nconst T = 6;\nconst M = 50;\nconst B = 94;\n/** How thick a segment is, and the gap where two meet. */\nconst TH = 9;\nconst GAP = 2.5;\n\nfunction horizontal(y: number, x1: number, x2: number): string {\n  const h = TH / 2;\n  return `${x1},${y} ${x1 + h},${y - h} ${x2 - h},${y - h} ${x2},${y} ${x2 - h},${y + h} ${x1 + h},${y + h}`;\n}\nfunction vertical(x: number, y1: number, y2: number): string {\n  const h = TH / 2;\n  return `${x},${y1} ${x + h},${y1 + h} ${x + h},${y2 - h} ${x},${y2} ${x - h},${y2 - h} ${x - h},${y1 + h}`;\n}\n\n/** Each segment's polygon points in a cell. */\nexport const SEGMENT_POINTS: Readonly<Record<Segment, string>> = {\n  a: horizontal(T, L + GAP, R - GAP),\n  g: horizontal(M, L + GAP, R - GAP),\n  d: horizontal(B, L + GAP, R - GAP),\n  f: vertical(L, T + GAP, M - GAP),\n  b: vertical(R, T + GAP, M - GAP),\n  e: vertical(L, M + GAP, B - GAP),\n  c: vertical(R, M + GAP, B - GAP),\n};\n\n/** The decimal point, bottom right of a cell. */\nexport const DP = { cx: R + 8, cy: B, r: 4.5 } as const;\n/** The colon's two dots, centred in its cell. */\nexport const COLON_DOTS = [\n  { cx: COLON_W / 2, cy: 32, r: 4.5 },\n  { cx: COLON_W / 2, cy: 68, r: 4.5 },\n] as const;\n\n/** A segment face leans forward, as they do. The lean moves the bottom left. */\nexport const LEAN = 5;\n/** How far the lean pushes a cell's bottom left, so the face can make room for it. */\nexport const LEAN_OFFSET = Math.ceil(Math.tan((LEAN * Math.PI) / 180) * CELL_H);\n\n/** Where each cell starts, and the face's whole width. */\nexport function place(cells: readonly Cell[]): { x: number[]; width: number } {\n  const x: number[] = [];\n  let at = LEAN_OFFSET;\n  for (const cell of cells) {\n    x.push(at);\n    at += cell.kind === \"colon\" ? COLON_W : CELL_W;\n  }\n  return { x, width: at };\n}\n"
+    },
+    {
+      "path": "segment-display/index.ts",
+      "sha256": "32b763039466babcda068a0cc8226daf0a0b18d3df67cc6e0eaff1be3edb1459",
+      "content": "export { SegmentDisplay } from \"./segment-display\";\nexport type { SegmentDisplayProps } from \"./segment-display\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`SegmentDisplay`: a seven-segment readout that looks like a real one.** The segments a reading doesn't light stay faintly visible under the glass, and zeros that only pad a reading out print dim instead of vanishing, so `88.5` on a four-digit face reads as a dim `0` and a lit `88.5`. Digits, a minus, a decimal point, a colon and the few letters a segment face can draw; `roll` steps through the digits in between. It sits in its own dark well, or `flush` inside a screen you already have. Screen readers hear the reading once, as it is, with its unit."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Reflective screens.** `screen=\"reflective\"` gives a screen the paper glass of a pocket calculator, printed in ink: digits, labels and ghost segments in the chassis colour, nothing glowing. The ink is held to AA on the glass under every theme. On `SegmentDisplay`, `Tuner`, `Keypad`, `DateTile`, `NowPlaying`, `Annunciator` and `DescriptionList`'s screen."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

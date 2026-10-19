@@ -1,0 +1,83 @@
+/**
+ * WeekStrip. A large Segmented of seven days between two small keys. Each
+ * day is its weekday, its date, and a socket that lights when something's on;
+ * today carries the lit rail. Composes var(--echo-*) — no hex literals.
+ */
+.echo-week-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-3);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+.echo-week-strip > .echo-segmented {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+/* Seven equal days across whatever width it's given. */
+.echo-week-strip .echo-segmented__option {
+  flex: 1 1 0;
+  min-inline-size: var(--echo-control-compact, 32px);
+  padding-inline: var(--echo-space-1);
+}
+
+.echo-week-strip__day {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-1);
+}
+/*
+ * The weekday is quieter than the date by its size alone. Faded as well, on
+ * top of the unchosen segment's dimmer text, the letters fell to 3.6:1, and
+ * the chosen day's to 3.9:1.
+ */
+.echo-week-strip__weekday {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wide, 0.06em);
+  text-transform: uppercase;
+}
+.echo-week-strip__date {
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-md);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--echo-tracking-normal, 0);
+}
+
+/* Something's on: a socket that lights. */
+.echo-week-strip__pip {
+  inline-size: 4px;
+  block-size: 4px;
+  border-radius: var(--echo-radius-full);
+  background: transparent;
+}
+.echo-week-strip__pip[data-on] {
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 5px color-mix(in oklab, var(--echo-lcd-glow) 80%, transparent);
+}
+[aria-checked="true"] .echo-week-strip__pip[data-on] {
+  background: var(--echo-text);
+  box-shadow: none;
+}
+
+/* Today: the lit rail under its date. */
+.echo-week-strip__day[data-today]::after {
+  content: "";
+  position: absolute;
+  inset-block-end: calc(-1 * var(--echo-space-3));
+  inset-inline: 25%;
+  block-size: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 7px color-mix(in oklab, var(--echo-lcd-glow) 80%, transparent);
+}
+
+@media (forced-colors: active) {
+  .echo-week-strip__pip[data-on],
+  .echo-week-strip__day[data-today]::after {
+    background: CanvasText;
+    box-shadow: none;
+  }
+}

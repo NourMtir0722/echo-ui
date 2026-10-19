@@ -1,0 +1,102 @@
+/**
+ * ScrollArea. A groove and a molded thumb; shade at an edge where the
+ * content continues. Composes var(--echo-*).
+ */
+.echo-scroll-area {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  --bar: 10px;
+}
+.echo-scroll-area__viewport {
+  flex: 1;
+  min-width: 0;
+  overscroll-behavior: contain;
+  border-radius: var(--echo-radius-md);
+  outline: none;
+  /* Shade where there's more: Base UI measures how far each edge overflows. */
+  box-shadow:
+    inset 0 calc(min(var(--scroll-area-overflow-y-start, 0px), 12px) * 0.9) 10px -8px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 calc(min(var(--scroll-area-overflow-y-end, 0px), 12px) * -0.9) 10px -8px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-scroll-area__viewport:focus-visible {
+  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow)));
+}
+.echo-scroll-area[data-orientation="vertical"] .echo-scroll-area__viewport {
+  padding-inline-end: calc(var(--bar) + var(--echo-space-2));
+}
+.echo-scroll-area[data-orientation="horizontal"] .echo-scroll-area__viewport {
+  padding-block-end: calc(var(--bar) + var(--echo-space-2));
+}
+
+/* The groove: cut into the surface, the thumb's travel. */
+.echo-scroll-area__bar {
+  display: flex;
+  margin: var(--echo-space-2);
+  border-radius: var(--echo-radius-full);
+  background: color-mix(in oklab, var(--echo-well) 70%, transparent);
+  box-shadow: inset 0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  opacity: 0.55;
+  transition: opacity var(--echo-duration-swap) ease;
+  touch-action: none;
+  user-select: none;
+}
+.echo-scroll-area__bar[data-orientation="vertical"] {
+  width: 6px;
+}
+.echo-scroll-area__bar[data-orientation="horizontal"] {
+  height: 6px;
+}
+/* It wakes when the area is hovered or scrolling, and fattens under the hand. */
+.echo-scroll-area__bar[data-hovering],
+.echo-scroll-area__bar[data-scrolling] {
+  opacity: 1;
+}
+@media (hover: hover) {
+  .echo-scroll-area__bar[data-orientation="vertical"]:hover {
+    width: var(--bar);
+  }
+  .echo-scroll-area__bar[data-orientation="horizontal"]:hover {
+    height: var(--bar);
+  }
+}
+.echo-scroll-area__thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--echo-cap-highlight), var(--echo-cap) 60%, var(--echo-cap-shadow));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),
+    0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-scroll-area__bar[data-orientation="vertical"] .echo-scroll-area__thumb {
+  height: var(--scroll-area-thumb-height);
+}
+.echo-scroll-area__bar[data-orientation="horizontal"] .echo-scroll-area__thumb {
+  width: var(--scroll-area-thumb-width);
+  background: linear-gradient(180deg, var(--echo-cap-highlight), var(--echo-cap) 60%, var(--echo-cap-shadow));
+}
+.echo-scroll-area__bar[data-orientation] {
+  transition:
+    opacity var(--echo-duration-swap) ease,
+    width var(--echo-duration-tick) ease,
+    height var(--echo-duration-tick) ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-scroll-area__bar[data-orientation] {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-scroll-area__bar {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-scroll-area__thumb {
+    background: CanvasText;
+  }
+  .echo-scroll-area__viewport:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}

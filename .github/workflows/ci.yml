@@ -1,0 +1,253 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    # `ready_for_review`: a draft gets the build only (see e2e), so marking it
+    # ready is what runs the browser suite.
+    types: [opened, synchronize, reopened, ready_for_review]
+  # The browser suite on any branch, by hand: `gh workflow run CI --ref <branch>`.
+  # For a Dependabot pull request, before merging it.
+  workflow_dispatch:
+
+# The day this repository is public, `pull_request` runs for forks. The
+# default token is read-write unless a workflow says otherwise, and nothing
+# here writes anything. `actions: read` is the gate's: it looks up which code
+# the browser suite already passed on.
+permissions:
+  contents: read
+  actions: read
+
+# A second push to a pull request cancels the first: two runs of the same
+# branch never both matter, and the e2e job is the most expensive thing here.
+# Deliberately NOT on release-matrix.yml or visual-baselines.yml — those must
+# finish once started.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # A hung job holds a runner until GitHub's 6-hour default. Nothing
+    # here has ever taken more than a few minutes.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build registry
+        run: pnpm build:registry
+
+      - name: Test
+        run: pnpm test
+
+      # Two steps in one, because `-r` already covers both.
+      #
+      # The publishable artefacts are built by a bespoke ESM-specifier rewriter
+      # and a generated dist/package.json, and until now that ran only in the
+      # weekly matrix — so a pull request could break exactly what `npm
+      # publish` sends and still go green. The docs build (the Next.js SSR
+      # smoke, which used to be its own step) is the last package `-r` reaches,
+      # so running both separately built the site twice for no answer.
+      - name: Build everything, publishable packages included
+        run: pnpm -r build
+
+      # `next build` and `ECHO_STATIC_EXPORT=1 next build` are
+      # different builds, and only the second one deploys. A metadata route
+      # that needs `force-static` compiles cleanly under the first and refuses
+      # under the second, so the artefact that actually ships was the one
+      # artefact nothing here ever built.
+      - name: Build the static export — the thing that actually deploys
+        run: pnpm --filter @echo-ui/www build:static
+
+  # The browser suite is about two hours of runner time, and a merge usually
+  # brings main code the suite already passed on: a pull request's run tests
+  # the pull request merged into main, so if main hasn't moved since, the
+  # merge is that same tree. The same tree gets the same answer, so a push to
+  # main skips the suite only for a tree a full run passed on (`e2e-passed`
+  # below records each one). Anything else runs it, as it always has: main
+  # moved under the pull request, a Dependabot merge, a lookup that failed.
+  gate:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tested: ${{ steps.lookup.outputs.tested }}
+    steps:
+      - name: Has the browser suite passed on this exact tree?
+        id: lookup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tree=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$GITHUB_SHA" --jq .tree.sha) || tree=""
+          found=0
+          if [ -n "$tree" ]; then
+            found=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=e2e-passed-$tree" \
+              --jq '[.artifacts[] | select(.expired | not)] | length') || found=0
+          fi
+          if [ "${found:-0}" -gt 0 ] 2>/dev/null; then
+            echo "tested=true" >> "$GITHUB_OUTPUT"
+            echo "The browser suite already passed on tree $tree: not running it again."
+          else
+            echo "tested=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  e2e:
+    needs: gate
+    # Who gets the browser suite. A run started by hand, always. Behind the
+    # repository variable BROWSER_SUITE_AUTO: a pull request ready for review,
+    # and a push to main the gate didn't clear. A draft gets the build only
+    # until it's marked ready. So does a Dependabot pull request: its update
+    # meets the suite when it lands (or before, started by hand).
+    # `!cancelled()` because the gate is skipped outside pushes, and a
+    # skipped need would skip this job with it.
+    if: >-
+      ${{ !cancelled() && (
+        github.event_name == 'workflow_dispatch'
+        || (vars.BROWSER_SUITE_AUTO == 'on' && (
+            (github.event_name == 'push' && needs.gate.outputs.tested != 'true')
+            || (github.event_name == 'pull_request'
+                && !github.event.pull_request.draft
+                && github.event.pull_request.user.login != 'dependabot[bot]')
+        ))
+      ) }}
+    runs-on: ubuntu-latest
+    # The runner has two cores, so Playwright runs one worker. At 270 tests the
+    # job took 38 minutes; at 748 desktop tests it hit its limit with a third
+    # of them run. So each browser suite is split across runners.
+    # On 2026-10-04 a shard took 12 to 31 minutes, setup included, but the one
+    # that drew the docs console sweep (one test, about 20 minutes on CI's dev
+    # server, which can't be split) took 44, with it retried once. The limit leaves
+    # room for that retry, so a red shard ends with its report rather than
+    # cancelled without one. When a shard passes 45, add a shard.
+    # `fail-fast: false`: one run reports every shard's failures.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    timeout-minutes: 60
+    # The same image the Linux baselines are taken in (visual-baselines.yml), so
+    # a screenshot comparison here is against the same renderer. Kept in step
+    # with package.json by registry/scripts/playwright-image.test.ts.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The image already carries the browsers; this only links them up.
+      - name: Install Playwright browser
+        run: pnpm exec playwright install chromium
+
+      # The registry first: the docs read what it writes into public/ (the /e/
+      # and /r/ items the install panels show, llms.txt). Those files are
+      # gitignored, so without this step the docs tests fail in CI alone.
+      - name: Build registry and docs
+        run: |
+          pnpm build:registry
+          pnpm --filter @echo-ui/www build
+
+      # Functional component tests: a11y (axe), keyboard-nav, dialog behavior.
+      - name: Component a11y + keyboard + behavior tests (desktop)
+        run: pnpm exec playwright test --project=chromium --grep-invert "visual:" --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      # Screenshots are compared only where Linux baselines exist. They are
+      # written by visual-baselines.yml in this same image; until they land on
+      # main this step skips itself rather than failing on a missing file.
+      - name: Screenshots (Linux baselines)
+        if: hashFiles('tests/__screenshots__/**/*-linux.png') != ''
+        run: pnpm exec playwright test --project=chromium --grep "visual:" --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      # The same a11y specs plus the layout sweep at 390x844. Kept as
+      # its own step so a phone-only break reads as one in the CI log rather
+      # than as a desktop regression. The project's own `grep: /@mobile/`
+      # keeps the visual baselines desktop-only.
+      - name: Mobile a11y + layout (390x844)
+        run: pnpm exec playwright test --project=mobile --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      # The 44px platform touch guideline. Its own project because the
+      # rules are `@media (pointer: coarse)` — a project without pointer
+      # emulation cannot see them, and would pass while proving nothing.
+      - name: Touch targets (coarse pointer)
+        run: pnpm exec playwright test --project=touch --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+      # Pages loading many at once, timed last, when nothing else is running
+      #. `--no-deps`: the projects it waits for locally already ran.
+      # Once, on the first runner: it times the site, not a share of the suite.
+      - name: Load
+        if: matrix.shard == 1
+        run: pnpm exec playwright test --project=load-chromium --no-deps
+
+      # Without this a red e2e job is a log line and a guess. The report
+      # carries the trace, the screenshot and the DOM at the moment it failed,
+      # which is the difference between reproducing it and re-running it.
+      - name: Keep the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          # One per shard: upload-artifact refuses a name already taken.
+          name: playwright-report-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # The other half of the gate: every shard passed, so this run's tree is
+  # recorded where a push to main can find it. A one-line file, kept 30 days.
+  # Never red: if the lookup fails, nothing is recorded, and the merge runs the
+  # suite again.
+  e2e-passed:
+    needs: e2e
+    # Said outright: a job whose chain holds a skipped job (the gate, outside
+    # pushes) is skipped by default, every shard green or not.
+    if: ${{ !cancelled() && needs.e2e.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Name the tree the suite passed on
+        id: tree
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tree=$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$GITHUB_SHA" --jq .tree.sha) || tree=""
+          echo "sha=$tree" >> "$GITHUB_OUTPUT"
+          echo "$GITHUB_SHA" > tested-commit.txt
+
+      - name: Record it
+        if: steps.tree.outputs.sha != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-passed-${{ steps.tree.outputs.sha }}
+          path: tested-commit.txt
+          retention-days: 30

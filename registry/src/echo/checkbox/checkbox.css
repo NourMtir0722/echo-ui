@@ -1,0 +1,149 @@
+/**
+ * Checkbox. Off, it is a recessed well — a hole in
+ * the chassis, like the radio's. On, it becomes the lit primary cap with a
+ * tick: the SAME primary-cap stops and cream legend as the Record button, so
+ * "the accent" is one accent across the library (and a pairing the material tests
+ * already hold to contrast). No outer glow. Composes var(--echo-*).
+ */
+.echo-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-sm);
+  cursor: pointer;
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  /* Bezel: a 1px rim of chassis plastic, so the hole reads on any ground. */
+  /* useCapPhysics sets --press (0 → 1 as it lands): the hole deepens and the
+     lit cap's drop closes up. It owns the transform, so none is set here. */
+  box-shadow:
+    inset 0 calc(2px + 1px * var(--press, 0)) calc(4px + 2px * var(--press, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),
+    0 0 0 1px color-mix(in oklab, var(--echo-cap) 85%, transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  transition: background var(--echo-duration-swap) ease;
+}
+
+.echo-checkbox[data-checked],
+.echo-checkbox[data-indeterminate] {
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    0 calc(1px - 1px * var(--press, 0)) calc(2px - 1px * var(--press, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-checkbox:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+.echo-checkbox:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.echo-checkbox__indicator {
+  display: inline-flex;
+  /* The primary cap's own legend colour (see hardware-button.css). */
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+}
+.echo-checkbox__indicator svg {
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+}
+.echo-checkbox__dash,
+.echo-checkbox[data-indeterminate] .echo-checkbox__check {
+  display: none;
+}
+.echo-checkbox[data-indeterminate] .echo-checkbox__dash {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-checkbox {
+    transition: none;
+  }
+}
+
+/*
+ * WCAG 2.2 2.5.8 — a target must be at least 24x24 CSS px.
+ *
+ * Expanded with a centred pseudo-element rather than by growing the control:
+ * the visual size IS the design, and no component in the library used hit-area
+ * expansion before this, so every target was exactly as big as it looked.
+ * `max(100%, 24px)` keeps the expansion a floor — a target already larger than
+ * 24px is untouched.
+ */
+.echo-checkbox {
+  position: relative;
+  /* Declares a deliberate 24px target pad; see tests/helpers/layout.ts. */
+  --echo-hit-area: 24px;
+}
+
+.echo-checkbox::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both
+ * platform guidelines use — a fingertip rather than conformance. Gated on
+ * `@media (pointer: coarse)`, so the desktop rendering does not move.
+ *
+ * Where a control's visual size is the design (a 24px checkbox, a 10px pip),
+ * the target is grown with the same transparent pseudo-element as the 24px minimum,
+ * not by growing the control.
+ */
+@media (pointer: coarse) {
+  .echo-checkbox {
+    --echo-hit-area: 44px;
+  }
+
+  .echo-checkbox::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the box's gradient and shadows,
+ * so an unchecked checkbox disappeared entirely. System colors draw the box
+ * and the checked state; nothing here disables forced colors, so focus shows.
+ */
+@media (forced-colors: active) {
+  .echo-checkbox {
+    border: var(--echo-border-thick, 2px) solid ButtonText;
+  }
+  .echo-checkbox[data-checked],
+  .echo-checkbox[data-indeterminate] {
+    border-color: Highlight;
+    color: Highlight;
+  }
+}

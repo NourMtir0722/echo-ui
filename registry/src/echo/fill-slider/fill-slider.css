@@ -1,0 +1,98 @@
+/**
+ * FillSlider. Meter's tube and its liquid, standing up: a groove cut into the
+ * chassis, filled from the bottom with the primary plastic to the level. The
+ * whole tube is the target, and the top of the fill is the handle. Composes
+ * var(--echo-*) — no hex literals; the only fixed values are the key light.
+ */
+.echo-fill-slider {
+  --fs-width: calc(var(--echo-control-large, 60px) - var(--echo-space-2));
+  --fs-height: calc(var(--echo-control-large, 60px) * 2.6);
+  display: inline-grid;
+  justify-items: center;
+  gap: var(--echo-space-4);
+}
+.echo-fill-slider__root,
+.echo-fill-slider__control {
+  inline-size: var(--fs-width);
+  block-size: var(--fs-height);
+  touch-action: none;
+}
+.echo-fill-slider__control {
+  cursor: pointer;
+}
+
+/* The tube: a groove cut into the surface. */
+.echo-fill-slider__tube {
+  position: relative;
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: var(--echo-space-2);
+  border-radius: var(--echo-radius-2xl);
+  background: var(--echo-lcd);
+  box-shadow:
+    inset 0 3px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.75 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  overflow: hidden;
+  /* The handle is a full-width target positioned by the slider: the tube clips it on purpose. */
+  --echo-clip: decorative;
+}
+/* The liquid: poured to the level from the bottom, lit along its top. */
+.echo-fill-slider__fill {
+  position: absolute;
+  inset-inline: var(--echo-space-2);
+  min-block-size: calc(var(--echo-radius-lg) * 2);
+  border-radius: var(--echo-radius-lg);
+  background: linear-gradient(180deg, var(--echo-pour-top, var(--echo-primary-cap-top)) 0%, var(--echo-pour-mid, var(--echo-primary-cap-mid)) 45%, var(--echo-pour-base, var(--echo-primary-cap-base)) 100%);
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+}
+.echo-fill-slider__icon {
+  position: absolute;
+  inset-block-end: var(--echo-space-7);
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  display: inline-flex;
+  inline-size: var(--echo-icon-lg, 20px);
+  block-size: var(--echo-icon-lg, 20px);
+  color: var(--echo-text);
+  pointer-events: none;
+}
+.echo-fill-slider__icon > svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+/* The handle is the top of the fill: a full-width target, drawn only when focused. */
+.echo-fill-slider__handle {
+  inline-size: 100%;
+  block-size: var(--echo-space-10, 24px);
+  border-radius: var(--echo-radius-lg);
+  outline: none;
+}
+.echo-fill-slider__handle:has(:focus-visible) {
+  box-shadow: 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow));
+}
+
+.echo-fill-slider__label {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-fill-slider[data-disabled] {
+  opacity: 0.45;
+}
+
+@media (forced-colors: active) {
+  .echo-fill-slider__tube {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-fill-slider__fill {
+    background: Highlight;
+  }
+  .echo-fill-slider__handle:has(:focus-visible) {
+    outline: 2px solid Highlight;
+  }
+}

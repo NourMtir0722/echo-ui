@@ -1,0 +1,61 @@
+{
+  "name": "echo-ui-mcp",
+  "version": "0.3.2",
+  "type": "module",
+  "description": "The design system that keeps your AI on-brand, as an MCP server: an agent searches Echo UI's components by the job, reads one, and gets its tokens and accessibility rules before writing code.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "echo-ui",
+    "design-system",
+    "react",
+    "components",
+    "ai",
+    "agent"
+  ],
+  "license": "MIT",
+  "author": "Nawwara Studio",
+  "homepage": "https://echo-ui.com",
+  "funding": "https://echo-ui.com/support",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NourMtir0722/echo-ui.git",
+    "directory": "mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/NourMtir0722/echo-ui/issues"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "bin": {
+    "echo-ui-mcp": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "prepublishOnly": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy",
+    "build:plugin": "tsx src/build-plugin.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cfworker/json-schema": "^4.1.1",
+    "@echo-ui/client": "workspace:*",
+    "@types/node": "^26.6.5",
+    "echo-ui-core": "workspace:*",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.151.0"
+  }
+}

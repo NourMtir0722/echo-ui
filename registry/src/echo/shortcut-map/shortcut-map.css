@@ -1,0 +1,109 @@
+/**
+ * ShortcutMap. A keyboard of Kbd caps over the list of shortcuts; a lit key
+ * is the primary cap. Composes var(--echo-*) — no hex literals; the only
+ * fixed values are the key light.
+ */
+.echo-shortcut-map {
+  container-type: inline-size;
+  display: grid;
+  gap: var(--echo-space-10);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+/* The board scales to fit: 15 units and their gaps across the width it has. */
+.echo-shortcut-map__board {
+  --sm-unit: clamp(12px, calc((100cqi - 88px) / 15.5), 24px);
+  display: grid;
+  gap: var(--echo-space-2);
+  justify-content: start;
+  padding: var(--echo-space-5);
+  border-radius: var(--echo-radius-lg);
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  max-inline-size: 100%;
+  /* The cap counts the padding too. */
+  box-sizing: border-box;
+}
+.echo-shortcut-map__row {
+  display: flex;
+  gap: var(--echo-space-2);
+}
+.echo-shortcut-map__slot {
+  display: flex;
+  flex: none;
+  inline-size: calc(var(--sm-unit) * var(--w, 1));
+}
+.echo-shortcut-map__slot[data-width="1.25"] { --w: 1.25; }
+.echo-shortcut-map__slot[data-width="1.5"] { --w: 1.5; }
+.echo-shortcut-map__slot[data-width="1.75"] { --w: 1.75; }
+.echo-shortcut-map__slot[data-width="2.25"] { --w: 2.25; }
+.echo-shortcut-map__slot[data-width="2.75"] { --w: 2.75; }
+.echo-shortcut-map__slot[data-width="5.5"] { --w: 5.5; }
+.echo-shortcut-map__slot > .echo-kbd {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  /* A long legend on a small cap is cut, not spilled: the board is only a picture. */
+  --echo-clip: decorative;
+  padding-inline: var(--echo-space-1);
+  font-size: var(--echo-text-3xs);
+}
+/* Lit: the keys of the shortcut you're pointing at. */
+.echo-shortcut-map__slot[data-lit] > .echo-kbd {
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  background: linear-gradient(180deg, var(--echo-primary-cap-top) 0%, var(--echo-primary-cap-mid) 45%, var(--echo-primary-cap-base) 100%);
+}
+
+.echo-shortcut-map__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0 var(--echo-space-10);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.echo-shortcut-map__item {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-6);
+  padding-block: var(--echo-space-4);
+  border-block-end: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+  box-shadow: var(--echo-shadow-hairline, 0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1))));
+}
+.echo-shortcut-map__keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-2);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.echo-shortcut-map__then {
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-2xs);
+  color: var(--echo-text-dim);
+}
+.echo-shortcut-map__label {
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text);
+  overflow-wrap: anywhere;
+}
+
+/* Too narrow for a keyboard (a phone, or very large text): the list stands alone. */
+@container (max-width: 26rem) {
+  .echo-shortcut-map__board {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .echo-shortcut-map__slot[data-lit] > .echo-kbd {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

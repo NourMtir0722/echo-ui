@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "name": "stopwatch",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "Stopwatch",
+  "description": "Start becomes the running time (lit) and a Lap button beside it; each lap is a drop that leaves Lap and lands in the lap count. Pause dims the time and Lap flows into Reset, which folds everything back into Start.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "morph",
+    "count-badge",
+    "bud-off"
+  ],
+  "files": [
+    {
+      "path": "stopwatch/stopwatch.css",
+      "sha256": "c1051160e9ac8bf4c75c3df965e3232f74c91c2de2c55090cf9323435dbf4cfe",
+      "content": "/* Digits that don't move as they change: the cap keeps its width while it runs. */\n.echo-stopwatch__time {\n  font-variant-numeric: tabular-nums;\n}\n.echo-stopwatch__laps {\n  display: inline-flex;\n}\n"
+    },
+    {
+      "path": "stopwatch/stopwatch.tsx",
+      "sha256": "ceab16d3479ad0d8f29e1e8384dd081a8101ab021d2b80dc45a15a2873c58c71",
+      "content": "\"use client\";\n\n/**\n * Stopwatch. Start becomes the running time (lit) and a Lap button that buds\n * beside it; each lap is a drop that leaves Lap and lands in the lap count.\n * Pause dims the time and Lap flows into Reset, which folds it all back into\n * Start.\n *\n * Real HardwareButtons in a Morph, a CountBadge for the laps, and useBudOff\n * for the drop. The time is written straight into the cap every frame, so\n * nothing re-renders while it runs.\n */\nimport { useEffect, useRef, useState } from \"react\";\nimport type { MorphFeelName } from \"echo-ui-core/tactile\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { CountBadge } from \"../count-badge\";\nimport { Morph } from \"../morph\";\nimport { useBudOff } from \"../bud-off\";\nimport \"./stopwatch.css\";\n\nexport interface StopwatchProps {\n  /** Called on every lap, with its number and the time, ms. */\n  onLap?: (lap: number, ms: number) => void;\n  /** Called on reset, with the time it had reached, ms. */\n  onReset?: (ms: number) => void;\n  feel?: MorphFeelName;\n  size?: \"sm\" | \"md\" | \"lg\";\n  align?: \"center\" | \"start\" | \"end\";\n  className?: string;\n}\n\nconst Play = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <path d=\"M5 3.2v9.6l8-4.8z\" fill=\"currentColor\" />\n  </svg>\n);\nconst Pause = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <path d=\"M4.5 3h2.6v10H4.5zM8.9 3h2.6v10H8.9z\" fill=\"currentColor\" />\n  </svg>\n);\nconst Flag = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.7\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    <path d=\"M3.5 14V2.5M3.5 2.5h8l-1.6 3 1.6 3h-8\" />\n  </svg>\n);\n\n/** 01:23.45 — minutes, seconds, hundredths. */\nexport const watch = (ms: number) => {\n  const cs = Math.floor(Math.max(0, ms) / 10);\n  const m = Math.floor(cs / 6000);\n  const s = Math.floor(cs / 100) % 60;\n  return `${String(m).padStart(2, \"0\")}:${String(s).padStart(2, \"0\")}.${String(cs % 100).padStart(2, \"0\")}`;\n};\n\ntype Phase = \"idle\" | \"run\" | \"pause\";\n\nexport function Stopwatch({ onLap, onReset, feel, size, align, className }: StopwatchProps) {\n  const [phase, setPhase] = useState<Phase>(\"idle\");\n  const [laps, setLaps] = useState(0);\n  const [shownLaps, setShownLaps] = useState(0);\n  const [status, setStatus] = useState(\"\");\n  const budOff = useBudOff();\n  const text = useRef<HTMLSpanElement>(null);\n  const lapButton = useRef<HTMLButtonElement>(null);\n  const badge = useRef<HTMLSpanElement>(null);\n  const loop = useRef(0);\n  const clockRef = useRef({ base: 0, at: 0 });\n  /** Drops still flying to the lap count; Reset calls them off. */\n  const flights = useRef(new Set<() => void>());\n\n  const now = () => {\n    const c = clockRef.current;\n    return phase === \"run\" ? c.base + performance.now() - c.at : c.base;\n  };\n  /**\n   * The time is written into the text node already there, never by setting\n   * textContent, which swaps the node for a new one. The time is the Pause\n   * cap's label and changes every frame, so a press landed on a node that was\n   * gone by the time it let go, and WebKit dropped the click.\n   */\n  const show = (ms: number) => {\n    const el = text.current;\n    if (!el) return;\n    const node = el.firstChild;\n    if (node && node.nodeType === Node.TEXT_NODE) node.nodeValue = watch(ms);\n    else el.textContent = watch(ms);\n  };\n  const tick = () => {\n    const c = clockRef.current;\n    show(c.base + performance.now() - c.at);\n    loop.current = requestAnimationFrame(tick);\n  };\n  useEffect(() => () => cancelAnimationFrame(loop.current), []);\n\n  const start = () => {\n    clockRef.current = { base: 0, at: performance.now() };\n    loop.current = requestAnimationFrame(tick);\n    setPhase(\"run\");\n    setStatus(\"Stopwatch running\");\n  };\n\n  const toggle = () => {\n    const c = clockRef.current;\n    if (phase === \"run\") {\n      cancelAnimationFrame(loop.current);\n      c.base += performance.now() - c.at;\n      show(c.base);\n      setPhase(\"pause\");\n      setStatus(`Paused at ${watch(c.base)}`);\n    } else {\n      c.at = performance.now();\n      loop.current = requestAnimationFrame(tick);\n      setPhase(\"run\");\n      setStatus(\"Running\");\n    }\n  };\n\n  const lap = () => {\n    const n = laps + 1;\n    const at = now();\n    setLaps(n);\n    onLap?.(n, at);\n    setStatus(`Lap ${n}, ${watch(at)}`);\n    // The first lap brings the count in; the drop waits for it to be there.\n    // Waiting or flying, Reset can call it off.\n    let cancel = () => cancelAnimationFrame(frame);\n    const callOff = () => cancel();\n    const landed = () => {\n      flights.current.delete(callOff);\n      setShownLaps(n);\n    };\n    const frame = requestAnimationFrame(() => {\n      const from = lapButton.current;\n      const to = badge.current;\n      if (from && to) cancel = budOff(from, to, { onArrive: landed });\n      else landed();\n    });\n    flights.current.add(callOff);\n  };\n\n  const reset = () => {\n    const at = clockRef.current.base;\n    cancelAnimationFrame(loop.current);\n    // A lap still on its way would land after this and bring its count back.\n    flights.current.forEach((cancel) => cancel());\n    flights.current.clear();\n    clockRef.current = { base: 0, at: 0 };\n    setLaps(0);\n    setShownLaps(0);\n    setPhase(\"idle\");\n    setStatus(\"Stopwatch reset\");\n    onReset?.(at);\n  };\n\n  return (\n    <Morph feel={feel} align={align} className={[\"echo-stopwatch\", className].filter(Boolean).join(\" \")} status={status}>\n      {phase === \"idle\" ? (\n        <HardwareButton data-morph=\"time\" size={size} icon={<Play />} onClick={start}>\n          Start\n        </HardwareButton>\n      ) : (\n        <>\n          <HardwareButton\n            data-morph=\"time\"\n            variant={phase === \"run\" ? \"primary\" : \"neutral\"}\n            size={size}\n            icon={phase === \"run\" ? <Pause /> : <Play />}\n            aria-label={phase === \"run\" ? \"Pause stopwatch\" : \"Resume stopwatch\"}\n            onClick={toggle}\n          >\n            <span ref={text} className=\"echo-stopwatch__time\">\n              {watch(clockRef.current.base + (phase === \"run\" ? performance.now() - clockRef.current.at : 0))}\n            </span>\n          </HardwareButton>\n          {phase === \"run\" ? (\n            <HardwareButton ref={lapButton} data-morph=\"side\" size={size} icon={<Flag />} onClick={lap}>\n              Lap\n            </HardwareButton>\n          ) : (\n            <HardwareButton data-morph=\"side\" size={size} onClick={reset}>\n              Reset\n            </HardwareButton>\n          )}\n          {laps > 0 ? (\n            <span ref={badge} className=\"echo-stopwatch__laps\">\n              <CountBadge count={shownLaps} label={shownLaps === 1 ? \"lap\" : \"laps\"} showZero />\n            </span>\n          ) : null}\n        </>\n      )}\n    </Morph>\n  );\n}\n"
+    },
+    {
+      "path": "stopwatch/index.ts",
+      "sha256": "55fc6f9ed211085c5f0b0699873553c005286656b87aadb1cb437c5b0f2e2b9a",
+      "content": "export { Stopwatch } from \"./stopwatch\";\nexport type { StopwatchProps } from \"./stopwatch\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Six more that change shape as you use them, all on `Morph`.** `SaveButton` narrows into its own progress while your save runs, widens into a lit \"Saved\" and flows back. `Timer` opens into durations; the others run into the one you pick, which drains as the time runs and rings. `Stopwatch` buds a Lap button from Start, and every lap is a drop that lands in the lap count. `VoiceNote` records from the microphone: your voice swells the Stop button, and the take becomes a note that fills as it plays. `AddToBag` sends a drop from the button into the count beside it. `useBudOff` is that drop on its own, from any element into any other. `Morph` now keeps a button's identity across states when it has the same `data-morph` name, and draws filled caps as levels."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**`Stopwatch`: Pause takes on every press in Safari**. The running time is the cap's label and was rewritten every frame by replacing its text, so a press that began on the old text and ended on the new one was sometimes dropped. The time now changes in place."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**`Stopwatch`: a lap still in flight when you Reset no longer comes back**. Its drop landed after the reset and put the old count back, so the next first lap briefly read \"2 laps\". To do it, `budOff(…)` from `useBudOff` now returns a function that calls the drop off before it lands; ignoring it changes nothing."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

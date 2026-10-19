@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "name": "select",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Select",
+  "description": "Base UI Select (typeahead, keyboard, a11y) skinned as an Echo dropdown — a molded cap trigger and a floating panel with a lit dot on the selected option. CSS fade in and out (Base UI Select cannot hold a node for a GSAP exit); sound.select on change.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "size"
+  ],
+  "files": [
+    {
+      "path": "select/select.css",
+      "sha256": "8cdede651b0674c39eb6ff22a7312eea179a8e59a251bfd52af47aeeb3505781",
+      "content": "/**\n * Select. Base UI Select behavior, Echo device skin: a\n * molded cap trigger and a floating panel with an accent dot on the selected\n * option. GSAP owns the popup transform/opacity (useGsapPresence). Composes\n * var(--echo-*).\n */\n.echo-select__trigger {\n  /* One size scale (sm/md/lg): the cap's height is the control height. */\n  --ctl-h: var(--echo-control-default);\n  --ctl-font: var(--echo-text-md);\n  --ctl-px: var(--echo-space-8);\n  --ctl-radius: var(--echo-radius-xl);\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n  /*\n   * A floor, not a width: `min-width: 180px` pushed its container open at\n   * 320px (the same problem Toast had). `min()` keeps the comfortable width\n   * where there is room and gives it up where there isn't.\n   */\n  min-width: min(180px, 100%);\n  height: var(--ctl-h);\n  padding: 0 var(--ctl-px);\n  border: 0;\n  border-radius: var(--ctl-radius);\n  cursor: pointer;\n  color: var(--echo-text);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--ctl-font);\n  /* The HardwareButton neutral cap, stop for stop. */\n  background: linear-gradient(\n    180deg,\n    var(--echo-cap-highlight) 0%,\n    var(--echo-cap) 40%,\n    var(--echo-cap) 62%,\n    var(--echo-cap-shadow) 100%\n  );\n  box-shadow:\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),\n    0 calc(4px + 1px * var(--lift, 0) - 3px * var(--press, 0)) 0 var(--echo-seam),\n    0 calc(9px + 5px * var(--lift, 0) - 6px * var(--press, 0)) calc(14px + 10px * var(--lift, 0) - 9px * var(--press, 0))\n      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  /* useCapPhysics owns the transform: lift, lean, travel onto the seam. */\n}\n.echo-select__trigger[data-size=\"sm\"] {\n  --ctl-h: var(--echo-control-compact);\n  --ctl-font: var(--echo-text-sm);\n  --ctl-px: var(--echo-space-6);\n  --ctl-radius: var(--echo-radius-lg);\n  min-width: min(140px, 100%);\n}\n.echo-select__trigger[data-size=\"lg\"] {\n  --ctl-h: var(--echo-control-large);\n  --ctl-font: var(--echo-text-lg);\n  --ctl-px: var(--echo-space-9);\n  --ctl-radius: var(--echo-radius-2xl);\n}\n.echo-select__trigger:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n\n.echo-select__icon {\n  display: inline-flex;\n  color: var(--echo-text-dim);\n  transition: transform var(--echo-duration-swap) ease;\n}\n.echo-select__trigger[data-popup-open] .echo-select__icon {\n  transform: rotate(180deg);\n}\n\n/* Above any dialog it opens from (BUG-13). */\n.echo-select__positioner {\n  z-index: var(--echo-z-popover, 300);\n}\n\n.echo-select__popup {\n  /* The flowing highlight is positioned against the panel. */\n  position: relative;\n  box-sizing: border-box;\n  min-width: var(--anchor-width);\n  max-height: var(--available-height);\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: var(--echo-space-3);\n  border-radius: var(--echo-radius-xl);\n  color: var(--echo-text);\n  /*\n   * The same plastic as the trigger it drops from — cap at the top, settling\n   * to the cap's shadow — with the trigger's lit top edge. It used to be the\n   * flat page surface, so an open Select read as a molded button with a grey\n   * sheet of paper under it.\n   */\n  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);\n  box-shadow:\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.28 * var(--echo-gloss, 1))),\n    inset 0 0 0 1px color-mix(in oklab, var(--echo-seam) 70%, transparent),\n    0 24px 48px -18px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);\n  outline: none;\n  /* Base UI's origin is the edge that meets the trigger, so the sheet grows\n     from the cap it drops out of, on whichever side it opened. */\n  transform-origin: var(--transform-origin, top center);\n  /* It unrolls out of its trigger: solid quickly, its length overshooting and\n     settling. Leaving, it rolls back up, quick and plain. */\n  transition:\n    opacity var(--echo-duration-swap) ease,\n    transform var(--echo-duration-pop) var(--echo-ease-pop);\n}\n.echo-select__popup[data-ending-style] {\n  transition-duration: var(--echo-duration-swap);\n  transition-timing-function: ease-in;\n}\n.echo-select__popup[data-starting-style],\n.echo-select__popup[data-ending-style] {\n  opacity: 0;\n  transform: scale(0.96, 0.4);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-select__popup {\n    transition-duration: var(--echo-duration-glitch);\n    transform: none;\n  }\n}\n\n.echo-select__item {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n  padding: var(--echo-space-4) var(--echo-space-6);\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  user-select: none;\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n  /* The highlight marks the current option, for the pointer and the arrow\n     keys alike; the browser's own ring on top was a second mark (BUG-52). */\n  outline: none;\n}\n.echo-select__item[data-highlighted] {\n  background: color-mix(in oklab, var(--echo-cap-highlight) 55%, transparent);\n  color: var(--echo-text);\n}\n.echo-select__item[data-selected] {\n  color: var(--echo-text);\n}\n\n/*\n * ONE mark for the chosen item: a check in the text colour. Base UI's\n * ItemIndicator renders a ✔️ emoji when given no children, and this rule used\n * to paint the same element as a glowing accent dot — so the chosen row\n * showed both at once.\n */\n.echo-select__indicator {\n  display: inline-flex;\n  flex: none;\n  color: var(--echo-text);\n}\n\n.echo-select__indicator svg {\n  width: var(--echo-icon-sm, 14px);\n  height: var(--echo-icon-sm, 14px);\n}\n\n/*\n * Forced colors (Windows High Contrast) drops the recessed well's gradient and\n * shadows, which is its whole edge: without a border an input, and above all\n * an empty one, isn't visible at all. System colors only, so focus still shows.\n */\n@media (forced-colors: active) {\n  .echo-select__trigger {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n}\n\n/*\n * The flowing highlight (useLiquidHighlight): one cap that travels to the\n * hovered item on a spring. Once it shows, the popup has data-glow and the\n * items drop their own tint.\n */\n.echo-select__glow {\n  position: absolute;\n  z-index: var(--echo-z-base, 0);\n  visibility: hidden;\n  pointer-events: none;\n  will-change: transform, top, height;\n}\n.echo-select__glow-shape {\n  position: absolute;\n  inset: 0;\n  border-radius: var(--echo-radius-md);\n  background: color-mix(in oklab, var(--echo-cap-highlight) 55%, transparent);\n}\n.echo-select__popup[data-glow] .echo-select__item[data-highlighted] {\n  background: transparent;\n}\n.echo-select__item {\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n}\n@media (forced-colors: active) {\n  .echo-select__glow {\n    display: none;\n  }\n  /* The highlight is hidden here, so the current option carries the mark. */\n  .echo-select__item[data-highlighted] {\n    outline: var(--echo-border-thick, 2px) solid Highlight;\n    outline-offset: -2px;\n  }\n}\n"
+    },
+    {
+      "path": "select/select.tsx",
+      "sha256": "48c2f4401cbed94605d436522bcf861bb0fa0d7cd0044ea97277c84edaaa6a44",
+      "content": "\"use client\";\n\n/**\n * Select. Base UI Select behavior (typeahead,\n * keyboard, a11y) skinned as an Echo device dropdown — a molded cap trigger and\n * a floating panel with an accent dot on the selected option. sound.select on\n * change. The popup fades/scales via CSS (Base UI auto-detects the transition),\n * so no GSAP presence is needed here.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport { Select as BaseSelect } from \"@base-ui/react/select\";\nimport { forwardRef, useMemo } from \"react\";\nimport type { EchoInterop, EchoPortalContainer } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { mergeHandlers, mergeRefs, useCapPhysics, useLiquidHighlight } from \"echo-ui-core/tactile\";\nimport { useControlSize, type ControlSize } from \"../size\";\nimport \"./select.css\";\n\nexport interface SelectOption {\n  value: string;\n  label: string;\n}\n\ninterface SelectOwnProps extends EchoInterop {\n  options: SelectOption[];\n  value?: string;\n  defaultValue?: string;\n  onValueChange?: (value: string) => void;\n  /** The greyed text shown until something is chosen. Not a label. */\n  placeholder?: string;\n  /**\n   * Height on the control scale: `sm` 32px, `md` 44px (default), `lg` 60px,\n   * the same as a Field or HardwareButton of that size. Defaults to the\n   * nearest SizeProvider's size.\n   */\n  size?: ControlSize;\n  /**\n   * Where the list mounts. Defaults to <body>. Pass an element inside a\n   * scoped theme (`createEchoTheme(seed, { selector })`) and the list wears\n   * that theme too — mounted on <body>, it can only read the :root one.\n   */\n  container?: EchoPortalContainer;\n}\n\n/**\n * A control has to have a name: `aria-label`, or\n * `aria-labelledby` pointing at visible text. Leaving both out is a type\n * error, so it gets decided rather than forgotten.\n */\ntype AccessibleName =\n  | { \"aria-label\": string; \"aria-labelledby\"?: string }\n  | { \"aria-labelledby\": string; \"aria-label\"?: string };\n\nexport type SelectProps = SelectOwnProps & AccessibleName;\n\nfunction ChevronDown() {\n  return (\n    <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2.4\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n      <path d=\"M6 9l6 6 6-6\" />\n    </svg>\n  );\n}\n\nfunction CheckIcon() {\n  return (\n    <svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2.2\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n      <path d=\"M3.5 8.5l3 3 6-7\" />\n    </svg>\n  );\n}\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`.\n *\n * The ref lands on the TRIGGER, because that is the focusable element: it is\n * what `shouldFocusError` calls `.focus()` on, and what `onBlur` and `onFocus`\n * fire from. Form participation — `name`, `required`, `readOnly` — belongs to\n * the Root, which owns the hidden input. So the interop set is split by hand\n * here rather than spread wholesale: the two halves go to different elements.\n */\nexport const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(\n  {\n    options,\n    size: ownSize,\n    value,\n    defaultValue,\n    onValueChange,\n    placeholder = \"Select…\",\n    disabled,\n    name,\n    required,\n    readOnly,\n    id,\n    autoFocus,\n    onBlur,\n    onFocus,\n    onKeyDown,\n    \"aria-label\": ariaLabel,\n    \"aria-labelledby\": ariaLabelledby,\n    container,\n    ...rest\n  },\n  ref,\n) {\n  const sound = useSoundOptional();\n  const size = useControlSize(ownSize);\n  // The hovered option is marked by one cap flowing from option to option.\n  const glow = useLiquidHighlight();\n  // The trigger is the button's neutral cap, so it presses like one.\n  const cap = useCapPhysics<HTMLButtonElement>({ tilt: 3 });\n  const capRef = cap.ref;\n  const triggerRef = useMemo(() => mergeRefs(ref, capRef), [ref, capRef]);\n\n  return (\n    <BaseSelect.Root\n      items={options}\n      value={value}\n      defaultValue={defaultValue}\n      disabled={disabled}\n      name={name}\n      required={required}\n      readOnly={readOnly}\n      onValueChange={(next) => {\n        sound?.play(\"select\");\n        onValueChange?.(next as string);\n      }}\n    >\n      <BaseSelect.Trigger\n        ref={triggerRef}\n        /*\n         * Spread only when set. The Trigger owns the keys that open the\n         * listbox, and an explicit `onKeyDown={undefined}` overrides that\n         * rather than leaving it alone.\n         */\n        {...(id ? { id } : {})}\n        {...(autoFocus ? { autoFocus } : {})}\n        {...(onFocus ? { onFocus } : {})}\n        className=\"echo-select__trigger\"\n        data-size={size}\n        aria-label={ariaLabel}\n        aria-labelledby={ariaLabelledby}\n        {...rest}\n        // The cap's own pointer and key handlers, with the caller's onBlur and\n        // onKeyDown run first (the Trigger's own key handling is untouched).\n        {...mergeHandlers(cap.handlers, { onBlur, onKeyDown, ...rest })}\n      >\n        <BaseSelect.Value placeholder={placeholder} />\n        <BaseSelect.Icon className=\"echo-select__icon\">\n          <ChevronDown />\n        </BaseSelect.Icon>\n      </BaseSelect.Trigger>\n      <BaseSelect.Portal container={container}>\n        <BaseSelect.Positioner\n          className=\"echo-select__positioner\"\n          side=\"bottom\"\n          align=\"start\"\n          sideOffset={8}\n          alignItemWithTrigger={false}\n        >\n          <BaseSelect.Popup ref={glow.container} className=\"echo-select__popup\">\n            <span ref={glow.light} className=\"echo-select__glow\" aria-hidden>\n              <span ref={glow.shape} className=\"echo-select__glow-shape\" />\n            </span>\n            {options.map((option) => (\n              <BaseSelect.Item key={option.value} value={option.value} className=\"echo-select__item\">\n                <BaseSelect.ItemText>{option.label}</BaseSelect.ItemText>\n                {/* Explicit children: with none, Base UI renders a ✔️ emoji. */}\n                <BaseSelect.ItemIndicator className=\"echo-select__indicator\">\n                  <CheckIcon />\n                </BaseSelect.ItemIndicator>\n              </BaseSelect.Item>\n            ))}\n          </BaseSelect.Popup>\n        </BaseSelect.Positioner>\n      </BaseSelect.Portal>\n    </BaseSelect.Root>\n  );\n});\n"
+    },
+    {
+      "path": "select/index.ts",
+      "sha256": "a90e4d998a17a3618eb3ba39faf0a3df9544045ef501fe66b7c8944bd3a9a080",
+      "content": "export { Select } from \"./select\";\nexport type { SelectProps, SelectOption } from \"./select\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [
+    "select"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**One `size` on everything with a height.** `Field`, `Select`, `NumberField`, `OtpField` and `Segmented` take `size=\"sm\" | \"md\" | \"lg\"` (32, 44 or 60px), matching `HardwareButton`, and all of them read a `SizeProvider` around them. `md` is exactly what they were. `Avatar` gains `xs` (inline with a line of text) and `xl` (a profile header)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**A new error shakes the field; a Select unrolls from its cap.** When a `Field`'s `error` appears or changes, the field is shoved sideways and swings back through to rest on a spring, the way a latch that won't take the key bounces back. A `Select`'s list now grows out of the edge of the trigger it drops from, rather than scaling up from its own middle. Neither moves under reduced motion."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: Echo's public API names Echo's own types, not Base UI's.** Eleven items put a `@base-ui/react` type straight into a signature you write against — `BaseSwitch.Root.ChangeEventDetails` on a change handler, `ComponentProps<typeof BaseSelect.Portal>[\"container\"]` on a portal target. That made Echo's API a downstream of Base UI's internals: an upstream rename would have been a breaking Echo release triggered by somebody else's refactor."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Controls must have an accessible name, or they don't compile.** `Switch`, `Checkbox`, `Slider`, `Segmented`, `Select`, `RadioGroup` and `Progress` need `aria-label` or `aria-labelledby`; `Field` and `Textarea` need `label`, `aria-label` or `aria-labelledby`; an `iconOnly` `HardwareButton` needs `aria-label` or `aria-labelledby`. **Breaking** for code that left them out: add the name. A control inside a `<label>` points `aria-labelledby` at the label's text."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Descriptions that described an older look.** `Tabs` (a lit rail, not a lit cap), `Select` (CSS fades, not a GSAP exit), and `Badge`, `Segmented`, `Select` and `Field`, which named the default seed's raspberry instead of the accent."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**Popups opened inside a dialog appeared behind it.** A `Select`, `Popover`, `Tooltip` or `Menu` inside a `Modal` or `Sheet` opened under the dialog's backdrop. They now stack above it."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "known limitations",
+        "a11y"
+      ],
+      "summary": "**Base UI focus guards trip `aria-hidden-focus`** on any open non-dialog popup (e.g. `Select`). That markup is upstream and not Echo's to fix; re-checked on each Base UI bump."
+    }
+  ]
+}

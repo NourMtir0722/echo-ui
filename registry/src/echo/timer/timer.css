@@ -1,0 +1,8 @@
+/* Digits that don't move as they change: the cap keeps its width while it counts. */
+.echo-timer__time {
+  font-variant-numeric: tabular-nums;
+}
+/* "Time's up" is the answer, not an action: disabled but at full strength. */
+.echo-timer .echo-hw__cap[data-fill]:disabled {
+  opacity: 1;
+}

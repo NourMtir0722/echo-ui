@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "name": "perch",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Perch",
+  "description": "A creature on the top edge of whatever you put in it: sitting there watching, or hiding behind the edge and peeking up when you come near. It reacts through its mood like every Creature, and never covers what it sits on: the space it needs above the edge is kept for it. For onboarding, an empty state's card, a success moment, a product's assistant.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "creature"
+  ],
+  "files": [
+    {
+      "path": "perch/perch.tsx",
+      "sha256": "000f565f198b95040b87fbf1f0a17d308dceab55948d30edd4faad97f357be92",
+      "content": "\"use client\";\n\n/**\n * Perch. A creature on the top edge of whatever you put in it (a Card, a\n * Panel, a Modal's body): sitting there watching, or hiding behind the edge\n * and peeking up when you come near it. It reacts through its mood, like\n * every Creature, and never covers what it sits on: the space it needs\n * above the edge is kept for it.\n *\n * Decorative: the creature is hidden from assistive technology, and what\n * you put in the Perch is read as it is.\n */\nimport type { CSSProperties, ReactNode } from \"react\";\nimport { Creature, type CreatureMood } from \"../creature\";\nimport type { CreatureCharacter } from \"../creature\";\nimport \"./perch.css\";\n\nexport interface PerchProps {\n  /** What it sits on. */\n  children: ReactNode;\n  /** What it's doing. Default `idle`. */\n  mood?: CreatureMood;\n  /** Who it is. Default: Echo. */\n  character?: CreatureCharacter;\n  /** `sit` (default) on the edge; `peek` hides behind it and comes up when you're near. */\n  behavior?: \"sit\" | \"peek\";\n  /** Which end of the edge. Default `end`. */\n  at?: \"start\" | \"end\";\n  /** The creature's height in px. Default 56. */\n  size?: number;\n}\n\nexport function Perch({ children, mood = \"idle\", character, behavior = \"sit\", at = \"end\", size = 56 }: PerchProps) {\n  // Its size, as a variable the stylesheet reads: the room kept above the edge.\n  const style = { \"--perch-size\": `${size}px` } as CSSProperties;\n  return (\n    <div className=\"echo-perch\" data-behavior={behavior} data-at={at} style={style}>\n      <div className=\"echo-perch__ledge\" aria-hidden=\"true\">\n        <span className=\"echo-perch__creature\">\n          <Creature mood={mood} character={character} size={size} />\n        </span>\n      </div>\n      <div className=\"echo-perch__base\">{children}</div>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "perch/perch.css",
+      "sha256": "cb66dc317775385c4adbad58aa03cca4b0fb5c32991c2e7e2c750bfa2fa84c9b",
+      "content": "/**\n * Perch. The creature stands on the top edge of what's in it: the lower part\n * of its body over the edge, so it sits rather than floats. Peeking, the\n * ledge clips it at the edge and it rises from behind. Composes var(--echo-*).\n */\n.echo-perch {\n  --perch-size: 56px;\n  --perch-over: calc(var(--perch-size) * 0.32);\n  position: relative;\n  display: grid;\n  min-inline-size: 0;\n  /* The room it needs above the edge, kept for it. */\n  padding-block-start: calc(var(--perch-size) - var(--perch-over));\n}\n.echo-perch__base {\n  position: relative;\n  min-inline-size: 0;\n}\n.echo-perch__ledge {\n  position: absolute;\n  inset-block-start: 0;\n  inset-inline: var(--echo-space-10);\n  z-index: var(--echo-z-raised, 1);\n  display: flex;\n  justify-content: flex-end;\n  block-size: var(--perch-size);\n  pointer-events: none;\n}\n.echo-perch[data-at=\"start\"] .echo-perch__ledge {\n  justify-content: flex-start;\n}\n.echo-perch__creature {\n  display: inline-flex;\n  transition: translate var(--echo-duration-pop) var(--echo-ease-pop);\n}\n\n/* Peek: clipped at the edge, down out of sight until you're near. */\n.echo-perch[data-behavior=\"peek\"] .echo-perch__ledge {\n  block-size: calc(var(--perch-size) - var(--perch-over));\n  overflow: hidden;\n  --echo-clip: decorative;\n}\n.echo-perch[data-behavior=\"peek\"] .echo-perch__creature {\n  translate: 0 70%;\n}\n.echo-perch[data-behavior=\"peek\"]:focus-within .echo-perch__creature {\n  translate: 0 12%;\n}\n@media (hover: hover) {\n  .echo-perch[data-behavior=\"peek\"]:hover .echo-perch__creature {\n    translate: 0 12%;\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-perch__creature {\n    transition: none;\n  }\n}\n"
+    },
+    {
+      "path": "perch/index.ts",
+      "sha256": "8d880bf5407fc3841887216a922ad68fb816ed149ad869e701e15842ebd53c82",
+      "content": "export { Perch } from \"./perch\";\nexport type { PerchProps } from \"./perch\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`Perch`: a creature on a card's top edge.** It sits there watching, or hides behind the edge and peeks up when you're near (on hover and when focus is inside). The room it needs above the edge is kept, so it never covers content."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

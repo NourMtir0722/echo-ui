@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "name": "skeleton",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Skeleton",
+  "description": "The shape of content that has not arrived: a recess in the chassis with a slow sheen crossing it. Every skeleton is aria-hidden by default — the wait is announced once, by the region that owns it, via the label prop. Reduced motion holds the sheen still rather than looping forever.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "skeleton/skeleton.css",
+      "sha256": "45580de55b2c2f1417083c35997756b81e37f33d76363787b400bd99b352d098",
+      "content": "/**\n * Skeleton. A recess in the chassis with a slow\n * sheen crossing it — the device is fetching, not broken. Composes\n * var(--echo-*).\n */\n.echo-skeleton {\n  position: relative;\n  /*\n   * The sheen is an absolutely positioned overlay that slides across this box\n   * and is clipped by it — that is the effect. It therefore reports\n   * `scrollWidth > clientWidth` for part of every animation cycle, which is\n   * decorative overflow, not content a user cannot reach.\n   *\n   * Declared for the layout sweep in `tests/helpers/layout.ts`, which would\n   * otherwise flag it — and flag it INTERMITTENTLY, because the amount of\n   * overflow depends on where the animation happens to be when the page is\n   * measured.\n   */\n  --echo-clip: decorative;\n  overflow: hidden;\n  width: var(--echo-skeleton-width, 100%);\n  height: var(--echo-skeleton-height, 12px);\n  border-radius: var(--echo-radius-sm);\n  background: linear-gradient(\n    160deg,\n    color-mix(in oklab, var(--echo-well) 80%, var(--echo-shade-ink, black)),\n    var(--echo-lcd)\n  );\n  box-shadow:\n    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.65 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));\n}\n\n.echo-skeleton[data-variant=\"block\"] {\n  height: var(--echo-skeleton-height, 96px);\n  border-radius: var(--echo-radius-lg);\n}\n\n.echo-skeleton[data-variant=\"circle\"] {\n  width: var(--echo-skeleton-width, var(--echo-skeleton-height, 36px));\n  height: var(--echo-skeleton-height, 36px);\n  border-radius: var(--echo-radius-full);\n}\n\n/* The sheen. Sits above the well, never intercepts the pointer. */\n.echo-skeleton::after {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  pointer-events: none;\n  background: linear-gradient(\n    90deg,\n    transparent 0%,\n    color-mix(in oklab, var(--echo-cap-highlight) 30%, transparent) 50%,\n    transparent 100%\n  );\n  transform: translateX(-100%);\n  animation: echo-skeleton-sheen 1.6s ease-in-out infinite;\n}\n\n@keyframes echo-skeleton-sheen {\n  to {\n    transform: translateX(100%);\n  }\n}\n\n.echo-skeleton-lines {\n  display: grid;\n  gap: var(--echo-space-4);\n  width: var(--echo-skeleton-width, 100%);\n}\n\n/* Real paragraphs do not end flush. */\n.echo-skeleton-lines .echo-skeleton[data-last] {\n  width: 62%;\n}\n\n/* A loading indicator that never stops is the worst case for motion\n   sensitivity — hold it still and let the recess alone read as pending. */\n@media (prefers-reduced-motion: reduce) {\n  .echo-skeleton::after {\n    animation: none;\n    opacity: 0.5;\n    transform: none;\n  }\n}\n"
+    },
+    {
+      "path": "skeleton/skeleton.tsx",
+      "sha256": "5d0e49734d8186486550add9e27ac55766a1938e71673cb0acc8efe09566f959",
+      "content": "/**\n * Skeleton — the shape of content that has not arrived. A recessed well with a slow sheen crossing it.\n *\n * a11y: every skeleton is aria-hidden. A screen reader should hear \"Loading\"\n * once from the region that owns the wait — not a dozen anonymous boxes — so\n * the busy state belongs on the container, and the `label` prop puts it there.\n *\n * Static; consumes only var(--echo-*) via skeleton.css.\n */\nimport type { CSSProperties, HTMLAttributes } from \"react\";\nimport \"./skeleton.css\";\n\nexport type SkeletonVariant = \"text\" | \"block\" | \"circle\";\n\nexport interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {\n  variant?: SkeletonVariant;\n  /** CSS width. Default 100% (text/block) or the height (circle). */\n  width?: string | number;\n  /** CSS height. Defaults per variant. */\n  height?: string | number;\n  /** Number of text lines; the last is short, as real paragraphs are. */\n  lines?: number;\n  /**\n   * Announce the wait. Pass this ONCE, on the outermost skeleton of a region;\n   * it makes that element the busy live region. Omit on every other one.\n   */\n  label?: string;\n}\n\nconst size = (v: string | number | undefined) => (typeof v === \"number\" ? `${v}px` : v);\n\nexport function Skeleton({\n  variant = \"text\",\n  width,\n  height,\n  lines = 1,\n  label,\n  className,\n  style,\n  ...rest\n}: SkeletonProps) {\n  const vars = {\n    ...(width != null ? { \"--echo-skeleton-width\": size(width) } : null),\n    ...(height != null ? { \"--echo-skeleton-height\": size(height) } : null),\n    ...style,\n  } as CSSProperties;\n\n  const live = label\n    ? ({ role: \"status\", \"aria-busy\": true, \"aria-label\": label } as const)\n    : ({ \"aria-hidden\": true } as const);\n\n  if (variant === \"text\" && lines > 1) {\n    return (\n      <div\n        className={[\"echo-skeleton-lines\", className].filter(Boolean).join(\" \")}\n        style={vars}\n        {...live}\n        {...rest}\n      >\n        {Array.from({ length: lines }, (_, i) => (\n          <div\n            key={i}\n            className=\"echo-skeleton\"\n            data-variant=\"text\"\n            data-last={i === lines - 1 ? \"\" : undefined}\n            aria-hidden=\"true\"\n          />\n        ))}\n      </div>\n    );\n  }\n\n  return (\n    <div\n      className={[\"echo-skeleton\", className].filter(Boolean).join(\" \")}\n      data-variant={variant}\n      style={vars}\n      {...live}\n      {...rest}\n    />\n  );\n}\n"
+    },
+    {
+      "path": "skeleton/index.ts",
+      "sha256": "ad571187623f63411f263d411acdf3eb703ca7c6e5e9570bb2d69d56f389565f",
+      "content": "export { Skeleton } from \"./skeleton\";\nexport type { SkeletonProps, SkeletonVariant } from \"./skeleton\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

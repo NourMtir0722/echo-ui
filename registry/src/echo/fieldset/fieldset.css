@@ -1,0 +1,41 @@
+/**
+ * Fieldset. A legend in the section voice over its fields; a hairline above
+ * separates it from the group before.
+ */
+.echo-fieldset {
+  display: grid;
+  gap: var(--echo-space-6);
+  min-width: 0;
+  margin: 0;
+  padding: var(--echo-space-9) 0 0;
+  border: 0;
+  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+/* Base UI's Legend is an element in the flow that names the fieldset
+   (aria-labelledby), not a native legend on its border. */
+.echo-fieldset__legend {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold, 600);
+  color: var(--echo-text);
+}
+.echo-fieldset__description {
+  margin: calc(-1 * var(--echo-space-4)) 0 0;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+.echo-fieldset__body {
+  display: grid;
+  gap: var(--echo-space-8);
+  min-width: 0;
+}
+.echo-fieldset[data-disabled] {
+  opacity: 0.6;
+}
+@media (forced-colors: active) {
+  .echo-fieldset {
+    border-block-start-color: CanvasText;
+  }
+}

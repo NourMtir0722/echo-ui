@@ -1,0 +1,149 @@
+# Patterns
+
+A component page tells you what one part does. This page is about the compositions Echo has an
+opinion about — the ones where picking the right part is most of the work, and where the obvious
+arrangement is usually the wrong one.
+
+Each pattern names the components it is made from. None of them need anything Echo does not ship.
+
+## Forms
+
+A field is three things: a name, a value, and — when there is something to say — one line about it.
+Echo puts all three on the component, because the moment they are separate elements is the moment
+they stop being linked to the input.
+
+```tsx
+<Field
+  label="Workspace URL"
+  description="Lowercase letters, numbers and dashes."
+  error={taken ? "That name is taken." : undefined}
+  value={name}
+  onValueChange={setName}
+/>
+```
+
+`description` and `error` are linked to the input for you, and `error` sets `aria-invalid`. You do
+not write the wiring, and you do not get to forget it.
+
+**The rules:**
+
+- **The label is visible, always.** A placeholder is not a label: it disappears exactly when
+  someone needs it, and it fails every zoom and translation case.
+- **Help text goes in `description`, before the mistake.** A rule someone can only discover by
+  breaking it is a rule stated too late.
+- **The problem goes in `error`, and it says what to do.** "That name is taken" beats "Invalid".
+- **Never signal an error with colour or a border alone.** Echo has one accent and no red; the
+  error text is the signal, and it is a sentence.
+- **Validate on submit, or on blur — not on every keystroke.** Telling someone their email is
+  invalid while they are still typing it is noise.
+
+**Sign-in** has its own rules, because password managers depend on them: `autoComplete="email"` and
+`autoComplete="current-password"` on the fields, and `OtpField` for a one-time code — it allows
+pasting, which is how most people enter one.
+
+**Don't** build a form out of `Panel` and bare inputs to get a custom layout. The layout is not
+what is at stake; the linking is.
+
+## Destructive actions
+
+Echo spends its one hue on the accent, so danger cannot be a red button. It is carried by what
+happens instead — which is the stronger signal anyway, since a red button still gets clicked.
+
+```tsx
+<AlertDialog
+  title="Delete 3 projects?"
+  description="Their deploy history goes with them. This cannot be undone."
+  confirmLabel="Delete 3 projects"
+  onConfirm={deleteProjects}
+/>
+```
+
+**The rules:**
+
+- **Nothing destructive happens on one press.** It goes through `AlertDialog`, which has
+  `role="alertdialog"`, requires a description, and cannot be dismissed by clicking away.
+- **The words name the consequence**, in the title and on the confirm cap. "Delete 3 projects",
+  never "OK" — the button should make sense read on its own.
+- **Say what cannot be undone**, and say it in the description rather than in the title.
+- **Cancel comes first**, so a reflexive Enter never confirms.
+- **The sound does the work colour would have.** `caution` on open is the one rough waveform in
+  the library, and it is spent here.
+
+**Don't** add a red variant, a warning icon in a second hue, or a "type DELETE to confirm" box.
+The first two break the one-accent rule; the third is friction people learn to type through.
+
+## The four states of a screen
+
+Every screen that loads something is four screens. Echo ships a part for three of them, and the
+fourth is the one you were going to build anyway.
+
+| State | What to use | The thing people get wrong |
+| --- | --- | --- |
+| **Loading** | `Skeleton` for content with a shape; `Loader` for a wait with no shape | A spinner in place of a layout, so the page jumps when it arrives |
+| **Empty** | `EmptyState`, with its action slot filled | An empty state with no way forward — a dead end with a nice illustration |
+| **Error** | `Banner` for a condition still true; `Toast` for what just happened | Reporting a failure in a toast that vanishes before it is read |
+| **Full** | The screen itself | — |
+
+### Loading
+
+`Skeleton` is a recess in the chassis with a sheen crossing it, shaped like the content that is
+coming. Match the shape: three lines of skeleton for three lines of text, and the page does not
+jump when the real thing lands.
+
+Every skeleton is `aria-hidden`. The wait is announced once, by the region that owns it, through
+`label` — not once per shape, which is how a loading screen becomes a screen reader reading
+"loading" forty times.
+
+Use `Loader` when there is no shape to promise: a submit in flight, a connection opening.
+
+### Empty
+
+`EmptyState` renders as a quiet recess — the screen is on and working, there is simply nothing in
+it yet. Its action slot is part of the API on purpose. Fill it.
+
+Distinguish the two empties: **nothing yet** ("Add your first project") and **nothing found**
+("No projects match 'stag'"). The second needs a way back, not a way forward — clear the filter.
+
+### Error
+
+The choice is about **duration**, not severity:
+
+- **`Banner`** stays. Use it for a condition that is still true: an expired card, a degraded
+  region, a permission you do not have. It sits in the layout and it is still there when someone
+  comes back to the tab.
+- **`Toast`** passes. Use it for what just happened: saved, copied, failed to send. Mount
+  `<Toaster>` once around the app and call `toast()` from `useToast()` — the live region is on the
+  page before anything is said, which is what makes it announced at all.
+
+Severity in both is the LED's shape and the LCD tag that names it, never a hue. An error banner
+and an info banner are told apart with the colour removed, which is also how they read in Windows
+High Contrast.
+
+**Don't** report a failure someone must act on in a toast. It disappears, it does not come back,
+and it is gone before a screen reader that was mid-sentence reaches it.
+
+## A sound switch
+
+Echo's sound starts off: someone who hasn't chosen yet hears nothing until they turn it on. Give
+them the switch, in settings or wherever the app keeps its preferences, and their choice is
+remembered:
+
+```tsx
+"use client";
+
+import { useSound } from "echo-ui-core/sound";
+import { Switch } from "@/components/echo/switch";
+
+export function SoundSwitch() {
+  const { muted, setMuted } = useSound();
+  return <Switch aria-label="Sound" checked={!muted} onCheckedChange={(on) => setMuted(!on)} />;
+}
+```
+
+**The rules:**
+
+- **Name it for what it turns on.** "Sound", on when sound plays. A switch labelled "Mute" that is
+  on when it's quiet makes every reader stop and work it out.
+- **One switch for the whole app.** It sets the provider's state, which every component reads.
+- **Haptics don't wait for it.** On a phone, the moments that matter buzz whether or not sound is on
+  ([Motion & sound](/docs/motion-and-sound#haptics)).

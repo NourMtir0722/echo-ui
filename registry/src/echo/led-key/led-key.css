@@ -1,0 +1,172 @@
+/**
+ * LedKey. The original ECHO snooze key re-skinned as
+ * a general latching key: a pill cap sunk in its own well, with an LED that
+ * breathes while lit. Composes var(--echo-*) — no hex literals; the only fixed
+ * values are the single-key-light occlusion model.
+ */
+.echo-led-key {
+  /* One size scale: the key's outer height (well included) is the control height. */
+  --led-well: var(--echo-space-2, 4px);
+  --ctl-h: var(--echo-control-default);
+  --led-px: var(--echo-space-9);
+  --led-font: var(--echo-text-xs);
+  display: inline-flex;
+  padding: var(--led-well);
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-well);
+  box-shadow:
+    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    0 1px 0 var(--echo-cap-highlight),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-led-key[data-size="sm"] {
+  --led-well: var(--echo-space-1, 2px);
+  --ctl-h: var(--echo-control-compact);
+  --led-px: var(--echo-space-6);
+  --led-font: var(--echo-text-2xs);
+}
+.echo-led-key[data-size="lg"] {
+  --ctl-h: var(--echo-control-large);
+  --led-px: var(--echo-space-10);
+  --led-font: var(--echo-text-sm);
+}
+
+.echo-led-key__cap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+  box-sizing: border-box;
+  height: calc(var(--ctl-h) - 2 * var(--led-well));
+  padding: 0 var(--led-px);
+  border: 0;
+  border-radius: var(--echo-radius-full);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  color: var(--echo-text);
+  background: linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    var(--echo-cap) 55%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.25 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent),
+    0 calc(3px + 3px * var(--lift, 0) - 2px * var(--press, 0))
+      calc(5px + 6px * var(--lift, 0) - 2px * var(--press, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* useCapPhysics owns the transform: lift, lean, travel, rebound. */
+  will-change: transform;
+  position: relative;
+}
+/* The hit area is the key's full height, well included, as on HardwareButton. */
+.echo-led-key__cap::after {
+  content: "";
+  position: absolute;
+  inset-block: calc(-1 * var(--led-well));
+  inset-inline: 0;
+}
+
+.echo-led-key__cap:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+}
+
+.echo-led-key__cap:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.echo-led-key__label {
+  font-size: var(--led-font);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  line-height: var(--echo-leading-none, 1);
+}
+
+/* Dead plastic until lit — the same two-state LED as StatusDot. */
+.echo-led-key__led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: color-mix(in oklab, var(--echo-cap) 70%, var(--echo-text-dim));
+}
+
+.echo-led-key[data-lit] .echo-led-key__led {
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 6px var(--echo-accent-glow);
+  animation: echo-led-key-breathe 1.4s infinite ease-in-out;
+}
+
+@keyframes echo-led-key-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Reduced motion holds the LED lit rather than dark — the state still reads. */
+@media (prefers-reduced-motion: reduce) {
+  .echo-led-key[data-lit] .echo-led-key__led {
+    animation: none;
+  }
+}
+
+/* Visually hidden, still announced — "Snooze, armed". */
+.echo-led-key__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the other
+ * threshold: the 44px both platform guidelines use, which is about a
+ * fingertip rather than about conformance.
+ *
+ * Gated on `@media (pointer: coarse)` so the desktop rendering does not move
+ * — these are "passing AA but under the
+ * platform guideline", not broken. Pagination is first among them because
+ * people tap it repeatedly, which is exactly when a 30px target starts
+ * costing mis-taps.
+ */
+@media (pointer: coarse) {
+  /* md and lg are 44px and up, well included; sm grows to it on a touch screen. */
+  .echo-led-key[data-size="sm"] {
+    --ctl-h: 44px;
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops gradients and shadows, which is
+ * everything that draws this control's state. System colors draw it instead;
+ * nothing here sets forced-color-adjust: none, so focus outlines still show.
+ */
+@media (forced-colors: active) {
+  .echo-led-key__cap {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-led-key__led {
+    background: Canvas;
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-led-key[data-lit] .echo-led-key__led {
+    background: Highlight;
+    border-color: Highlight;
+  }
+}

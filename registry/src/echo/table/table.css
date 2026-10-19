@@ -1,0 +1,379 @@
+/**
+ * Table. A recessed screen well holding rows; the
+ * header is a machine label, the body is readout text. Composes var(--echo-*).
+ */
+.echo-table__scroll {
+  /*
+   * The containing block for what's hidden inside it (the live region after
+   * the table): without it, a visually hidden element sat at the bottom of a
+   * tall scrolled table, outside the clip, and stretched the page by the
+   * table's whole height.
+   */
+  position: relative;
+  overflow-x: auto;
+  border-radius: var(--echo-radius-lg);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow:
+    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.65 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-table__scroll:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.65 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));
+}
+
+.echo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+}
+
+.echo-table__caption {
+  padding: var(--echo-space-6) var(--echo-space-7) 0;
+  text-align: start;
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+/*
+ * Row rules are the Divider's seam (2026-09-18): a dark groove over a light
+ * lip, fading out at both ends of the row. They used to be flat hairlines —
+ * the one ruled surface in the library that did not look like the Divider,
+ * and the Console template put the two side by side.
+ *
+ * Drawn as background layers on the cells rather than as borders, because a
+ * border cannot fade. The first and last cell carry the fade-in and fade-out;
+ * every cell between is solid, so the row reads as ONE groove.
+ *
+ * On the dark well the groove is nearly the well's own colour, so the LIP is
+ * what separates rows — by luminance, which survives every colour-vision
+ * deficiency and greyscale alike. The header's lip is brighter: it closes the
+ * head off from the body.
+ */
+.echo-table {
+  --echo-table-groove: var(--echo-seam);
+  --echo-table-lip: color-mix(in srgb, var(--echo-text) 7%, transparent);
+  --echo-table-fade: var(--echo-space-12);
+}
+
+.echo-table__head {
+  --echo-table-lip: color-mix(in srgb, var(--echo-text) 13%, transparent);
+}
+
+.echo-table__header-cell,
+.echo-table__cell {
+  --echo-table-in: 0%;
+  --echo-table-out: 100%;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      var(--echo-table-groove) var(--echo-table-in),
+      var(--echo-table-groove) var(--echo-table-out),
+      transparent 100%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0,
+      var(--echo-table-lip) var(--echo-table-in),
+      var(--echo-table-lip) var(--echo-table-out),
+      transparent 100%
+    );
+  background-size:
+    100% 1px,
+    100% 1px;
+  background-position:
+    left bottom 1px,
+    left bottom;
+  background-repeat: no-repeat;
+}
+
+.echo-table__row > :first-child {
+  --echo-table-in: var(--echo-table-fade);
+}
+
+.echo-table__row > :last-child {
+  --echo-table-out: calc(100% - var(--echo-table-fade));
+}
+
+.echo-table__header-cell {
+  padding: var(--echo-space-5) var(--echo-space-7);
+  white-space: nowrap;
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-table__cell {
+  padding: var(--echo-space-5) var(--echo-space-7);
+  color: var(--echo-text);
+}
+
+/* The row under the pointer lifts — a luminance step, not a colour. */
+@media (hover: hover) {
+  .echo-table__body .echo-table__row:hover .echo-table__cell,
+  .echo-table__body .echo-table__row:hover .echo-table__header-cell {
+    background-color: color-mix(in oklab, var(--echo-text) 5%, transparent);
+  }
+}
+
+.echo-table[data-striped] .echo-table__body .echo-table__row:nth-child(even) .echo-table__cell,
+.echo-table[data-striped] .echo-table__body .echo-table__row:nth-child(even) .echo-table__header-cell {
+  background-color: color-mix(in oklab, var(--echo-text) 3.5%, transparent);
+}
+
+/* The last row sits on the well's edge; a groove there is a double line. */
+.echo-table__body .echo-table__row:last-child .echo-table__cell,
+.echo-table__body .echo-table__row:last-child .echo-table__header-cell {
+  background-image: none;
+}
+
+.echo-table__header-cell[data-align="start"],
+.echo-table__cell[data-align="start"] {
+  text-align: start;
+}
+
+.echo-table__header-cell[data-align="end"],
+.echo-table__cell[data-align="end"] {
+  text-align: end;
+}
+
+/* Numbers line up or they are not worth tabulating. */
+.echo-table__cell[data-numeric] {
+  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A row header is a label, not data. */
+.echo-table__header-cell[scope="row"] {
+  font-size: var(--echo-text-sm);
+  letter-spacing: var(--echo-tracking-normal, 0);
+  text-transform: none;
+  color: var(--echo-text);
+}
+
+.echo-table__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ size */
+
+/* Row height from the control scale, so a table sits on the same rhythm as the controls beside it. */
+.echo-table[data-size="sm"] {
+  --echo-table-row: var(--echo-control-compact, 32px);
+}
+.echo-table[data-size="md"] {
+  --echo-table-row: var(--echo-control-default, 44px);
+}
+.echo-table[data-size="lg"] {
+  --echo-table-row: var(--echo-control-large, 60px);
+}
+.echo-table[data-size] .echo-table__row {
+  height: var(--echo-table-row);
+}
+.echo-table[data-size] .echo-table__cell,
+.echo-table[data-size] .echo-table__header-cell {
+  padding-block: 0;
+  vertical-align: middle;
+}
+.echo-table[data-size="sm"] .echo-table__cell,
+.echo-table[data-size="sm"] .echo-table__header-cell {
+  padding-inline: var(--echo-space-5);
+}
+
+/* ------------------------------------------------ height, header, window */
+
+/* A table with its own height scrolls inside the well, and its header stays at the top. */
+.echo-table__scroll[data-height] {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.echo-table[data-sticky] .echo-table__head .echo-table__header-cell {
+  position: sticky;
+  top: 0;
+  z-index: var(--echo-z-raised, 1);
+  /* Opaque, so the rows pass under it. */
+  background-color: var(--echo-well);
+}
+/* Every drawn row is exactly one control height: one line each, the window is arithmetic. */
+.echo-table[data-virtual] .echo-table__cell,
+.echo-table[data-virtual] .echo-table__header-cell {
+  white-space: nowrap;
+}
+.echo-table__spacer > td {
+  padding: 0;
+  background-image: none;
+}
+
+/* ------------------------------------------------------------------ sort */
+
+.echo-table__sort {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-3);
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  /* A button resets letter-spacing; the header's own tracking. */
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: inherit;
+  cursor: pointer;
+}
+.echo-table__sort[data-active] {
+  color: var(--echo-text);
+}
+.echo-table__sort:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--echo-shadow-ring, 0 0 0 2px var(--echo-surface), 0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)));
+}
+@media (hover: hover) {
+  .echo-table__sort:hover {
+    color: var(--echo-text);
+  }
+}
+
+/* The LED pips: up lights for ascending, down for descending. Shape and place say the direction. */
+.echo-table__pips {
+  display: inline-grid;
+  gap: var(--echo-space-1);
+}
+.echo-table__pips > i {
+  display: block;
+  width: 7px;
+  height: 4px;
+  background: color-mix(in oklab, var(--echo-text) 22%, transparent);
+  transition: background var(--echo-duration-swap) var(--echo-ease-swap);
+}
+.echo-table__pips > i:first-child {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.echo-table__pips > i:last-child {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.echo-table__pips > i[data-lit] {
+  background: var(--echo-accent-glow);
+}
+
+/* ---------------------------------------------- selection, actions, press */
+
+.echo-table__select {
+  width: 1%;
+  padding-inline-end: 0;
+}
+.echo-table__actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: end;
+}
+/* A selected row lifts a step in luminance; its Checkbox says so in words. */
+.echo-table__row[data-selected] > .echo-table__cell,
+.echo-table__row[data-selected] > .echo-table__header-cell {
+  background-color: color-mix(in oklab, var(--echo-text) 7%, transparent);
+}
+.echo-table__row[data-pressable] {
+  cursor: pointer;
+}
+.echo-table__press {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  /* A button resets letter-spacing; a row's label reads at the body's. */
+  letter-spacing: var(--echo-tracking-normal, 0);
+  text-align: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.echo-table__press:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--echo-shadow-ring, 0 0 0 2px var(--echo-surface), 0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)));
+}
+/* A pressed row gives under the hand. */
+.echo-table__row[data-pressable]:active > .echo-table__cell,
+.echo-table__row[data-pressable]:active > .echo-table__header-cell {
+  background-color: color-mix(in oklab, var(--echo-well) 55%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .echo-table__row[data-pressable]:active {
+    transform: translateY(1px);
+  }
+}
+
+/* ------------------------------------------------------- empty, loading */
+
+.echo-table__empty {
+  padding-block: var(--echo-space-10);
+  text-align: center;
+  color: var(--echo-text-dim);
+}
+.echo-table__skeleton {
+  display: block;
+  width: var(--echo-table-skeleton, 60%);
+  height: 0.7em;
+  border-radius: var(--echo-radius-full);
+  background: color-mix(in oklab, var(--echo-text) 10%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .echo-table__skeleton {
+    animation: echo-table-waiting 1.6s ease-in-out infinite;
+  }
+}
+@keyframes echo-table-waiting {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (forced-colors: active) {
+  .echo-table__pips > i {
+    forced-color-adjust: none;
+    background: GrayText;
+  }
+  .echo-table__pips > i[data-lit] {
+    background: CanvasText;
+  }
+  .echo-table__sort:focus-visible,
+  .echo-table__press:focus-visible {
+    outline-color: Highlight;
+  }
+  .echo-table__skeleton {
+    forced-color-adjust: none;
+    background: GrayText;
+  }
+}

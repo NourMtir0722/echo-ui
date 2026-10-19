@@ -1,0 +1,54 @@
+/**
+ * The supporters server: a Cloudflare Worker of its own, behind Echo's island
+ * and /supporters/welcome (src/worker.ts says what it does).
+ *
+ * WHY NOT INSIDE THE SITE'S WORKER. The site deploys as static files only
+ * (apps/www/wrangler.jsonc), and the registry the CLI installs from is among
+ * them; a server's bugs stay out of that path. Apart, a bad deploy here costs
+ * the thank-you page's form and the island's names, and nothing else: the
+ * pages still open, with the island showing Noor alone.
+ *
+ * Its three secrets are set with `wrangler secret put <name>` (or in the
+ * Worker's settings, as type Secret, never Text: a deploy replaces the
+ * Worker's text variables with the ones below), and `deploy:worker`
+ * refuses to deploy until all three are there (src/deploy.ts):
+ * - STRIPE_KEY: a Stripe restricted key with Checkout Sessions: Read and
+ *   nothing else. Unset, the server answers that it isn't set up yet.
+ * - STRIPE_WEBHOOK_SECRET: the signing secret of the Stripe webhook endpoint
+ *   that calls https://api.echo-ui.com/stripe/webhook on
+ *   checkout.session.completed, checkout.session.async_payment_succeeded,
+ *   invoice.paid, charge.refunded and charge.dispute.created (src/stripe.ts).
+ * - SUPPORTER_SALT: long and random, set once and never changed: what an
+ *   email's fingerprint is made with, so payments with the same email are one
+ *   supporter (src/store.ts). A new one would make every supporter a stranger.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "echo-ui-supporters",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-11",
+
+  // One public address, as the site's and the MCP server's: no workers.dev copy, no preview URLs.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "api.echo-ui.com", "custom_domain": true }],
+
+  // The only page that calls it.
+  "vars": { "SITE": "https://echo-ui.com" },
+
+  // What supporters sent, by session: the island's list (`pnpm supporters` reads and changes it).
+  "kv_namespaces": [{ "binding": "SUBMISSIONS", "id": "89c90d65fdcb42e0beec2c30343a0869" }],
+
+  // The thank-you email (src/thanks.ts), from the site's domain, onboarded in Email Service.
+  "send_email": [{ "name": "EMAIL" }],
+
+  // A supporter sends a name once or twice; this is a runaway script's ceiling, per address. The
+  // island's list isn't counted: it's answered from the cache.
+  "ratelimits": [{ "name": "LIMITER", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } }],
+
+  // Each call is one read of Stripe, or of KV, and a few lines of checking.
+  "limits": { "cpu_ms": 100 },
+
+  // Request logs: the path, status and timing, never a body.
+  "observability": { "enabled": true }
+}

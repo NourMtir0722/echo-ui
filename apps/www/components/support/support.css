@@ -1,0 +1,286 @@
+/*
+ * Donating: one panel, the hero's card, with the amount on the device's
+ * screen and one big Donate key; beside it, where the money goes. Roles only,
+ * so it relights with the seed like everything else. Also the Swiss title the
+ * homepage's block opens with.
+ */
+.support__head {
+  max-width: 60rem;
+}
+.support__title {
+  margin: 0;
+  color: var(--echo-text);
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(2.4rem, 6vw, 5.5rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.support__lede strong {
+  font-weight: 600;
+  color: var(--echo-text);
+}
+
+.donate {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  width: min(100%, 62rem);
+}
+.donate__panel {
+  position: relative;
+  overflow: clip;
+  display: grid;
+  /* One column that never grows past the panel. Left to size itself, it took
+     the Donate key's one-line label as its width, and on a narrow phone that
+     pushed everything right, past the edge the panel clips at. */
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: clamp(1.1rem, 2vw, 1.5rem);
+  box-sizing: border-box;
+  padding: clamp(1.5rem, 3.5vw, 2.5rem);
+  border: 1px solid color-mix(in oklab, var(--echo-text) 9%, transparent);
+  border-radius: clamp(1.25rem, 2.2vw, 2rem);
+  background: color-mix(in oklab, var(--echo-surface) 28%, var(--echo-well));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 1px 2px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    0 30px 60px -34px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+}
+/* The amount, on the device's screen: big, lit, unmistakable. */
+.donate__screen {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: clamp(0.9rem, 2vw, 1.25rem) 1rem;
+  border-radius: clamp(0.9rem, 1.4vw, 1.2rem);
+  background: linear-gradient(180deg, var(--echo-lcd), color-mix(in oklab, var(--echo-lcd) 80%, var(--echo-shade-ink, black)));
+  box-shadow:
+    inset 0 3px 14px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.65 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 50.0%, transparent),
+    0 1px 0 rgb(255 255 255 / 0.06);
+}
+.donate__amount {
+  font-family: var(--brand-font-lcd), var(--site-font-mono), monospace;
+  font-size: clamp(3.5rem, 7vw, 5.5rem);
+  line-height: 0.9;
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+  text-shadow: 0 0 18px color-mix(in oklch, var(--echo-accent-glow) 60%, transparent);
+}
+.donate__per {
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+}
+.donate__amounts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--echo-space-5) var(--echo-space-4);
+}
+/* The chosen amount: the library's one "you are here", a lit rail under it. */
+.donate__amounts .echo-hw {
+  position: relative;
+}
+.donate__amounts .echo-hw:has(.echo-hw__cap[aria-pressed="true"])::after {
+  content: "";
+  position: absolute;
+  left: var(--echo-space-4);
+  right: var(--echo-space-4);
+  bottom: calc(var(--echo-space-3) * -1);
+  height: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--echo-accent-glow) 70%, transparent);
+}
+.donate__go {
+  width: min(100%, 24rem);
+  padding-top: var(--echo-space-3);
+  /* Its key says "Support with" only where it fits (below). */
+  container: donate-go / inline-size;
+}
+.donate__note {
+  margin: 0;
+  max-width: 30rem;
+  min-height: 3em;
+  font-size: var(--echo-text-sm);
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+  text-align: center;
+}
+.donate__note a {
+  color: var(--echo-text);
+  text-underline-offset: 3px;
+}
+/* Where it goes: a ruled list, the Swiss way. */
+.donate__where {
+  display: grid;
+  gap: 1rem;
+  align-self: center;
+}
+.donate__where-h {
+  margin: 0;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.donate__where ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--echo-seam);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+.donate__where li {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--echo-seam);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04);
+  text-align: start;
+}
+.donate__where-what {
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+}
+.donate__where-how {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+}
+
+/* --- the crowd ------------------------------------------------------------ */
+
+.crowd {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-9);
+  width: 100%;
+  padding-top: var(--echo-space-9);
+}
+/* A heap, not a row: each one lifted and turned a little, overlapping its neighbours. */
+.crowd__pile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0;
+  padding: 0 var(--echo-space-6);
+  list-style: none;
+}
+.crowd__one {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-3);
+  margin-inline: -5px;
+  translate: 0 calc(var(--lift, 0px) * -1);
+  rotate: var(--turn, 0deg);
+}
+.crowd__body {
+  display: block;
+  filter: drop-shadow(0 10px 10px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.4 * var(--echo-shade, 1) * 100%), transparent));
+}
+.crowd__tag {
+  padding: 2px var(--echo-space-5);
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-surface);
+  box-shadow: 0 0 0 1px var(--echo-seam);
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-3xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--echo-text);
+  white-space: nowrap;
+}
+.crowd__tag a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+.crowd__one--empty {
+  margin-inline-start: var(--echo-space-8);
+  rotate: none;
+  translate: none;
+}
+.crowd__slot {
+  display: block;
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  border-radius: var(--echo-radius-full);
+  border: 2px dashed color-mix(in oklab, var(--echo-text-dim) 70%, transparent);
+}
+.crowd__line {
+  margin: 0;
+  max-width: 38rem;
+  font-size: var(--echo-text-sm);
+  line-height: 1.55;
+  color: var(--echo-text-dim);
+  text-align: center;
+}
+.crowd__line a {
+  color: var(--echo-text);
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 48rem) {
+  .donate {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Under 368px the panel's padding steps down, to give the key its room. */
+@media (max-width: 23rem) {
+  .donate__panel {
+    padding: 1rem;
+  }
+}
+
+/* "Support with $100 a month" needs a key 20rem wide, with a little over for
+   wider fonts. On a narrower key, the key says "$100 a month" beside its heart,
+   which says the rest. It's the key's width that decides, not the window's: at
+   375 and 390px it was still cut, "a mo…". Its name keeps the words. */
+@container donate-go (width < 20.5rem) {
+  /* Out of sight, still in the key's name. */
+  .donate__verb {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (pointer: coarse) {
+  .crowd__line a,
+  .support__other a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* It's the second title in the letter's section: a size down from the section's own. */
+.letter-sec .support__title {
+  font-size: clamp(2rem, 4.4vw, 4rem);
+}

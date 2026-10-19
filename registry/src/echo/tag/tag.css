@@ -1,0 +1,150 @@
+/**
+ * Tag. A small applied plate, not printed ink: a
+ * lifted edge, a soft drop, and a remove key that presses like every other
+ * cap in the system. Composes var(--echo-*).
+ */
+.echo-tag {
+  /*
+   * An inline-layout root grows to fit its content, so a long label
+   * pushed the container open rather than the component adapting. Capping it
+   * at the container is what lets the truncation and wrapping below take
+   * effect at all.
+   */
+  max-width: 100%;
+  /* The cap counts the padding too. */
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-3);
+  padding-block: var(--echo-space-2);
+  padding-inline: var(--echo-space-5) var(--echo-space-3);
+  border-radius: var(--echo-radius-md);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-none, 1);
+  color: var(--echo-text);
+  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.22 * var(--echo-gloss, 1))),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 calc(1px + 3px * var(--lift, 0) - 1px * var(--press, 0))
+      calc(3px + 6px * var(--lift, 0) - 2px * var(--press, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+/* No remove key — close the right side back up. */
+.echo-tag:not(:has(.echo-tag__remove)) {
+  padding-inline-end: var(--echo-space-5);
+}
+
+.echo-tag__label {
+  /*
+   * This label must stay on one line, so long content truncates
+   * rather than pushing its container open. `min-width: 0` is the half that
+   * is easy to forget — without it a flex child refuses to shrink below its
+   * own content and the ellipsis never gets a chance to apply.
+   */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.echo-tag__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-sm);
+  cursor: pointer;
+  color: var(--echo-text-dim);
+  background: transparent;
+  transition:
+    color var(--echo-duration-tick) ease,
+    background var(--echo-duration-tick) ease;
+}
+
+.echo-tag__remove svg {
+  width: var(--echo-icon-xs, 12px);
+  height: var(--echo-icon-xs, 12px);
+}
+
+@media (hover: hover) {
+  .echo-tag__remove:hover {
+    color: var(--echo-text);
+    background: color-mix(in oklab, var(--echo-cast-ink, black) calc(0.28 * var(--echo-shade, 1) * 100%), transparent);
+  }
+}
+
+.echo-tag__remove:active {
+  transform: translateY(1px);
+}
+
+.echo-tag__remove:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px var(--echo-cap),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-tag__remove {
+    transition: none;
+  }
+
+  .echo-tag__remove:active {
+    transform: none;
+  }
+}
+
+/*
+ * WCAG 2.2 2.5.8 — a target must be at least 24x24 CSS px.
+ *
+ * Expanded with a centred pseudo-element rather than by growing the control:
+ * the visual size IS the design, and no component in the library used hit-area
+ * expansion before this, so every target was exactly as big as it looked.
+ * `max(100%, 24px)` keeps the expansion a floor — a target already larger than
+ * 24px is untouched.
+ */
+.echo-tag__remove {
+  position: relative;
+  /* Declares a deliberate 24px target pad; see tests/helpers/layout.ts. */
+  --echo-hit-area: 24px;
+}
+
+.echo-tag__remove::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both
+ * platform guidelines use — a fingertip rather than conformance. Gated on
+ * `@media (pointer: coarse)`, so the desktop rendering does not move.
+ *
+ * Where a control's visual size is the design (a 24px checkbox, a 10px pip),
+ * the target is grown with the same transparent pseudo-element as the 24px minimum,
+ * not by growing the control.
+ */
+@media (pointer: coarse) {
+  .echo-tag__remove {
+    --echo-hit-area: 44px;
+  }
+
+  .echo-tag__remove::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}

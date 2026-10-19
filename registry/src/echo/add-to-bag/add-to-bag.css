@@ -1,0 +1,11 @@
+.echo-add-to-bag {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-10);
+  max-width: 100%;
+}
+/* The drop lands here and it swells; its own box, so the badge's transform is untouched. */
+.echo-add-to-bag__count {
+  display: inline-flex;
+}

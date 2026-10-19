@@ -1,0 +1,102 @@
+/**
+ * Textures. Decorative overlays that fill their
+ * nearest positioned ancestor. Geometry and ink live here; only the tunables
+ * (image, size, opacity, blend) arrive as custom properties from the
+ * component.
+ *
+ * Ink is the black/white occlusion model, not palette — the same exception
+ * material.css takes. Palette comes from var(--echo-*) only, in the grain
+ * field below.
+ */
+.echo-texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--echo-texture-image);
+  background-size: var(--echo-texture-size) var(--echo-texture-size);
+  opacity: var(--echo-texture-opacity);
+  mix-blend-mode: var(--echo-texture-blend);
+}
+
+.echo-texture[data-fixed] {
+  position: fixed;
+}
+
+/* Ordered dither must never be smoothed — the cells are the point. */
+.echo-texture--dither {
+  image-rendering: pixelated;
+}
+
+/* Halftone and scanlines are pure CSS gradients; they ignore the image var. */
+.echo-texture--halftone {
+  background-image: radial-gradient(
+    circle at center,
+    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent) 46%,
+    color-mix(in oklab, var(--echo-cast-ink, black) calc(0 * var(--echo-shade, 1) * 100%), transparent) 47%
+  );
+}
+
+.echo-texture--scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.18 * var(--echo-shade, 1) * 100%), transparent) 0px,
+    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.18 * var(--echo-shade, 1) * 100%), transparent) 1px,
+    transparent 1px,
+    transparent var(--echo-texture-size)
+  );
+  background-size: auto;
+}
+
+/* ------------------------------------------------------------------ field */
+
+.echo-grain-field {
+  position: relative;
+  overflow: hidden;
+}
+
+.echo-grain-field__bloom {
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * The brand field. Echo has ONE seed accent by design, so the bloom is built
+ * from stops of the derived accent ramp rather than fixed hues: a sky seed
+ * gives a sky field, with nothing of any other seed left in it.
+ */
+.echo-grain-field[data-tone="accent"] .echo-grain-field__bloom {
+  background:
+    radial-gradient(70% 90% at 22% 28%, var(--echo-accent-3) 0%, transparent 58%),
+    radial-gradient(60% 80% at 82% 18%, var(--echo-accent-2) 0%, transparent 55%),
+    radial-gradient(80% 90% at 65% 95%, var(--echo-accent-5) 0%, transparent 60%),
+    var(--echo-accent-6);
+}
+
+.echo-grain-field[data-tone="chassis"] .echo-grain-field__bloom {
+  background:
+    radial-gradient(70% 90% at 25% 75%, var(--echo-cap) 0%, transparent 60%),
+    radial-gradient(60% 80% at 80% 30%, var(--echo-bloom, var(--echo-accent-6)) 0%, transparent 55%),
+    radial-gradient(60% 70% at 50% 10%, var(--echo-cap-highlight) 0%, transparent 55%),
+    var(--echo-surface);
+}
+
+/* The accent field is deep on either device, so what's written on it is the paper colour: on a dark device, the text it inherits. */
+.echo-grain-field[data-tone="accent"] .echo-grain-field__content {
+  color: var(--echo-paper-stock, currentColor);
+}
+
+/* Edge darkening — keeps overlaid text legible over a busy field. */
+.echo-grain-field__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 120% at 50% 45%, transparent 55%, color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent));
+}
+
+.echo-grain-field__content {
+  position: relative;
+}
+
+.echo-textured {
+  position: relative;
+}

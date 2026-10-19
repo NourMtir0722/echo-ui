@@ -1,0 +1,403 @@
+/*
+ * What is left of the site chrome now that `echo-app-shell` draws the frame.
+ *
+ * The frame — rail, sticky sidebar, grid, skip link, breakpoints — moved into
+ * `echo-app-shell`. This file used to be 210 lines; everything that went is now
+ * a registry item that any consumer gets. What remains is genuinely this site's:
+ * the wordmark, the look of a destination link, the component list's own
+ * typography, and the phone nav toggle.
+ *
+ * Every value is an --echo-* role. The site is the demo, so a hardcoded hex in
+ * the chrome is a defect.
+ */
+
+/* --- wordmark ------------------------------------------------------------ */
+
+.echo-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+  color: var(--echo-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* The logo's own face: Fredoka, cap-set like the wordmark. */
+.echo-wordmark__word {
+  font-family: var(--brand-font-display), var(--echo-font-sans);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.echo-wordmark__ui {
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-3xs);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--echo-text-dim);
+}
+
+/* The one lit thing in the chrome. Same emissive recipe as LedKey. */
+.echo-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--echo-accent-glow);
+  box-shadow:
+    0 0 9px 1px color-mix(in srgb, var(--echo-accent-glow) 65%, transparent),
+    inset 0 -1px 1px color-mix(in srgb, var(--echo-accent-pressed) 80%, transparent);
+}
+
+/* The one filled key in the rail, Support Echo: a little room before it, so it reads as a key, not a link. */
+.echo-topnav__key {
+  display: inline-flex;
+  flex: none;
+  margin-inline-start: 0.5rem;
+}
+
+/* --- destinations in the rail -------------------------------------------- */
+
+.echo-topnav__link {
+  /*
+   * Its own height, as a pill, centred in the rail: the rail's own
+   * link style is the rail's full height, and this padding on top of that made
+   * every link 70px in a 56px rail, so the rail scrolled under the wheel and
+   * the lit pill was a clipped slab.
+   */
+  height: auto;
+  padding: 7px 11px;
+  border-radius: 8px;
+  /* Sentence case in the text face. Uppercase tracked mono read as a
+     terminal prompt — the chrome should read like the product, not a log. */
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-sm);
+  font-weight: 500;
+  color: var(--echo-text-dim);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.echo-topnav__link:hover {
+  color: var(--echo-text);
+  background: color-mix(in srgb, var(--echo-cap) 34%, transparent);
+}
+
+.echo-topnav__link[aria-current="page"] {
+  position: relative;
+  color: var(--echo-text);
+  background: color-mix(in srgb, var(--echo-cap) 40%, transparent);
+}
+
+/* The accent is the RAIL under the label, never the label itself: accent text
+   on a lit ground is 3.70:1, under AA. */
+.echo-topnav__link[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--echo-accent-glow) 70%, transparent);
+}
+
+/* The light/dark key sits a little apart from the destinations: it's a setting, not a place. */
+.echo-device-switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-inline-start: var(--echo-space-4);
+}
+
+/* --- the component list -------------------------------------------------- */
+
+.echo-sidenav__group + .echo-sidenav__group {
+  margin-top: 22px;
+}
+
+.echo-sidenav__label {
+  display: block;
+  padding: 0 10px 7px;
+  font-family: var(--echo-font-machine);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-sidenav a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--echo-text-dim);
+  text-decoration: none;
+}
+
+.echo-sidenav a:hover {
+  color: var(--echo-text);
+  background: color-mix(in srgb, var(--echo-cap) 30%, transparent);
+}
+
+.echo-sidenav a[aria-current="page"] {
+  position: relative;
+  color: var(--echo-text);
+  background: color-mix(in srgb, var(--echo-cap) 38%, transparent);
+}
+
+.echo-sidenav a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--echo-accent-glow) 70%, transparent);
+}
+
+/* A gallery is the group's composed overview, so it reads as a sub-entry. */
+.echo-sidenav__overview {
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-xs) !important;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Inside the Sheet the list is ordinary flow, not a sticky bordered rail. */
+.echo-sidenav--sheet {
+  padding: 4px 0 0;
+}
+
+.echo-sidenav a:focus-visible,
+.echo-topnav__link:focus-visible,
+.echo-wordmark:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+
+/* --- the phone nav toggle ------------------------------------------------ */
+
+/*
+ * Hidden on desktop, where the sidebar is already on screen — showing both
+ * would be two ways to one list. AppShell removes the sidebar column at the
+ * same 900px, which is where this takes over.
+ *
+ * Every rule is qualified with `.echo-sheet__trigger`. The toggle IS a Sheet
+ * trigger, and sheet.css gives that class `display: inline-flex` plus a molded
+ * cap at the same specificity as `.echo-navtoggle` — so whichever stylesheet
+ * happened to load last won. On any /docs/[slug] page that loads the Sheet
+ * chunk after this one, the toggle sat on screen beside the sidebar at every
+ * desktop width. Two classes beat one regardless of order.
+ *
+ * It is also deliberately NOT a cap. It is chrome, like the topnav links next
+ * to it; a raised button in the rail competed with every real control on the
+ * page for the one thing the material language says only a control may do.
+ */
+.echo-sheet__trigger.echo-navtoggle {
+  display: none;
+  align-items: center;
+  gap: var(--echo-space-4);
+  height: var(--echo-control-compact);
+  padding: 0 var(--echo-space-5);
+  border: 1px solid var(--echo-seam);
+  border-radius: var(--echo-radius-md);
+  box-shadow: none;
+  background: transparent;
+  color: var(--echo-text-dim);
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-sm);
+  font-weight: 500;
+}
+
+/* The site menu's toggle (SiteMenu.tsx): the three lines alone, square, named "Menu" for a screen reader. */
+.echo-sheet__trigger.echo-navtoggle--icon {
+  justify-content: center;
+  width: var(--echo-control-compact);
+  padding: 0;
+}
+@media (pointer: coarse) {
+  .echo-sheet__trigger.echo-navtoggle--icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.echo-sheet__trigger.echo-navtoggle:hover {
+  color: var(--echo-text);
+  background: color-mix(in srgb, var(--echo-cap) 34%, transparent);
+}
+
+/* Breakpoints in rem, so a reader's larger text reaches them too (WCAG 1.4.4). */
+@media (max-width: 56.25rem) {
+  .echo-sheet__trigger.echo-navtoggle {
+    display: inline-flex;
+  }
+}
+
+/* --- the site menu (SiteMenu.tsx) ----------------------------------------- */
+
+/*
+ * Every destination, one under another, each a row as tall as a finger needs,
+ * a seam between them; the current one lit as the bar lights it, the rail on
+ * its left as the sidebar's. Under the list, the bar's right-hand side: the
+ * page's own keys (GitHub, X) on the left, Support Echo on the right.
+ */
+.echo-sitemenu__list {
+  display: grid;
+  margin: var(--echo-space-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.echo-sitemenu__list li + li {
+  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+.echo-sitemenu__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 var(--echo-space-6);
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-lg);
+  font-weight: 600;
+  color: var(--echo-text-dim);
+  text-decoration: none;
+  transition: color var(--echo-duration-swap) ease;
+}
+.echo-sitemenu__link[aria-current="page"] {
+  color: var(--echo-text);
+}
+.echo-sitemenu__link[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--echo-accent-glow) 70%, transparent);
+}
+@media (hover: hover) {
+  .echo-sitemenu__link:hover {
+    color: var(--echo-text);
+  }
+}
+.echo-sitemenu__link:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: -2px;
+  border-radius: var(--echo-radius-sm);
+}
+.echo-sitemenu__tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+  margin-top: var(--echo-space-8);
+  padding-top: var(--echo-space-8);
+  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+.echo-sitemenu__tools .navtools a {
+  width: 44px;
+  height: 44px;
+}
+
+@media (max-width: 35rem) {
+  /*
+   * At 390 the destinations do not fit. AppShell already lets the rail nav
+   * scroll sideways, but a hard edge through "TACTILE" reads as a clipping
+   * bug rather than more to see — the fade is the affordance.
+   */
+  .echo-shell__railnav {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    padding-right: var(--echo-space-9);
+  }
+  /*
+   * Support Echo ends the row, reached by the same swipe as the destinations. It
+   * isn't pinned over them: a link half under it is a target too small to
+   * press (WCAG 2.5.8), and the fade already says there's more.
+   */
+  .echo-topnav__key {
+    margin-inline-start: auto;
+    padding-inline-start: 0.6rem;
+  }
+
+  .echo-topnav__link {
+    padding: 7px 7px;
+  }
+}
+
+/*
+ * WCAG 2.2 2.5.8 — a target must be at least 24x24 CSS px.
+ *
+ * Expanded with a centred pseudo-element rather than by growing the control:
+ * the visual size IS the design, and no component in the library used hit-area
+ * expansion before this, so every target was exactly as big as it looked.
+ * `max(100%, 24px)` keeps the expansion a floor — a target already larger than
+ * 24px is untouched.
+ */
+.echo-wordmark {
+  position: relative;
+  /* Declares a deliberate 24px target pad; see tests/helpers/layout.ts. */
+  --echo-hit-area: 24px;
+}
+
+.echo-wordmark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Coarse-pointer targets in the site chrome.
+ *
+ * The topnav links measured 27-28px, the skip link 138x36 and the wordmark
+ * 78x14. All clear 2.5.8's 24px; this brings them to the 44px
+ * platform guideline on touch, and only on touch, so the desktop chrome is
+ * unchanged.
+ */
+@media (pointer: coarse) {
+  .echo-topnav__link,
+  .echo-wordmark {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /*
+   * A min-width replaces a flex item's own floor (its words), so in the rail's
+   * row the long links shrank below their text and ran into the next one:
+   * "TemplatesThemes". The row scrolls sideways; nothing needs to shrink.
+   */
+  .echo-topnav__link {
+    flex-shrink: 0;
+  }
+
+  .echo-wordmark {
+    --echo-hit-area: 44px;
+  }
+
+  .echo-wordmark::after {
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+}
+
+/*
+ * Coarse-pointer targets on the inline-styled pages.
+ *
+ * The generator, the audition bench and the docs index build their controls
+ * with React style objects, and a media query cannot be written as one — which
+ * is why these three rules live in a stylesheet rather than beside the markup
+ * they apply to. Touch only; the desktop rendering is unchanged.
+ */
+

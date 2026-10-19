@@ -1,0 +1,7 @@
+/*
+ * "Saved" is the answer, not an action: disabled, so it's announced as
+ * unavailable and can't be pressed twice, but lit at full strength.
+ */
+.echo-save-button .echo-hw__cap[data-variant="primary"]:disabled {
+  opacity: 1;
+}

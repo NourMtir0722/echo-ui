@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "name": "throw-stack",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "ThrowStack",
+  "description": "A stack of cards you can throw: drag the top one and flick it, and it keeps the speed you gave it, spins from where you held it (grabbed low, it swings the other way), flies off and tucks back in underneath. A short drag springs back. The cards are Echo Panels.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "panel"
+  ],
+  "files": [
+    {
+      "path": "throw-stack/throw-stack.css",
+      "sha256": "8545da2e4c2acae5d7de7d61860dad32d498d714111b9db4a61665ff217db38a",
+      "content": "/**\n * ThrowStack. Echo Panels stacked in one cell, each a little lower and\n * smaller than the one above; the top one can be grabbed and thrown.\n */\n.echo-throw-stack {\n  position: relative;\n  display: grid;\n  place-items: center;\n  padding-block-end: var(--echo-space-11);\n  touch-action: pan-y;\n}\n\n.echo-throw-stack__card {\n  grid-area: 1 / 1;\n  inline-size: min(100%, 16rem);\n  min-block-size: 8.5rem;\n  user-select: none;\n  will-change: translate, rotate, scale;\n}\n.echo-throw-stack__card[data-top] {\n  cursor: grab;\n  touch-action: none;\n}\n.echo-throw-stack__card[data-top]:active {\n  cursor: grabbing;\n}\n.echo-throw-stack__card:focus-visible {\n  outline: 2px solid transparent;\n  box-shadow:\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)),\n    0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent);\n}\n\n.echo-throw-stack__live {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n\n@media (forced-colors: active) {\n  .echo-throw-stack__card {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "throw-stack/throw-stack.tsx",
+      "sha256": "4e69f3985fa20dd67fbdebe51285f2dbffa0368f47e8f2054430c02e0d9a79f0",
+      "content": "\"use client\";\n\n/**\n * ThrowStack. A stack of cards you can throw: drag the top one and flick it,\n * and it keeps the speed you gave it, spins from where you held it (grabbed\n * low, it swings the other way), flies off and tucks back in underneath. A\n * short drag springs back.\n *\n * The cards are Echo Panels. The top card is focusable: ← and → throw it,\n * and the new top card is announced. Under reduced motion it simply cycles.\n */\nimport { Children, useEffect, useRef, useState, type ReactNode } from \"react\";\nimport { createSpring, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport { Panel } from \"../panel\";\nimport \"./throw-stack.css\";\n\nexport interface ThrowStackProps {\n  /** One child per card, top first. */\n  children: ReactNode;\n  /** Names the stack, e.g. \"Today\". */\n  label: string;\n  /** Called with the index (in `children`) of the new top card. */\n  onChange?: (index: number) => void;\n  className?: string;\n}\n\nconst WHOOSH: SoundRecipe = { wave: \"sine\", freq: 520, decay: 0.12, gain: 0.07, bend: -300 };\nconst bouncy = { duration: 0.5, bounce: 0.3 };\n\nexport function ThrowStack({ children, label, onChange, className }: ThrowStackProps) {\n  const cards = Children.toArray(children);\n  const count = cards.length;\n  const root = useRef<HTMLDivElement>(null);\n  const [top, setTop] = useState(0);\n  const sound = useSoundOptional();\n  const play = useRef(sound?.play);\n  play.current = sound?.play;\n  const changed = useRef(onChange);\n  changed.current = onChange;\n  const throwRef = useRef<(dir: number) => void>(() => undefined);\n\n  useEffect(() => {\n    const el = root.current!;\n    const reduced = typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n    const nodes = [...el.querySelectorAll<HTMLElement>(\":scope > .echo-throw-stack__card\")];\n    let order = nodes.map((_, i) => i);\n    type S = { x: Spring; y: Spring; r: Spring; s: Spring };\n    const S: S[] = nodes.map((c) => {\n      const v = { x: 0, y: 0, r: 0, s: 1 };\n      const draw = () => {\n        c.style.translate = `${v.x.toFixed(1)}px ${v.y.toFixed(1)}px`;\n        c.style.rotate = `${v.r.toFixed(2)}deg`;\n        c.style.scale = v.s.toFixed(3);\n      };\n      const mk = (init: number, key: keyof typeof v) => createSpring(init, bouncy, (n) => ((v[key] = n), draw()));\n      return { x: mk(0, \"x\"), y: mk(0, \"y\"), r: mk(0, \"r\"), s: mk(1, \"s\") };\n    });\n    const settle = (config = bouncy) => {\n      order.forEach((ci, p) => {\n        const c = nodes[ci]!;\n        c.style.zIndex = String(count - p);\n        c.toggleAttribute(\"data-top\", p === 0);\n        c.tabIndex = p === 0 ? 0 : -1;\n        c.setAttribute(\"aria-hidden\", p === 0 ? \"false\" : \"true\");\n        if (reduced) {\n          // Straight into place, including a card that was dragged there (BUG-70).\n          S[ci]!.x.set(0);\n          S[ci]!.r.set(0);\n          S[ci]!.y.set(p * 12);\n          S[ci]!.s.set(1 - p * 0.05);\n        } else {\n          S[ci]!.y.to(p * 12, { config });\n          S[ci]!.s.to(1 - p * 0.05, { config });\n        }\n      });\n    };\n    order.forEach((ci, p) => {\n      S[ci]!.y.set(p * 12);\n      S[ci]!.s.set(1 - p * 0.05);\n    });\n    settle();\n\n    const toss = (dir: number, velocity = 0) => {\n      const id = order[0]!;\n      const s = S[id]!;\n      order = [...order.slice(1), id];\n      const next = order[0]!;\n      setTop(next);\n      changed.current?.(next);\n      const hadFocus = el.contains(document.activeElement);\n      if (reduced) {\n        settle();\n      } else {\n        play.current?.(WHOOSH);\n        nodes[id]!.style.zIndex = String(count + 1);\n        s.x.to(dir * 380, { config: { duration: 0.35, bounce: 0 }, velocity });\n        s.r.to(dir * 22, { config: { duration: 0.35, bounce: 0 } });\n        // Thrown past the edge, it tucks back in underneath.\n        setTimeout(() => {\n          nodes[id]!.style.zIndex = \"0\";\n          s.x.to(0, { config: { duration: 0.55, bounce: 0.15 } });\n          s.r.to(0, { config: { duration: 0.55, bounce: 0.15 } });\n          settle();\n        }, 260);\n        settle({ duration: 0.45, bounce: 0.35 });\n        nodes[id]!.style.zIndex = String(count + 1);\n      }\n      if (hadFocus) nodes[next]!.focus({ preventScroll: true });\n    };\n    throwRef.current = (dir) => toss(dir);\n\n    let drag: { id: number; x: number; y: number; flip: number; vx: number; t: number; lx: number } | null = null;\n    const down = (e: PointerEvent) => {\n      const ci = order[0]!;\n      const card = nodes[ci]!;\n      if (!card.contains(e.target as Node) || e.button !== 0) return;\n      const r = card.getBoundingClientRect();\n      card.setPointerCapture(e.pointerId);\n      // Grabbed low, it swings the other way — like a real card.\n      drag = { id: ci, x: e.clientX, y: e.clientY, flip: e.clientY > r.top + r.height / 2 ? -1 : 1, vx: 0, t: performance.now(), lx: e.clientX };\n      S[ci]!.s.to(1.03, { config: { duration: 0.2, bounce: 0 } });\n    };\n    const move = (e: PointerEvent) => {\n      if (!drag) return;\n      const now = performance.now();\n      const dt = Math.max(1, now - drag.t);\n      drag.vx = drag.vx * 0.6 + ((e.clientX - drag.lx) / dt) * 1000 * 0.4;\n      drag.lx = e.clientX;\n      drag.t = now;\n      const dx = e.clientX - drag.x;\n      const dy = e.clientY - drag.y;\n      const s = S[drag.id]!;\n      s.x.to(dx, { config: { duration: 0.08, bounce: 0 } });\n      s.y.to(dy * 0.6, { config: { duration: 0.08, bounce: 0 } });\n      s.r.to(dx * 0.07 * drag.flip, { config: { duration: 0.12, bounce: 0 } });\n    };\n    const up = () => {\n      if (!drag) return;\n      const { id, vx } = drag;\n      const s = S[id]!;\n      const dx = s.x.value;\n      drag = null;\n      if (Math.abs(dx) > 110 || Math.abs(vx) > 650) toss(Math.sign(dx || vx), vx);\n      else {\n        s.x.to(0, { config: bouncy, velocity: vx });\n        s.r.to(0, { config: bouncy });\n        settle();\n      }\n    };\n    el.addEventListener(\"pointerdown\", down);\n    el.addEventListener(\"pointermove\", move);\n    el.addEventListener(\"pointerup\", up);\n    el.addEventListener(\"pointercancel\", up);\n    return () => {\n      S.forEach((s) => [s.x, s.y, s.r, s.s].forEach((sp) => sp.stop()));\n      el.removeEventListener(\"pointerdown\", down);\n      el.removeEventListener(\"pointermove\", move);\n      el.removeEventListener(\"pointerup\", up);\n      el.removeEventListener(\"pointercancel\", up);\n    };\n  }, [count]);\n\n  return (\n    <div\n      ref={root}\n      className={[\"echo-throw-stack\", className].filter(Boolean).join(\" \")}\n      role=\"group\"\n      aria-roledescription=\"stack\"\n      aria-label={label}\n      onKeyDown={(e) => {\n        if (e.key === \"ArrowRight\" || e.key === \"ArrowLeft\") {\n          e.preventDefault();\n          throwRef.current(e.key === \"ArrowRight\" ? 1 : -1);\n        }\n      }}\n    >\n      {cards.map((c, i) => (\n        <Panel\n          key={i}\n          className=\"echo-throw-stack__card\"\n          aria-roledescription=\"card\"\n          aria-label={`${i + 1} of ${count}`}\n        >\n          {c}\n        </Panel>\n      ))}\n      <span className=\"echo-throw-stack__live\" aria-live=\"polite\">\n        {`${top + 1} of ${count}`}\n      </span>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "throw-stack/index.ts",
+      "sha256": "f5de864f7c7c93b252d03558311f7775087e70925b9e528f5b4478733ae28ded",
+      "content": "export { ThrowStack } from \"./throw-stack\";\nexport type { ThrowStackProps } from \"./throw-stack\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six other kinds of physics.** `PullCord` is a switch you pull: the cord stretches, clicks at a detent and changes as you let go. `SplitFlap` is a readout that turns over flap by flap. `LightSource` makes your pointer the light the HardwareButtons inside it are lit by. `Magnetic` makes the buttons inside lean toward your hand before you touch them. `ThrowStack` is a stack of Panels you flick away with the speed you gave them. `Ripple` is a surface that sends a wave from where you press. All of them are built from Echo's own caps, panels and roles, have a keyboard path, and hold still under reduced motion."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**`ThrowStack` under reduced motion puts a thrown card back straight** (BUG-70). A card thrown by dragging went to the back still shifted and tilted by the drag."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

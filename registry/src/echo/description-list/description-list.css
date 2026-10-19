@@ -1,0 +1,97 @@
+/**
+ * DescriptionList. Terms in the machine voice, values in body text or, on a
+ * screen, in the readout face; the one separator between rows. Composes
+ * var(--echo-*) — no hex literals; the only fixed values are the key light.
+ */
+.echo-description-list {
+  display: grid;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.echo-description-list__row {
+  display: grid;
+  gap: var(--echo-space-2);
+  padding-block: var(--echo-space-5);
+  min-inline-size: 0;
+}
+/* The one separator: a dark groove over a faint lip. */
+.echo-description-list__row + .echo-description-list__row {
+  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));
+}
+.echo-description-list[data-layout="inline"] .echo-description-list__row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--echo-space-6);
+}
+
+.echo-description-list__term {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-3);
+  min-inline-size: 0;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  line-height: var(--echo-leading-tight, 1.25);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  overflow-wrap: anywhere;
+}
+.echo-description-list__icon {
+  display: inline-flex;
+  flex: none;
+  inline-size: var(--echo-icon-sm, 14px);
+  block-size: var(--echo-icon-sm, 14px);
+}
+.echo-description-list__icon > svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.echo-description-list__detail {
+  margin: 0;
+  min-inline-size: 0;
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-snug, 1.4);
+  color: var(--echo-text);
+  overflow-wrap: anywhere;
+}
+.echo-description-list[data-layout="inline"] .echo-description-list__detail {
+  text-align: end;
+}
+
+/* screen: the whole list on a dark screen, the values in the readout face. */
+.echo-description-list[data-variant="screen"] {
+  padding: var(--echo-space-3) var(--echo-space-8);
+  border-radius: var(--echo-radius-lg);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow: var(
+    --echo-shadow-well-screen,
+    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+.echo-description-list[data-variant="screen"] .echo-description-list__row + .echo-description-list__row {
+  border-block-start-color: color-mix(in oklab, var(--echo-text) 8%, transparent);
+  box-shadow: none;
+}
+.echo-description-list[data-variant="screen"] .echo-description-list__detail {
+  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-lg);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--echo-leading-none, 1);
+}
+
+@media (forced-colors: active) {
+  .echo-description-list[data-variant="screen"] {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-description-list__row + .echo-description-list__row {
+    border-block-start-color: CanvasText;
+  }
+}

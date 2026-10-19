@@ -1,0 +1,32 @@
+/**
+ * Tooltip. Base UI Tooltip behavior, Echo skin — a
+ * compact molded chip. GSAP owns transform/opacity (useGsapPresence); no CSS
+ * transition on the popup. Composes var(--echo-*).
+ */
+/* Above any dialog it opens from. */
+.echo-tooltip__positioner {
+  z-index: var(--echo-z-tooltip, 500);
+}
+
+.echo-tooltip__popup {
+  /* It blooms out of what it is anchored to (Base UI supplies the point). */
+  transform-origin: var(--transform-origin);
+  max-width: 240px;
+  padding: var(--echo-space-3) var(--echo-space-5);
+  border-radius: var(--echo-radius-md);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-snug, 1.4);
+  color: var(--echo-text);
+  outline: none;
+  background: linear-gradient(160deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);
+  box-shadow: var(
+    --echo-shadow-tooltip,
+    inset 0 1px 0 rgb(255 255 255 / calc(0.08 * var(--echo-gloss, 1))),
+    inset 0 0 0 1px var(--echo-seam),
+    0 8px 20px -8px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 calc(3px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  will-change: transform, opacity;
+}

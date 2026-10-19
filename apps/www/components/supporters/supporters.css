@@ -1,0 +1,578 @@
+/* /supporters: Echo's island. Echo's own material: tokens, display face, shades in the engine's inks. */
+
+/* --- The card a pressed Echo opens ------------------------------------------------------------------ */
+
+.sw-card {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 40;
+  translate: -50% 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  width: min(34rem, calc(100vw - 2rem));
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  background: var(--echo-surface);
+  color: var(--echo-text);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 24px 48px -18px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+  animation: sw-card-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes sw-card-in {
+  from {
+    translate: -50% 24px;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-card {
+    animation: none;
+  }
+}
+.sw-card__name {
+  margin: 0;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sw-card__plan {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--echo-text-dim);
+}
+/* A sleeping Echo's card says so, quietly, and how it wakes. */
+.sw-card__asleep {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--echo-text-dim);
+}
+.sw-card__founding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--echo-text-dim);
+}
+.sw-card__do {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.sw-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sw-card__close {
+  align-self: start;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--echo-text-dim);
+  cursor: pointer;
+}
+.sw-card__close:hover {
+  color: var(--echo-text);
+}
+.sw-card__close:focus-visible {
+  outline: 2px solid var(--echo-accent);
+}
+
+/* --- Everyone, in the list that slides out ---------------------------------------------------------- */
+
+.sw-everyone {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.sw-everyone__group {
+  display: grid;
+  gap: 0.6rem;
+}
+.sw-everyone__title {
+  margin: 0;
+  font: 600 0.72rem/1 var(--site-font-mono), ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.sw-everyone__names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sw-everyone__first {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--echo-text-dim);
+}
+.sw-everyone__first a {
+  color: var(--echo-text);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+/* A name: its Echo's colour on a plate. Pointed at, it lifts; while a search runs, the rest step back. */
+.sw-name {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.sw-name .echo-tag {
+  transition:
+    translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.2s ease;
+}
+.sw-name:hover .echo-tag,
+.sw-name:focus-visible .echo-tag {
+  translate: 0 -2px;
+}
+.sw-name:focus-visible {
+  outline: 2px solid var(--echo-accent);
+  outline-offset: 2px;
+}
+.sw-name__dot {
+  /* Inside the tag's label, which is text: a block of its own, or it has no size. */
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 7px;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.35);
+}
+/* A founding supporter's dot stands in the same lit ring as their Echo: drawn inside its own box, which
+   the tag's label clips to. */
+.sw-name[data-founding] .sw-name__dot {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  padding: 2px;
+  border: 1.5px solid var(--echo-accent-glow);
+  background-clip: content-box;
+  box-shadow: none;
+}
+
+
+/* A name with its Echo's picture on the plate. */
+.sw-name__photo {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  vertical-align: middle;
+  scale: 1.35;
+}
+
+/* The collectible card: their Echo at the start, everything about them in one column beside it (the number
+   set like a signed print, the name, how they support, the mark, the links), the close key in the corner. */
+.sw-card {
+  width: min(34rem, calc(100vw - 2rem));
+  grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0.85rem 1.1rem;
+  padding: 1.1rem 1.1rem 1.1rem 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--family-seed-light, var(--echo-text)) 14%, transparent);
+}
+.sw-card__echo {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 4.75rem;
+  height: 4.75rem;
+  align-self: start;
+}
+.sw-card__echo img {
+  /* The photograph holds the Echo and its shadow: a little bigger than its place, centred on it. */
+  width: 6rem;
+  height: 6rem;
+  max-width: none;
+  filter: drop-shadow(0 10px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent));
+}
+.sw-card__who {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+.sw-card__close {
+  grid-column: 3;
+  grid-row: 1;
+}
+.sw-card__no {
+  margin: 0 0 6px;
+  font: 600 0.72rem/1 var(--site-font-mono), ui-monospace, monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--family-seed-light, var(--echo-accent));
+}
+.sw-card .sw-card__name {
+  font-size: clamp(1.5rem, 2.4vw, 1.85rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+/* Founding: a pearl edge, and one sweep of light across the card as it opens, the way foil catches it. */
+.sw-card[data-founding] {
+  border-color: color-mix(in oklab, var(--family-seed-light, var(--echo-accent)) 55%, transparent);
+  background:
+    linear-gradient(
+        115deg,
+        transparent 30%,
+        color-mix(in oklch, var(--family-seed-light, white) 16%, transparent) 46%,
+        color-mix(in oklch, white 10%, transparent) 50%,
+        transparent 64%
+      )
+      -120% 0 / 220% 100% no-repeat,
+    var(--echo-surface);
+  animation:
+    sw-card-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    sw-foil 1.6s 0.5s cubic-bezier(0.3, 0, 0.2, 1) both;
+}
+@keyframes sw-foil {
+  to {
+    background-position:
+      220% 0,
+      0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-card[data-founding] {
+    animation: none;
+  }
+}
+
+
+/* --- Island: the land of Echos ---------------------------------------------------------------------- */
+
+.sw-island {
+  position: relative;
+  /* The whole first screen, edge to edge: everything under the site's bar. */
+  height: calc(100svh - var(--echo-shell-rail-h, 56px));
+  min-height: 560px;
+  overflow: hidden;
+}
+/* The night it floats in: the brand's deep blue, lighter where the island catches the moon, and a few stars. */
+.sw-island,
+.sw-sky {
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, rgb(255 255 255 / 0.7), transparent 60%),
+    radial-gradient(1px 1px at 26% 62%, rgb(255 255 255 / 0.5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 41% 9%, rgb(255 255 255 / 0.6), transparent 60%),
+    radial-gradient(1px 1px at 58% 24%, rgb(255 255 255 / 0.45), transparent 60%),
+    radial-gradient(1.5px 1.5px at 73% 12%, rgb(255 255 255 / 0.65), transparent 60%),
+    radial-gradient(1px 1px at 86% 40%, rgb(255 255 255 / 0.5), transparent 60%),
+    radial-gradient(1px 1px at 92% 74%, rgb(255 255 255 / 0.4), transparent 60%),
+    radial-gradient(1px 1px at 6% 82%, rgb(255 255 255 / 0.4), transparent 60%),
+    radial-gradient(60% 55% at 50% 42%, color-mix(in oklch, var(--family-seed, var(--echo-accent)) 26%, transparent), transparent 75%),
+    linear-gradient(180deg, color-mix(in oklch, var(--family-seed-deep, var(--echo-accent)) 30%, var(--echo-well)) 0%, var(--echo-well) 100%);
+}
+.sw-island__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.sw-island__canvas:active {
+  cursor: grabbing;
+}
+.sw-island__tags {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sw-island__tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 4px 12px;
+  border-radius: var(--echo-radius-full, 999px);
+  background: color-mix(in oklab, var(--echo-surface) 88%, transparent);
+  color: var(--echo-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px -8px color-mix(in oklab, var(--echo-cast-ink, black) 70%, transparent);
+  transition: opacity 0.2s ease;
+}
+.sw-island__tag--plot {
+  border: 1px dashed color-mix(in oklab, var(--echo-accent) 70%, transparent);
+  background: color-mix(in oklab, var(--echo-well) 80%, transparent);
+  font-weight: 500;
+}
+.sw-island__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.sw-island__note {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  margin: 0;
+  font: 600 0.8rem/1 var(--site-font-mono), ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.sw-island[data-state="ready"] .sw-island__note {
+  display: none;
+}
+.sw-island__hint {
+  margin: 0 0 0.9rem;
+  font: 600 0.7rem/1 var(--site-font-mono), ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  pointer-events: none;
+}
+.sw-island__hint-touch {
+  display: none;
+}
+@media (pointer: coarse) {
+  .sw-island__hint-mouse {
+    display: none;
+  }
+  .sw-island__hint-touch {
+    display: inline;
+  }
+}
+.sw-island__keys {
+  display: flex;
+  gap: 8px;
+}
+
+/* The free plots' links: always shown, over their ghost Echo, in the brand's light. */
+.sw-island__claims {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sw-island__claim {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--echo-radius-full, 999px);
+  /* The primary key's own material and ink: a pair the engine keeps at AA on any seed. */
+  background: linear-gradient(180deg, var(--echo-primary-cap-top) 0%, var(--echo-primary-cap-mid) 45%, var(--echo-primary-cap-base) 100%);
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  pointer-events: auto;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, white 22%, transparent) inset,
+    0 0 22px color-mix(in oklch, var(--echo-accent-glow, var(--echo-accent)) 70%, transparent),
+    0 10px 20px -10px color-mix(in oklab, var(--echo-cast-ink, black) 80%, transparent);
+  transition: scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sw-island__claim:hover {
+  scale: 1.08;
+}
+.sw-island__claim:focus-visible {
+  outline: 2px solid var(--echo-text);
+  outline-offset: 3px;
+}
+.sw-island__claim span {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+/* The island is the page: centred and largest. Its title is a quiet heading in the top left corner of the sky. */
+.sw-island {
+  --sw-gutter: clamp(1rem, 4vw, 3rem);
+}
+.sw-island__head {
+  position: absolute;
+  z-index: 2;
+  top: clamp(1.25rem, 4vh, 2.25rem);
+  left: var(--sw-gutter);
+  max-width: min(24rem, calc(100% - 2rem));
+  pointer-events: none;
+}
+/* Top right: "Find yourself", and the key that slides out everyone. */
+.sw-island__find {
+  position: absolute;
+  z-index: 3;
+  top: clamp(1.25rem, 4vh, 2.25rem);
+  right: var(--sw-gutter);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(22rem, calc(100% - 2 * var(--sw-gutter)));
+}
+.sw-island__find .echo-combobox {
+  flex: 1;
+  min-width: 0;
+}
+/* The label names the field for screen readers; on screen its placeholder says it. */
+.sw-island__find .echo-combobox__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.sw-island__list-key {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.sw-island__list-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--echo-primary-cap-mid, var(--echo-accent));
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  font: 700 0.7rem/20px var(--site-font-mono), ui-monospace, monospace;
+  text-align: center;
+}
+.sw-island__title {
+  margin: 0;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2rem, 3.6vw, 3.25rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: var(--echo-text);
+}
+.sw-island__line {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.05vw, 1.05rem);
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+  text-wrap: pretty;
+}
+.sw-island__line strong {
+  color: var(--echo-text);
+  font-weight: 600;
+}
+/* Along the bottom, one row: the ask on the left, how to move the island in the middle, its keys on the right. */
+.sw-island__foot {
+  position: absolute;
+  z-index: 2;
+  left: var(--sw-gutter, clamp(1rem, 4vw, 3rem));
+  right: var(--sw-gutter, clamp(1rem, 4vw, 3rem));
+  bottom: clamp(1rem, 3.5vh, 2rem);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  pointer-events: none;
+}
+.sw-island__foot > * {
+  pointer-events: auto;
+}
+.sw-island__ask {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+}
+.sw-island__ask-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--echo-text-dim);
+}
+
+/* The view: the picture and everything drawn over it share one box, so the names land on the picture. */
+.sw-island__view {
+  position: absolute;
+  inset: 0;
+}
+@media (max-width: 40rem) {
+  /* On a phone the ask spans the bottom, under a row of the hint and the keys. */
+  .sw-island__foot {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .sw-island__hint {
+    margin: 0;
+  }
+  .sw-island__ask {
+    order: 3;
+    flex-basis: 100%;
+    justify-items: stretch;
+  }
+}
+
+/* --- The video of someone's place, in their card ------------------------------------------------------ */
+
+.sw-video {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.sw-video__making {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 18rem);
+  font-size: 0.85rem;
+  color: var(--echo-text-dim);
+}
+.sw-video__preview {
+  width: 7.5rem;
+  height: 7.5rem;
+  flex: none;
+  border-radius: 0.85rem;
+  background: var(--echo-well);
+  object-fit: cover;
+}
+.sw-video__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* On a phone the corner line sits at the top and the search spans the screen under it. */
+@media (max-width: 40rem) {
+  .sw-island__find {
+    top: calc(clamp(1.25rem, 4vh, 2.25rem) + 3.4rem);
+    left: var(--sw-gutter);
+    width: auto;
+  }
+}

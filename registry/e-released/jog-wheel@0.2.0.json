@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "name": "jog-wheel",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "JogWheel",
+  "description": "A knob with no ends: turn it and it moves a value by steps, as far as you like, like a video editor's jog wheel. Turn slowly for a step per click; spin it and the steps grow with the speed, so a long way is a quick flick. Knob's own cap, well and pointer, larger, with a ring engraved on the cap to see it turn. A spin button for assistive tech: arrows step, Shift or Page Up/Down take ten.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "knob"
+  ],
+  "files": [
+    {
+      "path": "jog-wheel/jog-wheel.tsx",
+      "sha256": "d48d88d259865ba928125a379c15f9d23674d7bee0cac43cc7c2cb9309e1f5fc",
+      "content": "\"use client\";\n\n/**\n * JogWheel. A knob with no ends: turn it and it moves a value by steps, as\n * far as you like, the way a video editor's jog wheel or a clicky scroll\n * wheel does. Turn slowly and it moves one step per click; spin it and the\n * steps grow with the speed, so a long way is a quick flick.\n *\n * It's Knob's own cap, well and pointer, larger, with its scale engraved on\n * the cap so you can see it turn. For assistive technology it's a spin\n * button (it has no ends to be a slider between): arrow keys step, Shift or\n * Page Up/Down take ten, and a `min` and `max` add Home and End.\n */\nimport {\n  forwardRef,\n  useCallback,\n  useEffect,\n  useRef,\n  useState,\n  type KeyboardEvent,\n  type MutableRefObject,\n  type PointerEvent,\n} from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { createSpring, useReducedMotionRef, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport { angleAround, spinSteps, wheelDegrees } from \"./spin\";\nimport \"../knob/knob.css\";\nimport \"./jog-wheel.css\";\n\nexport interface JogWheelProps extends EchoInterop {\n  /** What it moves: the label under it, and the accessible name. */\n  label: string;\n  value?: number;\n  defaultValue?: number;\n  onValueChange?: (value: number) => void;\n  step?: number;\n  /** Optional ends. Without them it turns forever. */\n  min?: number;\n  max?: number;\n  /** How the value reads, under the wheel and to assistive tech (\"00:01:12.08\"). */\n  formatValue?: (value: number) => string;\n  /** `md` 96px (default) or `lg` 128px across. */\n  size?: \"md\" | \"lg\";\n}\n\n/** Degrees of turn per step at a slow turn: a click every notch. */\nconst NOTCH = 15;\nconst DETENT: SoundRecipe = { wave: \"square\", freq: 2400, decay: 0.01, gain: 0.04 };\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on\n * the spin button.\n */\nexport const JogWheel = forwardRef<HTMLDivElement, JogWheelProps>(function JogWheel(\n  {\n    label,\n    value,\n    defaultValue,\n    onValueChange,\n    step = 1,\n    min,\n    max,\n    formatValue = (v) => String(v),\n    size = \"md\",\n    disabled = false,\n    name,\n    onKeyDown: onKeyDownProp,\n    ...interop\n  },\n  ref,\n) {\n  const [inner, setInner] = useState(defaultValue ?? min ?? 0);\n  const current = value ?? inner;\n  const sound = useSoundOptional();\n  const reduced = useReducedMotionRef();\n  const rotor = useRef<HTMLDivElement>(null);\n  const spring = useRef<Spring | null>(null);\n  const latest = useRef(current);\n  latest.current = current;\n  /** How far the cap has turned, in degrees, since it appeared: it never wraps. */\n  const turned = useRef(0);\n\n  const clamp = (v: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v));\n  const commit = useCallback(\n    (steps: number) => {\n      if (!steps) return;\n      const next = clamp(Number((latest.current + steps * step).toFixed(10)));\n      if (next === latest.current) return;\n      latest.current = next;\n      if (value === undefined) setInner(next);\n      sound?.play(DETENT);\n      onValueChange?.(next);\n    },\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n    [value, onValueChange, sound, step, min, max],\n  );\n\n  useEffect(() => {\n    const el = rotor.current;\n    if (!el) return;\n    spring.current = createSpring(0, { duration: 0.18, bounce: 0.2 }, (a) => {\n      el.style.rotate = `${a.toFixed(2)}deg`;\n    });\n    return () => spring.current?.stop();\n  }, []);\n  const turnTo = (degrees: number) => {\n    turned.current = degrees;\n    if (reduced.current) spring.current?.set(degrees);\n    else spring.current?.to(degrees);\n  };\n\n  /*\n   * Dragging round the centre: the angle it's turned through, in notches,\n   * faster for a quicker turn. Over the hub the angle means nothing (a hair's\n   * move swings it a quarter turn), so the turn waits until the hand is out\n   * of it again, and picks up from there.\n   */\n  const drag = useRef<{ angle: number | null; t: number; owed: number } | null>(null);\n  const well = useRef<HTMLDivElement | null>(null);\n  const angleAt = (e: PointerEvent<HTMLDivElement>) => {\n    const r = e.currentTarget.getBoundingClientRect();\n    return angleAround(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2), r.width / 2);\n  };\n  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {\n    if (disabled || e.button !== 0) return;\n    e.currentTarget.setPointerCapture(e.pointerId);\n    e.currentTarget.focus();\n    drag.current = { angle: angleAt(e), t: e.timeStamp, owed: 0 };\n  };\n  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {\n    const d = drag.current;\n    if (!d) return;\n    const a = angleAt(e);\n    if (a === null || d.angle === null) {\n      d.angle = a;\n      d.t = e.timeStamp;\n      return;\n    }\n    let delta = a - d.angle;\n    if (delta > 180) delta -= 360;\n    if (delta < -180) delta += 360;\n    const seconds = Math.max(0.001, (e.timeStamp - d.t) / 1000);\n    d.angle = a;\n    d.t = e.timeStamp;\n    turnTo(turned.current + delta);\n    const { steps, owed } = spinSteps(delta, seconds, d.owed, NOTCH);\n    d.owed = owed;\n    commit(steps);\n  };\n  const onPointerUp = () => {\n    drag.current = null;\n  };\n\n  /*\n   * The wheel turns it once it has focus, so a page scroll never catches on\n   * it. It turns as far as the wheel scrolled (a mouse's click is a notch, a\n   * trackpad's small deltas add up to one), and like a hand, faster is further.\n   */\n  const commitRef = useRef(commit);\n  commitRef.current = commit;\n  useEffect(() => {\n    const el = well.current;\n    if (!el) return;\n    let owed = 0;\n    let last = 0;\n    const wheel = (e: WheelEvent) => {\n      if (disabled || document.activeElement !== el) return;\n      const degrees = wheelDegrees(e, NOTCH);\n      if (!degrees) return;\n      e.preventDefault();\n      const seconds = Math.min(0.25, Math.max(0.001, (e.timeStamp - last) / 1000));\n      last = e.timeStamp;\n      const turn = spinSteps(degrees, seconds, owed, NOTCH);\n      owed = turn.owed;\n      turned.current += degrees;\n      if (reduced.current) spring.current?.set(turned.current);\n      else spring.current?.to(turned.current);\n      commitRef.current(turn.steps);\n    };\n    el.addEventListener(\"wheel\", wheel, { passive: false });\n    return () => el.removeEventListener(\"wheel\", wheel);\n  }, [disabled, reduced]);\n\n  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {\n    // The caller's handler runs first and may take the key for itself.\n    onKeyDownProp?.(e);\n    if (e.defaultPrevented || disabled) return;\n    const big = e.shiftKey ? 10 : 1;\n    let steps: number | null =\n      e.key === \"ArrowUp\" || e.key === \"ArrowRight\"\n        ? big\n        : e.key === \"ArrowDown\" || e.key === \"ArrowLeft\"\n          ? -big\n          : e.key === \"PageUp\"\n            ? 10\n            : e.key === \"PageDown\"\n              ? -10\n              : null;\n    if (steps === null && e.key === \"Home\" && min !== undefined) steps = Math.round((min - latest.current) / step);\n    if (steps === null && e.key === \"End\" && max !== undefined) steps = Math.round((max - latest.current) / step);\n    if (steps === null) return;\n    e.preventDefault();\n    turnTo(turned.current + Math.sign(steps) * Math.min(Math.abs(steps), 6) * NOTCH);\n    commit(steps);\n  };\n\n  const text = formatValue(current);\n  return (\n    <div className=\"echo-knob echo-jog-wheel\" data-size={size} data-disabled={disabled || undefined}>\n      <div className=\"echo-knob__dial echo-jog-wheel__dial\">\n        <div\n          ref={(node) => {\n            well.current = node;\n            if (typeof ref === \"function\") ref(node);\n            else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = node;\n          }}\n          className=\"echo-knob__well\"\n          role=\"spinbutton\"\n          tabIndex={disabled ? -1 : 0}\n          aria-label={label}\n          aria-valuenow={current}\n          aria-valuetext={text}\n          aria-valuemin={min}\n          aria-valuemax={max}\n          aria-disabled={disabled || undefined}\n          {...interop}\n          onPointerDown={onPointerDown}\n          onPointerMove={onPointerMove}\n          onPointerUp={onPointerUp}\n          onPointerCancel={onPointerUp}\n          onKeyDown={onKeyDown}\n        >\n          <div className=\"echo-knob__cap\">\n            {/* The rotor turns, not the cap: the engraving and the finger dimple turn with it. */}\n            <div ref={rotor} className=\"echo-knob__rotor echo-jog-wheel__rotor\">\n              <svg className=\"echo-jog-wheel__engraving\" viewBox=\"-50 -50 100 100\" aria-hidden=\"true\">\n                {Array.from({ length: 24 }, (_, i) => {\n                  const a = (i * 15 * Math.PI) / 180;\n                  const at = (r: number, f: (x: number) => number) => Math.round(f(a) * r * 100) / 100;\n                  return <line key={i} x1={at(38, Math.sin)} y1={-at(38, Math.cos)} x2={at(46, Math.sin)} y2={-at(46, Math.cos)} />;\n                })}\n              </svg>\n              <span className=\"echo-jog-wheel__dimple\" />\n            </div>\n          </div>\n        </div>\n      </div>\n      {name ? <input type=\"hidden\" name={name} value={current} /> : null}\n      <span className=\"echo-knob__label\" aria-hidden=\"true\">\n        {label}\n      </span>\n      <span className=\"echo-knob__value\" aria-hidden=\"true\">\n        {text}\n      </span>\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "jog-wheel/jog-wheel.css",
+      "sha256": "e74c6978599980cefecdf9ed243d6cec8c4c5e0ce613a6209d811fa920f5b8cb",
+      "content": "/**\n * JogWheel. Knob's cap, well and pointer (knob.css), larger, with a ring\n * engraved on the cap and a finger dimple, both turning with it. No lit\n * scale: it has no ends to light up to. Composes var(--echo-*).\n */\n.echo-jog-wheel {\n  --knob: 96px;\n}\n.echo-jog-wheel[data-size=\"lg\"] {\n  --knob: 128px;\n}\n.echo-jog-wheel__dial {\n  inline-size: calc(var(--knob) + 16px);\n  block-size: calc(var(--knob) + 16px);\n}\n.echo-jog-wheel__rotor {\n  inset: 0;\n}\n.echo-jog-wheel__engraving {\n  position: absolute;\n  inset: 0;\n  inline-size: 100%;\n  block-size: 100%;\n}\n.echo-jog-wheel__engraving line {\n  stroke: var(--echo-seam);\n  stroke-width: 2;\n  stroke-linecap: round;\n}\n/* Where a finger goes: a shallow dish near the rim. */\n.echo-jog-wheel__dimple {\n  position: absolute;\n  inset-block-start: 16%;\n  inset-inline-start: 50%;\n  inline-size: 22%;\n  block-size: 22%;\n  translate: -50% 0;\n  border-radius: 50%;\n  box-shadow:\n    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.12 * var(--echo-gloss, 1)));\n}\n\n@media (forced-colors: active) {\n  .echo-jog-wheel__engraving line {\n    stroke: ButtonText;\n  }\n  .echo-jog-wheel__dimple {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n}\n"
+    },
+    {
+      "path": "jog-wheel/spin.ts",
+      "sha256": "ed78eaef61314fddcf119bed68fe9814073d2f1b91afa415d502716510f340f8",
+      "content": "/**\n * How far a turn goes. Pure: no React, no DOM.\n *\n * A slow turn is a step per notch. Faster, each notch is worth more, so a\n * flick covers a long way: at a notch every 50ms (half a turn a second, a\n * brisk hand) a notch is two steps, and it keeps growing with the speed.\n * Turning carries what it owes from notch to notch, so no turn is lost to\n * rounding and a slow turn never skips.\n */\nexport function spinSteps(\n  degrees: number,\n  seconds: number,\n  owed: number,\n  notch: number,\n): { steps: number; owed: number } {\n  const speed = Math.abs(degrees) / notch / seconds; // notches a second\n  const gain = speed > 10 ? Math.min(12, speed / 10) : 1;\n  const total = owed + (degrees / notch) * gain;\n  const steps = Math.trunc(total);\n  return { steps, owed: total - steps };\n}\n\n/**\n * The hub: inside this fraction of the wheel's radius, the pointer's angle\n * round the centre is noise. A hair's move there swings it a quarter turn.\n */\nexport const HUB = 0.3;\n\n/** The pointer's angle round the centre, in degrees, or null inside the hub. */\nexport function angleAround(dx: number, dy: number, radius: number): number | null {\n  if (Math.hypot(dx, dy) < radius * HUB) return null;\n  return (Math.atan2(dy, dx) * 180) / Math.PI;\n}\n\n/** Pixels, lines and pages of scroll that make one notch. */\nconst PER_NOTCH = [100, 3, 1] as const;\n\n/**\n * How far a wheel event turns the wheel, in degrees: a mouse wheel's click\n * (100px, or three lines) is one notch, and a trackpad's small deltas add up\n * to one. The stronger axis wins; up and right turn it up.\n */\nexport function wheelDegrees(\n  e: { deltaX: number; deltaY: number; deltaMode: number },\n  notch = 15,\n): number {\n  const by = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : -e.deltaY;\n  if (!by) return 0;\n  return (by / (PER_NOTCH[e.deltaMode] ?? PER_NOTCH[0])) * notch;\n}\n"
+    },
+    {
+      "path": "jog-wheel/index.ts",
+      "sha256": "3c7f9edffd365231eea7a76113c31c398102c81e2513200c458cf31e9ae098ff",
+      "content": "export { JogWheel } from \"./jog-wheel\";\nexport type { JogWheelProps } from \"./jog-wheel\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`JogWheel`: a knob with no ends.** Knob's own cap, well and pointer, larger, with a ring engraved on the cap: turn slowly for a step per click, spin it and the steps grow with the speed. The wheel turns it by how far it scrolled, either axis, once it has focus; over the hub, where a hair's move is a quarter turn, dragging waits for the hand to leave. A spin button for assistive tech; `min` and `max` are optional."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

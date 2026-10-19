@@ -1,0 +1,73 @@
+/*
+ * Target sizes for the docs app's inline-styled pages.
+ *
+ * Imported by the ROOT layout, deliberately. The first attempt put these in
+ * `site-shell.css` and in per-page stylesheets, and they silently did not
+ * apply: Next.js loads a stylesheet only on the routes that import it, and
+ * `/audition` and the gallery pages do not render the site shell. A rule that
+ * is only sometimes loaded is worse than no rule, because the test that would
+ * have caught it passes on the routes where it happens to be present.
+ *
+ * Why CSS at all, when these pages style everything inline: a media query
+ * cannot be expressed as a React style object. And why not inline the 24px
+ * floor either — an inline style beats a stylesheet, so a `minHeight` written
+ * beside the markup makes the coarse-pointer rule below unreachable. Both
+ * thresholds have to live in the same cascade or the larger one never wins.
+ */
+
+/* WCAG 2.2 2.5.8 — 24px, every pointer. */
+.echo-generator summary,
+.guide-card a[href],
+.guide-index a[href] {
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+/*
+ * The 44px platform guideline, on touch only — the desktop rendering of these
+ * pages is unchanged.
+ *
+ * `.echo-gallery` covers the component galleries, whose demo controls are
+ * inline-styled page furniture rather than library components; the library's
+ * own controls carry their coarse rules in their own stylesheets, next to the
+ * component they belong to.
+ */
+@media (pointer: coarse) {
+  .echo-generator button,
+  .echo-generator summary,
+  .echo-generator input,
+  .guide-card a[href],
+  .guide-index a[href],
+  .echo-install button,
+  .doc-code__copy,
+  .echo-gallery button,
+  .echo-gallery a[href],
+  .echo-gallery summary {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/*
+ * The document scrollport leaves room for the rail (WCAG 2.4.11).
+ *
+ * `echo-app-shell` ships `scroll-margin-block-start` on its own focusables,
+ * which is the half a consumer gets and the half that follows a retuned
+ * `--echo-shell-rail-h`. This is the site's half, and it exists because of the
+ * site's own markup: `/templates/*` frames each preview in `.echo-tpl__stage`,
+ * which is `overflow: hidden` and therefore a nested scrollport. When WebKit
+ * scrolls a focused field into view through one of those, it does not carry the
+ * element's own `scroll-margin` out to the document scroll, and the field lands
+ * under the rail. Padding the outer scrollport covers the chained case.
+ *
+ * The literal is the rail's height plus a step, and it has to be a literal:
+ * `--echo-shell-rail-h` is declared on `.echo-shell`, so up here on the root it
+ * is out of scope, the `calc()` would be invalid at computed-value time, and
+ * the whole declaration would silently compute to `auto`. That is precisely the
+ * trap that can make this look like a WebKit limitation.
+ */
+html {
+  scroll-padding-block-start: 64px;
+}

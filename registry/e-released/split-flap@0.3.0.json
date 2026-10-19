@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "name": "split-flap",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "SplitFlap",
+  "description": "A readout that turns over like a departures board: each character flips through the ones between where it is and where it's going, flap by flap — fast when it's far, slowest on the last one — and each flap ticks. The flaps are the neutral cap's plastic in a recessed well.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "roll"
+  ],
+  "files": [
+    {
+      "path": "split-flap/split-flap.css",
+      "sha256": "541796466129233d22c22ed2a110be8d30016d74ac728acbfa041fb4fbf716df",
+      "content": "/**\n * SplitFlap. Flaps of the neutral cap's plastic in a recessed well, split by\n * a dark seam; the type is the machine face. Each flap is two halves and two\n * leaves that turn on the seam.\n */\n.echo-split-flap {\n  --flap-w: 44px;\n  --flap-h: 64px;\n  --flap-font: 44px;\n  position: relative;\n  display: inline-flex;\n  gap: var(--echo-space-2);\n  padding: var(--echo-space-3);\n  border-radius: calc(var(--echo-radius-md) + 4px);\n  perspective: 400px;\n  box-shadow: var(\n    --echo-shadow-well,\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n.echo-split-flap__face {\n  display: inline-flex;\n  gap: var(--echo-space-2);\n}\n.echo-split-flap[data-size=\"sm\"] {\n  --flap-w: 30px;\n  --flap-h: 44px;\n  --flap-font: 30px;\n}\n.echo-split-flap[data-size=\"lg\"] {\n  --flap-w: 58px;\n  --flap-h: 84px;\n  --flap-font: 60px;\n}\n\n.echo-split-flap__flap {\n  position: relative;\n  inline-size: var(--flap-w);\n  block-size: var(--flap-h);\n  border-radius: var(--echo-radius-md);\n  font-family: var(--echo-font-machine);\n  font-size: var(--flap-font);\n  font-weight: var(--echo-weight-bold, 700);\n  color: var(--echo-text);\n  box-shadow: 0 4px 8px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);\n}\n\n.echo-split-flap__half {\n  position: absolute;\n  inset-inline: 0;\n  block-size: 50%;\n  overflow: hidden;\n  backface-visibility: hidden;\n}\n.echo-split-flap__half b {\n  position: absolute;\n  inset-inline: 0;\n  block-size: var(--flap-h);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-variant-numeric: tabular-nums;\n}\n.echo-split-flap__half[data-half=\"top\"] {\n  inset-block-start: 0;\n  border-start-start-radius: inherit;\n  border-start-end-radius: inherit;\n  transform-origin: 50% 100%;\n  background: linear-gradient(180deg, var(--echo-cap-highlight), var(--echo-cap));\n}\n.echo-split-flap__half[data-half=\"bottom\"] {\n  inset-block-end: 0;\n  border-end-start-radius: inherit;\n  border-end-end-radius: inherit;\n  transform-origin: 50% 0%;\n  background: linear-gradient(180deg, var(--echo-cap), var(--echo-cap-shadow));\n  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n.echo-split-flap__half[data-half=\"bottom\"] b {\n  inset-block-start: calc(var(--flap-h) / -2);\n}\n.echo-split-flap__leaf {\n  z-index: var(--echo-z-raised, 1);\n}\n\n.echo-split-flap__live {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n\n@media (forced-colors: active) {\n  .echo-split-flap__half {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "split-flap/split-flap.tsx",
+      "sha256": "08102fd584fade18b5c16cce4c1ce32e22882b306a52d51554b6aaf3ad297a00",
+      "content": "\"use client\";\n\n/**\n * SplitFlap. A readout that turns over like a departures board: each\n * character flips through the ones between where it is and where it's going,\n * flap by flap — fast when it's far, slowest on the last one — and each flap\n * ticks. The flaps are the neutral cap's plastic, in a recessed well.\n *\n * It says its value once, as text (role=\"img\" with the value as its name);\n * pass `live` to have changes announced.\n */\nimport { useEffect, useRef, useState } from \"react\";\nimport { useReducedMotion } from \"echo-ui-core/tactile\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport { CHARS, DIGITS, turn, turnMs, turnsLeft } from \"../roll\";\nimport \"./split-flap.css\";\n\nexport interface SplitFlapProps {\n  /** What it shows. Numbers pad with zeros to `length`; text with spaces. */\n  value: number | string;\n  /** How many flaps. Defaults to the value's own length. */\n  length?: number;\n  /** What the value is, for its name: \"Visitors\" reads \"Visitors 1024\". */\n  label?: string;\n  /** Announce changes politely. */\n  live?: boolean;\n  size?: \"sm\" | \"md\" | \"lg\";\n  className?: string;\n}\n\nconst FLAP: SoundRecipe = { wave: \"square\", freq: 2600, decay: 0.012, gain: 0.05 };\n\n/** The drum each flap turns through, in order (shared with useRoll). */\nexport { CHARS, DIGITS };\n\nfunction Flap({ target, drum }: { target: string; drum: string }) {\n  const sound = useSoundOptional();\n  const play = useRef(sound?.play);\n  play.current = sound?.play;\n  const reduced = useReducedMotion();\n  const [cur, setCur] = useState(target);\n  const [next, setNext] = useState(target);\n  const top = useRef<HTMLSpanElement>(null);\n  const bottom = useRef<HTMLSpanElement>(null);\n  const busy = useRef(false);\n\n  useEffect(() => {\n    if (busy.current || cur === target) return;\n    // A flap only turns forward, and one that isn't on the drum starts from\n    // its first character.\n    const from = drum.includes(cur) ? cur : drum[0]!;\n    if (reduced || !drum.includes(target)) {\n      setCur(target);\n      setNext(target);\n      return;\n    }\n    busy.current = true;\n    const n = turn(from, target, drum);\n    setNext(n);\n    // Far to go, it flips faster; the last flap lands slowest.\n    const ms = turnMs(turnsLeft(from, target, drum));\n    const id = requestAnimationFrame(() => {\n      top.current?.animate([{ transform: \"rotateX(0deg)\" }, { transform: \"rotateX(-90deg)\" }], {\n        duration: ms,\n        easing: \"ease-in\",\n        fill: \"forwards\",\n      });\n      const b = bottom.current?.animate([{ transform: \"rotateX(90deg)\" }, { transform: \"rotateX(0deg)\" }], {\n        duration: ms * 1.3,\n        delay: ms,\n        easing: \"cubic-bezier(.3,1.6,.6,1)\",\n        fill: \"forwards\",\n      });\n      play.current?.(FLAP);\n      const done = () => {\n        busy.current = false;\n        setCur(n);\n      };\n      if (b) b.onfinish = done;\n      else done();\n    });\n    return () => {\n      cancelAnimationFrame(id);\n      busy.current = false;\n    };\n  }, [cur, target, drum, reduced]);\n\n  const face = (c: string) => <b>{c === \" \" ? \" \" : c}</b>;\n  return (\n    <span className=\"echo-split-flap__flap\">\n      <span className=\"echo-split-flap__half\" data-half=\"top\">{face(next)}</span>\n      <span className=\"echo-split-flap__half\" data-half=\"bottom\">{face(cur)}</span>\n      <span key={`t${cur}`} ref={top} className=\"echo-split-flap__half echo-split-flap__leaf\" data-half=\"top\">\n        {face(cur)}\n      </span>\n      <span\n        key={`b${cur}`}\n        ref={bottom}\n        className=\"echo-split-flap__half echo-split-flap__leaf\"\n        data-half=\"bottom\"\n        style={{ transform: \"rotateX(90deg)\" }}\n      >\n        {face(next)}\n      </span>\n    </span>\n  );\n}\n\nexport function SplitFlap({ value, length, label, live, size = \"md\", className }: SplitFlapProps) {\n  const numeric = typeof value === \"number\";\n  const raw = numeric ? String(Math.max(0, Math.floor(value))) : value.toUpperCase();\n  const n = length ?? raw.length;\n  const text = numeric ? raw.padStart(n, \"0\").slice(-n) : raw.padEnd(n, \" \").slice(0, n);\n  const drum = numeric ? DIGITS : CHARS;\n  const name = label ? `${label} ${String(value)}` : String(value);\n  // The flaps are one image named by the value; a live region (outside it,\n  // where it can be heard) says changes if asked.\n  return (\n    <span className={[\"echo-split-flap\", className].filter(Boolean).join(\" \")} data-size={size}>\n      <span className=\"echo-split-flap__face\" role=\"img\" aria-label={name}>\n        {text.split(\"\").map((c, i) => (\n          <Flap key={i} target={c} drum={drum} />\n        ))}\n      </span>\n      {live ? (\n        <span className=\"echo-split-flap__live\" aria-live=\"polite\">\n          {name}\n        </span>\n      ) : null}\n    </span>\n  );\n}\n"
+    },
+    {
+      "path": "split-flap/index.ts",
+      "sha256": "40da4bd5f992e9125bcf746c35b3775900abcd6e1891a1b4b10f1649db1b1692",
+      "content": "export { SplitFlap, DIGITS, CHARS } from \"./split-flap\";\nexport type { SplitFlapProps } from \"./split-flap\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Digits that roll: `roll` on `LcdChip`, `StatTile` and `NumberField`, and the `useRoll` hook under them.** Pass `roll` and a new value steps each digit through the ones in between, all together, fast when it's far and slowest on the last step: 18 → 21 shows 29, 20, 21. A falling number rolls back, 99 → 100 turns the nines over and puts a 1 in front, and anything that isn't a digit (a comma, a colon) swaps at once. The digits in between are drawn but hidden from assistive technology, so the value is still read once, as it is; under reduced motion it doesn't roll. On `NumberField` it replaces the slide a step used to give the whole number, and typing never rolls. It's off by default, so nothing changes until you pass it. `SplitFlap` now turns on the same drum (`echo-roll`, which each of these installs with it); it looks and sounds the same."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six other kinds of physics.** `PullCord` is a switch you pull: the cord stretches, clicks at a detent and changes as you let go. `SplitFlap` is a readout that turns over flap by flap. `LightSource` makes your pointer the light the HardwareButtons inside it are lit by. `Magnetic` makes the buttons inside lean toward your hand before you touch them. `ThrowStack` is a stack of Panels you flick away with the speed you gave them. `Ripple` is a surface that sends a wave from where you press. All of them are built from Echo's own caps, panels and roles, have a keyboard path, and hold still under reduced motion."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

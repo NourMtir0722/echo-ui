@@ -1,0 +1,67 @@
+/**
+ * Progress. Reproduces the first Echo device's LED
+ * progress: discrete cells in a recessed dark
+ * strip; filled cells are lit LEDs in the library's one lit accent (the primary
+ * cap). The light stays in the cell — no bloom. Composes var(--echo-*).
+ */
+.echo-progress {
+  display: flex;
+  gap: var(--echo-space-2);
+  /*
+   * Was a non-shrinking `width: 288px`, which overflowed any
+   * container narrower than itself — including a 320px viewport with padding,
+   * and the 284px docs preview column. The cells are `flex: 1`, so the strip
+   * was always able to be fluid; nothing needed the fixed number.
+   */
+  width: 100%;
+  max-width: 288px;
+  /* With `width: 100%` the 6px padding would otherwise be ADDED to the
+     container's width — 263 in a 251px cell on the home rail. */
+  box-sizing: border-box;
+  padding: var(--echo-space-3);
+  border-radius: var(--echo-radius-md);
+  background: var(--echo-lcd);
+  box-shadow: var(--echo-shadow-groove, inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent));
+}
+
+.echo-progress__cell {
+  height: 16px;
+  flex: 1;
+  border-radius: var(--echo-radius-xs);
+  background: color-mix(in oklab, var(--echo-lcd) 78%, var(--echo-cap));
+}
+
+.echo-progress__cell[data-on] {
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+}
+
+/*
+ * Power on (useBootOnView): lit cells come up in order from the start. "off"
+ * is only ever set on a meter that starts out of view.
+ */
+.echo-progress[data-boot="off"] .echo-progress__cell[data-on] {
+  background: color-mix(in oklab, var(--echo-lcd) 78%, var(--echo-cap));
+  box-shadow: none;
+}
+.echo-progress[data-boot="on"] .echo-progress__cell[data-on] {
+  animation: echo-progress-boot var(--echo-duration-press) steps(1, end) both;
+  /* Set down with the rail cell (pop), then one cell per glitch step. */
+  animation-delay: calc(var(--echo-duration-pop) + var(--i, 0) * var(--echo-duration-glitch));
+}
+@keyframes echo-progress-boot {
+  from {
+    background: color-mix(in oklab, var(--echo-lcd) 78%, var(--echo-cap));
+    box-shadow: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-progress[data-boot] .echo-progress__cell[data-on] {
+    animation: none;
+  }
+}

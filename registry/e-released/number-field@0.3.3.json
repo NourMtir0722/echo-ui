@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "name": "number-field",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "NumberField",
+  "description": "A machined readout between two molded step caps — and the label above it is a scrub handle you drag left and right to dial the value. Base UI owns typing, arrow keys, alt/shift step sizes, clamping, and form semantics. Scrubbing is what makes this worth wrapping instead of using a plain number input.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "gsap": "^3.13.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "roll",
+    "size"
+  ],
+  "files": [
+    {
+      "path": "number-field/number-field.css",
+      "sha256": "5abb87b2e43b7a5182d99e3b29cc461e33a5249657b04a091bd08d7d9c71fbb8",
+      "content": "/**\n * NumberField / Stepper. A machined LCD readout in a\n * recessed well, flanked by two molded step caps. The label above is the\n * scrub handle — it advertises that with a horizontal-resize cursor.\n * Composes var(--echo-*).\n */\n.echo-number-field {\n  /* One size scale (sm/md/lg): steppers and readout are the control height. */\n  --ctl-h: var(--echo-control-default);\n  --ctl-font: var(--echo-text-lg);\n  --ctl-radius: var(--echo-radius-lg);\n  --ctl-gap: var(--echo-space-5);\n  --nf-readout: 84px;\n  display: inline-grid;\n  gap: var(--echo-space-3);\n  /* Shrinks with its container rather than sizing it (two 44px steppers plus\n     the readout is wider than a 320px screen's column). */\n  min-width: 0;\n  max-width: 100%;\n}\n.echo-number-field[data-size=\"sm\"] {\n  --ctl-h: var(--echo-control-compact);\n  --ctl-font: var(--echo-text-md);\n  --ctl-radius: var(--echo-radius-md);\n  --ctl-gap: var(--echo-space-4);\n  --nf-readout: 64px;\n}\n.echo-number-field[data-size=\"lg\"] {\n  --ctl-h: var(--echo-control-large);\n  --ctl-font: var(--echo-text-xl);\n  --ctl-radius: var(--echo-radius-xl);\n  --ctl-gap: var(--echo-space-6);\n  --nf-readout: 108px;\n}\n\n/* The scrub handle. `cursor` is the whole affordance, so keep it. */\n.echo-number-field__scrub {\n  display: inline-flex;\n  width: fit-content;\n  cursor: ew-resize;\n  user-select: none;\n}\n\n.echo-number-field__label {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-semibold, 600);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n  cursor: inherit;\n}\n\n/*\n * One row on the control scale: two steppers and the value window, all one\n * default control tall, with real air between them. The gap used to be 4px,\n * and a focus ring drawn OUTSIDE the window ran straight into both steppers.\n */\n.echo-number-field__group {\n  display: inline-flex;\n  align-items: stretch;\n  height: var(--ctl-h);\n  gap: var(--ctl-gap);\n  min-width: 0;\n}\n\n/* Molded step caps — same top-lit plastic as every other control. */\n.echo-number-field__step {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: var(--ctl-h);\n  border: 0;\n  border-radius: var(--ctl-radius);\n  cursor: pointer;\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--ctl-font);\n  line-height: var(--echo-leading-none, 1);\n  color: var(--echo-text);\n  /*\n   * The HardwareButton neutral cap, stop for stop — the steppers were a\n   * lighter, flatter plastic of their own, so a NumberField beside a button\n   * looked like two products. A 3px side wall instead of the button's 4, as\n   * the steppers are smaller.\n   */\n  background: linear-gradient(\n    180deg,\n    var(--echo-cap-highlight) 0%,\n    var(--echo-cap) 40%,\n    var(--echo-cap) 62%,\n    var(--echo-cap-shadow) 100%\n  );\n  box-shadow:\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),\n    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),\n    0 calc(3px + 1px * var(--lift, 0) - 2px * var(--press, 0)) 0 var(--echo-seam),\n    0 calc(7px + 4px * var(--lift, 0) - 4px * var(--press, 0))\n      calc(12px + 6px * var(--lift, 0) - 6px * var(--press, 0))\n      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  /* The stepper's travel and rebound are useCapPhysics's (number-field.tsx):\n     the side wall shortens as it goes down, the shadow grows as it rises. */\n  will-change: transform;\n}\n\n.echo-number-field__step:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n\n.echo-number-field__step[disabled] {\n  opacity: 0.45;\n  cursor: default;\n}\n\n/* roll: the window holds the input and, while digits roll, draws them over\n   it in the input's own face. The input's text hides meanwhile; its caret\n   and its value (for assistive technology) stay. */\n.echo-number-field__window {\n  position: relative;\n  display: inline-flex;\n  min-width: 0;\n}\n.echo-number-field__roll {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 0 var(--echo-space-5);\n  overflow: hidden;\n  pointer-events: none;\n  white-space: pre;\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--ctl-font);\n  font-variant-numeric: tabular-nums;\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n  text-shadow: 0 0 8px color-mix(in oklab, var(--echo-lcd-glow) 45%, transparent);\n}\n.echo-number-field__roll[hidden] {\n  display: none;\n}\n.echo-number-field[data-rolling] .echo-number-field__input {\n  color: transparent;\n  text-shadow: none;\n  caret-color: var(--echo-accent-glow);\n}\n\n/* The readout: a dark screen well, tabular digits, emissive accent. It sinks\n   while focused (useWellMotion sets --well-depth and owns the transform). */\n.echo-number-field__input {\n  box-sizing: border-box;\n  /* The steppers keep their 44px targets; the readout gives up width first. */\n  width: var(--nf-readout);\n  min-width: 0;\n  padding: 0 var(--echo-space-5);\n  border: 0;\n  border-radius: var(--ctl-radius);\n  text-align: center;\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--ctl-font);\n  font-variant-numeric: tabular-nums;\n  /* Emissive LCD digits — the same lit accent as StatTile and LcdChip. */\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n  text-shadow: 0 0 8px color-mix(in oklab, var(--echo-lcd-glow) 45%, transparent);\n  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));\n  box-shadow:\n    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n/*\n * Focus lights the window's inner edge, like the Field — never a ring around\n * the outside. A text input is :focus-visible on every click, so the old outer\n * ring appeared the moment anyone typed, and at a 4px gap it fused the window\n * to both steppers.\n */\n.echo-number-field__input:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: -2px;\n  box-shadow:\n    /* The ring first, so the well's top shadow doesn't darken it. */\n    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),\n    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent);\n}\n\n.echo-number-field__input[disabled] {\n  opacity: 0.45;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-number-field__step {\n    transition: none;\n  }\n}\n\n/*\n * Coarse-pointer targets.\n *\n * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both\n * platform guidelines use — a fingertip rather than conformance. Gated on\n * `@media (pointer: coarse)`, so the desktop rendering does not move.\n *\n * Where a control's visual size is the design (a 24px checkbox, a 10px pip),\n * the target is grown with the same transparent pseudo-element as the 24px minimum,\n * not by growing the control.\n */\n@media (pointer: coarse) {\n  .echo-number-field__step {\n    min-width: 44px;\n  }\n\n  .echo-number-field__step,\n  .echo-number-field__input {\n    min-height: 44px;\n  }\n}\n\n/*\n * Forced colors (Windows High Contrast) drops the recessed well's gradient and\n * shadows, which is its whole edge: without a border an input, and above all\n * an empty one, isn't visible at all. System colors only, so focus still shows.\n */\n@media (forced-colors: active) {\n  .echo-number-field__input {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-number-field__step {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  /* Forced colors repaints the hidden input text, so the rolling copy would\n     sit on top of it: show the value only. */\n  .echo-number-field__roll {\n    display: none;\n  }\n}\n"
+    },
+    {
+      "path": "number-field/number-field.tsx",
+      "sha256": "6c7a5d02ec39a5e7058d2061f75cd8469867c95757b4e11d64be9de39bbb3ee0",
+      "content": "\"use client\";\n\n/**\n * NumberField / Stepper. Base UI NumberField\n * behavior — typing, arrow keys, alt/shift step sizes, clamping, form\n * semantics — skinned as a machined readout between two molded step caps.\n *\n * The label doubles as a SCRUB HANDLE: drag it left/right to dial the value.\n * The spec calls this out as \"very hardware-feeling\", and it is the reason\n * this component is worth wrapping rather than reaching for a plain input.\n *\n * Sound is driven from onValueChange and deduped per integer step, the same\n * way Slider does it — a scrub drag fires continuously, and playing a click\n * per event would machine-gun.\n *\n * With `roll`, a step rolls the digits (useRoll): each steps through the\n * ones in between, drawn over the input while it goes. Without it, the whole\n * number slides in the way it went.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport {\n  forwardRef,\n  useCallback,\n  useEffect,\n  useRef,\n  useState,\n  type MutableRefObject,\n  type ReactNode,\n} from \"react\";\nimport { NumberField as BaseNumberField } from \"@base-ui/react/number-field\";\nimport type { EchoNumberFieldChangeEvent, EchoTextInterop } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { timing, useCapPhysics, useReducedMotionRef, useWellMotion } from \"echo-ui-core/tactile\";\nimport gsap from \"gsap\";\nimport { useRoll } from \"../roll\";\nimport { useControlSize, type ControlSize } from \"../size\";\nimport \"./number-field.css\";\n\nexport interface NumberFieldProps extends EchoTextInterop {\n  /** Visible label; also the scrub handle and the input's accessible name. */\n  label: string;\n  value?: number;\n  defaultValue?: number;\n  onValueChange?: (\n    value: number | null,\n    eventDetails: EchoNumberFieldChangeEvent,\n  ) => void;\n  min?: number;\n  max?: number;\n  step?: number;\n  /** Step size while holding shift. Default 10. */\n  largeStep?: number;\n  /** Step size while holding alt. Default 0.1. */\n  smallStep?: number;\n  /** Accessible name for the decrement cap. Default \"Decrease\". */\n  decrementLabel?: string;\n  /** Accessible name for the increment cap. Default \"Increase\". */\n  incrementLabel?: string;\n  /**\n   * A step rolls the digits, each stepping through the ones in between,\n   * instead of sliding the whole number in. Typing never rolls.\n   */\n  roll?: boolean;\n  /**\n   * Height on the control scale: `sm` 32px, `md` 44px (default), `lg` 60px,\n   * the same as a Field or HardwareButton of that size. Defaults to the\n   * nearest SizeProvider's size.\n   */\n  size?: ControlSize;\n}\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref\n * lands on the INPUT, which is what a form library reads and focuses.\n */\nexport const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(function NumberField(\n  {\n    label,\n    onValueChange,\n    decrementLabel = \"Decrease\",\n    incrementLabel = \"Increase\",\n    roll = false,\n    size: ownSize,\n    autoFocus,\n    onBlur,\n    onFocus,\n    onKeyDown,\n    inputMode,\n    maxLength,\n    minLength,\n    pattern,\n    placeholder,\n    autoComplete,\n    ...props\n  },\n  ref,\n) {\n  const sound = useSoundOptional();\n  const size = useControlSize(ownSize);\n  // Seeded with the starting value, so the very first change can roll too.\n  const start = props.value ?? props.defaultValue;\n  const lastStep = useRef<number | null>(start == null ? null : Math.round(start));\n  const reduced = useReducedMotionRef();\n  const input = useRef<HTMLInputElement | null>(null);\n  // The readout is a typing well of its own (useWellMotion), like a code\n  // window: it sinks while focused and takes each digit as a strike.\n  const well = useWellMotion<HTMLInputElement>();\n  const setInput = useCallback(\n    (node: HTMLInputElement | null) => {\n      input.current = node;\n      well(node);\n      if (typeof ref === \"function\") ref(node);\n      else if (ref) (ref as MutableRefObject<HTMLInputElement | null>).current = node;\n    },\n    [ref, well],\n  );\n\n  // roll: what the input shows, read back after Base UI has formatted it\n  // (\"1,000\", not 1000), and whether the last change was typed. A typed\n  // change jumps; a step rolls from the old text to the new.\n  const [readout, setReadout] = useState(\"\");\n  const [typed, setTyped] = useState(true);\n  const readBack = useCallback(() => {\n    requestAnimationFrame(() => {\n      if (input.current) setReadout(input.current.value);\n    });\n  }, []);\n  const shown = useRoll(readout, { enabled: roll && !typed });\n  const rolling = roll && shown !== readout;\n  // A controlled value can change without a step; start from what's shown.\n  useEffect(() => {\n    if (roll) readBack();\n  }, [roll, readBack, props.value]);\n\n  const readoutInput = (\n    <BaseNumberField.Input\n      ref={setInput}\n      className=\"echo-number-field__input\"\n      aria-label={label}\n      /*\n       * Spread only when set. Base UI's Input brings its own `inputMode`\n       * and its own key handling for the steppers; an explicit `undefined`\n       * overrides them rather than leaving them alone.\n       */\n      {...(autoFocus ? { autoFocus } : {})}\n      {...(onBlur ? { onBlur } : {})}\n      {...(onFocus ? { onFocus } : {})}\n      {...(onKeyDown ? { onKeyDown } : {})}\n      {...(inputMode ? { inputMode } : {})}\n      {...(maxLength !== undefined ? { maxLength } : {})}\n      {...(minLength !== undefined ? { minLength } : {})}\n      {...(pattern ? { pattern } : {})}\n      {...(placeholder ? { placeholder } : {})}\n      {...(autoComplete ? { autoComplete } : {})}\n    />\n  );\n\n  return (\n    <BaseNumberField.Root\n      className=\"echo-number-field\"\n      data-size={size}\n      onValueChange={(value, eventDetails) => {\n        // One click per whole step, however the value arrived.\n        const step = value == null ? null : Math.round(value);\n        if (step !== lastStep.current) {\n          // The number rolls the way it went: up from below as it climbs,\n          // down from above as it falls. Not while typing — the text is the\n          // user's own there.\n          const el = input.current;\n          const was = lastStep.current;\n          if (el && step !== null && was !== null && eventDetails.reason !== \"input-change\" && !reduced.current && !roll) {\n            const dir = step > was ? 1 : -1;\n            // yPercent, not y: y is the well's own sink, and the two add up.\n            gsap.fromTo(el, { yPercent: 20 * dir, opacity: 0.35 }, { yPercent: 0, opacity: 1, ...timing(\"lift\"), overwrite: \"auto\" });\n          }\n          lastStep.current = step;\n          sound?.play(\"tap\");\n        }\n        if (roll) {\n          setTyped(eventDetails.reason === \"input-change\");\n          readBack();\n        }\n        onValueChange?.(value, eventDetails);\n      }}\n      data-rolling={rolling ? \"\" : undefined}\n      {...props}\n    >\n      <BaseNumberField.ScrubArea className=\"echo-number-field__scrub\">\n        <label className=\"echo-number-field__label\">{label}</label>\n        <BaseNumberField.ScrubAreaCursor />\n      </BaseNumberField.ScrubArea>\n\n      <BaseNumberField.Group className=\"echo-number-field__group\">\n        <Step part={BaseNumberField.Decrement} label={decrementLabel}>\n          −\n        </Step>\n        {roll ? (\n          <span className=\"echo-number-field__window\">\n            {readoutInput}\n            {/* The digits in between are drawn, not read: the input says the value. */}\n            <span className=\"echo-number-field__roll\" aria-hidden=\"true\" hidden={!rolling}>\n              {shown}\n            </span>\n          </span>\n        ) : (\n          readoutInput\n        )}\n        <Step part={BaseNumberField.Increment} label={incrementLabel}>\n          +\n        </Step>\n      </BaseNumberField.Group>\n    </BaseNumberField.Root>\n  );\n});\n\n/* A stepper is a molded cap: it rises on hover, travels onto its seam when\n   pressed and springs back (useCapPhysics), and holding it still repeats. */\nfunction Step({\n  part: Part,\n  label,\n  children,\n}: {\n  part: typeof BaseNumberField.Increment | typeof BaseNumberField.Decrement;\n  label: string;\n  children: ReactNode;\n}) {\n  const cap = useCapPhysics<HTMLButtonElement>({ travel: 2, tilt: 6 });\n  return (\n    <Part\n      ref={cap.ref}\n      className=\"echo-number-field__step\"\n      aria-label={label}\n      onPointerEnter={cap.handlers.onPointerEnter}\n      onPointerMove={cap.handlers.onPointerMove}\n      onPointerLeave={cap.handlers.onPointerLeave}\n      onPointerDown={cap.handlers.onPointerDown}\n      onPointerUp={cap.handlers.onPointerUp}\n      onPointerCancel={cap.handlers.onPointerCancel}\n      onKeyDown={cap.handlers.onKeyDown}\n      onKeyUp={cap.handlers.onKeyUp}\n      onBlur={cap.handlers.onBlur}\n    >\n      {children}\n    </Part>\n  );\n}\n"
+    },
+    {
+      "path": "number-field/index.ts",
+      "sha256": "19426f9ad59130d449f7ae9ee5308adb0a514cf86b1ff833b0b06908062cea63",
+      "content": "export { NumberField } from \"./number-field\";\nexport type { NumberFieldProps } from \"./number-field\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "lift"
+  ],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**One `size` on everything with a height.** `Field`, `Select`, `NumberField`, `OtpField` and `Segmented` take `size=\"sm\" | \"md\" | \"lg\"` (32, 44 or 60px), matching `HardwareButton`, and all of them read a `SizeProvider` around them. `md` is exactly what they were. `Avatar` gains `xs` (inline with a line of text) and `xl` (a profile header)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Digits that roll: `roll` on `LcdChip`, `StatTile` and `NumberField`, and the `useRoll` hook under them.** Pass `roll` and a new value steps each digit through the ones in between, all together, fast when it's far and slowest on the last step: 18 → 21 shows 29, 20, 21. A falling number rolls back, 99 → 100 turns the nines over and puts a 1 in front, and anything that isn't a digit (a comma, a colon) swaps at once. The digits in between are drawn but hidden from assistive technology, so the value is still read once, as it is; under reduced motion it doesn't roll. On `NumberField` it replaces the slide a step used to give the whole number, and typing never rolls. It's off by default, so nothing changes until you pass it. `SplitFlap` now turns on the same drum (`echo-roll`, which each of these installs with it); it looks and sounds the same."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: Echo's public API names Echo's own types, not Base UI's.** Eleven items put a `@base-ui/react` type straight into a signature you write against — `BaseSwitch.Root.ChangeEventDetails` on a change handler, `ComponentProps<typeof BaseSelect.Portal>[\"container\"]` on a portal target. That made Echo's API a downstream of Base UI's internals: an upstream rename would have been a breaking Echo release triggered by somebody else's refactor."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Props the docs did not list.** `HardwareButton` (`icon`, `trailingIcon`, `target`, `rel`), `Modal` (`trigger`, `title`, `description`, `footer`), `Popover` (`trigger`, `title`), `Tooltip` (`trigger`), `Slider` (`value`, `onValueChange`, `aria-label`, `aria-labelledby`), `NumberField` (`onValueChange`), `SoundProvider` (`backend`) and `Textured` (`dither`, `noise`) now appear in the prop tables, `llms-full.txt` and the MCP server."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

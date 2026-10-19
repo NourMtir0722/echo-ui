@@ -1,0 +1,111 @@
+/**
+ * FilterTray. One long well, as ButtonGroup's: the pads give up their own
+ * wells and sit on its floor, names engraved under them, the action at the
+ * far end. Composes var(--echo-*) — no hex literals; the only fixed values
+ * are the single-key-light occlusion model.
+ */
+.echo-filter-tray {
+  --ft-well: var(--echo-space-3, 6px);
+  /* A pad's cap: the control height less the well it would have had. */
+  --ft-cap: calc(var(--echo-control-large, 60px) - 2 * var(--echo-space-2, 4px));
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--echo-space-6);
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: var(--ft-well) var(--ft-well) var(--echo-space-2);
+  /* A pad, its gap and two lines of name, so wrapping names never move it. */
+  min-block-size: calc(
+    var(--ft-well) + var(--ft-cap) + var(--echo-space-4, 8px) + 2 * var(--echo-leading-tight, 1.25) * var(--echo-text-3xs, 0.625rem) +
+      var(--echo-space-2, 4px)
+  );
+  /* The well's corner follows a pad's, a well's width out. */
+  --ft-radius: calc(var(--echo-radius-xl) + var(--ft-well));
+  border-radius: var(--ft-radius);
+  box-shadow:
+    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/* The pads and the action sit on the tray's floor, not in wells of their own. */
+.echo-filter-tray .echo-hw__well {
+  padding: 0;
+  box-shadow: none;
+}
+.echo-filter-tray[data-size="md"] {
+  --ft-cap: calc(var(--echo-control-default, 44px) - 2 * var(--echo-space-2, 4px));
+}
+.echo-filter-tray[data-size="sm"] {
+  --ft-cap: calc(var(--echo-control-compact, 32px) - 2 * var(--echo-space-1, 2px));
+}
+/* Icons read at a pad's size. */
+.echo-filter-tray[data-size="lg"] .echo-hw {
+  --hw-icon: var(--echo-icon-xl, 28px);
+}
+.echo-filter-tray[data-size="md"] .echo-hw {
+  --hw-icon: var(--echo-icon-lg, 20px);
+}
+
+/* A pad's name wraps under it rather than pushing its neighbours away. */
+.echo-filter-tray .echo-hw__caption {
+  inline-size: calc(var(--hw-h) + var(--echo-space-6));
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  line-height: var(--echo-leading-tight, 1.25);
+}
+
+.echo-filter-tray > .echo-morph {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  justify-items: stretch;
+}
+.echo-filter-tray .echo-morph__row {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+/* The action is always the last key: it keeps to the tray's far end. */
+.echo-filter-tray .echo-morph__row > .echo-hw:last-child {
+  margin-inline-start: auto;
+}
+
+/*
+ * Folded: what's on, engraved on the floor beside the one key. Laid over the
+ * floor rather than taking room in it, so the tray keeps its size and the key
+ * lands where it rests while the pads fold into it.
+ */
+.echo-filter-tray__summary {
+  position: absolute;
+  inset-block-start: calc(var(--ft-well) + var(--ft-cap) / 2);
+  inset-inline-start: calc(var(--ft-well) + var(--echo-space-5));
+  inset-inline-end: calc(50% - var(--echo-space-8));
+  translate: 0 -50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  pointer-events: none;
+}
+
+/* Once the pads have folded into the key, the tray settles to one row. */
+.echo-filter-tray[data-folded] {
+  min-block-size: calc(2 * var(--ft-well) + var(--ft-cap));
+  transition: min-block-size var(--echo-duration-sweep) var(--echo-ease-glide) var(--echo-duration-pop);
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-filter-tray[data-folded] {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .echo-filter-tray {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+}

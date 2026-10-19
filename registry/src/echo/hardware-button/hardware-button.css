@@ -1,0 +1,495 @@
+/**
+ * HardwareButton. A molded cap in a recessed well with
+ * real press travel. Every color composes var(--echo-*) role variables (from
+ * createEchoTheme) — no hex literals, so retheming by seed relights the plastic.
+ * Transform is owned by useCapPhysics/GSAP; this file never sets `transform` on the
+ * cap. White/black alphas are the single-key-light model, not palette.
+ */
+
+.echo-hw {
+  /*
+   * An inline-layout root grows to fit its content, so a long label
+   * pushed the container open rather than the component adapting. Capping it
+   * at the container is what lets the truncation and wrapping below take
+   * effect at all.
+   */
+  max-width: 100%;
+  /*
+   * One size scale: the button's OUTER height (well included) is the control
+   * height, so a button and a field of the same size line up in a row. The
+   * cap is what's left inside the well. Both already carry density.
+   */
+  --hw-well: var(--echo-space-2, 4px);
+  --hw-outer: var(--echo-control-default, 44px);
+  --hw-h: calc(var(--hw-outer) - 2 * var(--hw-well));
+  /* The well's corner follows the cap's, a well's width out. At roundness 1 (--echo-cap-round) the cap is a pill. */
+  --hw-well-radius: calc(var(--hw-radius) + var(--hw-well) - 1px);
+  --hw-px: 18px;
+  --hw-font: 12px;
+  --hw-radius: max(calc(11px * var(--echo-radius-scale, 1)), calc(var(--echo-cap-round, 0) * 999px));
+  --hw-gap: var(--echo-space-4);
+  --hw-icon: var(--echo-icon-md, 16px);
+
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--echo-space-4);
+}
+
+/* 32px outer: a 2px well, or the cap would be too small for a press to read. */
+.echo-hw[data-size="sm"] {
+  --hw-well: var(--echo-space-1, 2px);
+  --hw-outer: var(--echo-control-compact, 32px);
+  --hw-px: 12px;
+  --hw-font: 11px;
+  --hw-radius: max(calc(8px * var(--echo-radius-scale, 1)), calc(var(--echo-cap-round, 0) * 999px));
+  --hw-gap: var(--echo-space-3);
+  --hw-icon: var(--echo-icon-sm, 14px);
+}
+/* 60px outer: the one action a screen is built around. */
+.echo-hw[data-size="lg"] {
+  --hw-outer: var(--echo-control-large, 60px);
+  --hw-px: 22px;
+  --hw-font: 13px;
+  --hw-radius: max(calc(13px * var(--echo-radius-scale, 1)), calc(var(--echo-cap-round, 0) * 999px));
+  --hw-gap: var(--echo-space-5);
+  --hw-icon: var(--echo-icon-md, 16px);
+}
+
+/* fullWidth: the well and the cap take the row they're in. */
+.echo-hw[data-full-width] {
+  display: flex;
+  align-items: stretch;
+  inline-size: 100%;
+}
+.echo-hw[data-full-width] .echo-hw__well,
+.echo-hw[data-full-width] .echo-hw__cap {
+  box-sizing: border-box;
+  inline-size: 100%;
+}
+
+/* The recessed well the cap seats in. */
+.echo-hw__well {
+  /* The well sits between the capped root and the cap, so without
+     this the cap is sized by its label and the cap's own max-width never
+     resolves against anything smaller. */
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: var(--hw-well);
+  border-radius: var(--hw-well-radius);
+  /*
+   * The well recipe without its drawn line: on a drawn device a key isn't
+   * drawn sitting in a bed, it stands on its own ink edge (the board's key).
+   * On a molded device this is the well exactly.
+   */
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));
+}
+
+/* The cap itself — the button element. */
+.echo-hw__cap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hw-gap);
+  height: var(--hw-h);
+  /* Its padding counts toward the max-width, as a <button>'s does, so a link
+     cap (an <a>) stays inside its well too. */
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0 var(--hw-px);
+  border: 0;
+  border-radius: var(--hw-radius);
+  /* Not overflow: hidden. The glint, fill and dots clip themselves to the
+     cap's corners, so the hit area below can reach past the cap. */
+  cursor: pointer;
+  user-select: none;
+  color: var(--echo-text);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--hw-font);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: uppercase;
+  will-change: transform;
+  /* The cap is also an <a> when given `href`. */
+  text-decoration: none;
+  /*
+   * The cap's light follows its height. useCapPhysics drives --lift (hovered,
+   * raised toward the key light) and --press (sunk onto the seam): the seam
+   * shortens as the cap travels down it, and the drop shadow grows and softens
+   * as the cap rises. 4px of seam against 3px of travel, so a pressed cap
+   * still sits on a sliver of its own side.
+   */
+  --hw-seam: calc(4px + 1px * var(--lift, 0) - 3px * var(--press, 0));
+  --hw-drop-y: calc(9px + 5px * var(--lift, 0) - 6px * var(--press, 0));
+  --hw-drop-blur: calc(14px + 10px * var(--lift, 0) - 9px * var(--press, 0) - 3px * var(--load, 0));
+}
+
+/*
+ * The hit area is the button's full height, well included: the cap is the
+ * outer height less its well, and a press on the well's rim above or below
+ * still lands. It keeps sm at 32px (28px at compact density) instead of its
+ * cap's 28px (24.5px), and md at 44px, a finger's width, instead of 36px.
+ * Height only: a cap is always wider than it is tall, and reaching past its
+ * sides would push its own box open.
+ */
+.echo-hw__cap::after {
+  content: "";
+  position: absolute;
+  inset-block: calc(-1 * var(--hw-well));
+  inset-inline: 0;
+}
+
+.echo-hw__cap[data-icon-only="true"] {
+  padding: 0;
+  width: var(--hw-h);
+}
+
+/* Neutral molded plastic. */
+.echo-hw__cap[data-variant="neutral"] {
+  background:
+    /* Soft molding (a Scope's): a pillow of light across the top. Transparent until --echo-pillow is set. */
+    radial-gradient(115% 85% at 32% 0%, color-mix(in oklab, var(--echo-paper-stock, var(--echo-text)) calc(var(--echo-pillow, 0) * 34%), transparent) 0%, transparent 72%),
+    linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    var(--echo-cap) 40%,
+    var(--echo-cap) 62%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    /* Soft molding: the fuller shade under a puffed cap. Nothing until --echo-pillow is set. */
+    inset 0 calc(-10px * var(--echo-pillow, 0)) calc(16px * var(--echo-pillow, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.42 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    /* Drawn: the outline, and the seam as the ink edge the key stands on, as wide as the outline. */
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    /* Drawn, a neutral key stands half as high as the primary one. */
+    0 calc(var(--hw-seam) * (1 - 0.5 * var(--echo-drawn, 0))) 0 var(--echo-line-width, 0px) var(--echo-seam),
+    var(--hw-light-x, 0px) calc(var(--hw-drop-y) + var(--hw-light-y, 0px)) var(--hw-drop-blur)
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+/*
+ * Primary — the one place hardware turns accent.
+ *
+ * The three stops are dedicated roles, not raw ramp stops. The ramp
+ * is a material envelope and knows nothing about what sits on top of it; these
+ * are the same envelope slid down until the cap's label, `--echo-primary-cap-ink`
+ * (the text on a dark device, near-white on a light one), clears AA at every
+ * point of the gradient, on every seed. Do not swap them back to `--echo-accent-2`
+ * / `--echo-accent-glow` / `--echo-accent-pressed`: that is the 1.74:1 label
+ * this ticket fixed, and `echo-theme.test.ts` will fail if the pairing drifts.
+ */
+/*
+ * Drawn, the primary is the paper key that stands highest, outlined in the
+ * ink, the way a spec sheet draws its CTA: there's no light to light a cap,
+ * and the accent is left to mark what's on.
+ */
+.echo-hw__cap[data-variant="primary"] {
+  color: var(--echo-drawn-key-ink, var(--echo-primary-cap-ink, var(--echo-text)));
+  background: var(--echo-drawn-key,
+    /*
+     * Soft molding (a Scope's): a pillow of light across the top, transparent until --echo-pillow is
+     * set. As bright as the neutral cap's, but it fades out sooner: reaching as far, the light lay
+     * behind the tops of the label's letters on the lit plastic, and they fell to 4.2:1.
+     */
+    radial-gradient(115% 85% at 32% 0%, color-mix(in oklab, var(--echo-paper-stock, var(--echo-text)) calc(var(--echo-pillow, 0) * 34%), transparent) 0%, transparent 56%),
+    linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  ));
+  box-shadow:
+    /* Soft molding: the fuller shade under a puffed cap. Nothing until --echo-pillow is set. */
+    inset 0 calc(-10px * var(--echo-pillow, 0)) calc(16px * var(--echo-pillow, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.42 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    inset 0 -2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    /* Drawn, the key stands on an ink edge twice as deep as a neutral one's. */
+    0 calc(var(--hw-seam) + 4px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-lit-edge, var(--echo-accent-6)),
+    /* The lit cap's halo. A drawing has no light: on a drawn device it collapses under the cap. */
+    calc(var(--hw-light-x, 0px) * (1 - var(--echo-drawn, 0))) calc((var(--hw-drop-y) - 1px + var(--hw-light-y, 0px)) * (1 - var(--echo-drawn, 0))) calc((var(--hw-drop-blur) + 6px) * (1 - var(--echo-drawn, 0)))
+      color-mix(in oklch, var(--echo-accent-4) 40%, transparent);
+}
+
+/* Ghost — flat, low-emphasis; no well, no cap material. */
+.echo-hw[data-variant="ghost"] .echo-hw__well {
+  padding: 0;
+  box-shadow: none;
+}
+.echo-hw__cap[data-variant="ghost"] {
+  background: transparent;
+  box-shadow: none;
+  color: var(--echo-text);
+}
+/* Drawn, a low-emphasis action is its label underlined in the ink. On the text
+   itself: the cap and its content are flex boxes, and an underline set on a
+   flex box never reaches its items. */
+.echo-hw__cap[data-variant="ghost"] .echo-hw__content > :not(.echo-hw__icon) {
+  text-decoration-line: var(--echo-drawn-decoration, none);
+  text-decoration-thickness: var(--echo-line-width, 0px);
+  text-underline-offset: 0.3em;
+  /* The label clips what overflows it, so it can truncate: room under
+     the text for the line, on a drawn device only. */
+  padding-block-end: calc(0.45em * var(--echo-drawn, 0));
+}
+@media (hover: hover) {
+  .echo-hw__cap[data-variant="ghost"]:hover {
+    background: color-mix(in oklab, var(--echo-text) 8%, transparent);
+  }
+}
+
+/*
+ * Impact: the bottom-out lands in the device. useCapPhysics dips the well
+ * and runs --impact from 1 to 0; the ring is the hit spreading out to the
+ * seam, widening as it fades.
+ */
+.echo-hw__well[data-impact] {
+  position: relative;
+}
+.echo-hw__well[data-impact]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px var(--echo-accent-glow),
+    0 0 calc(10px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 55%, transparent);
+  opacity: calc(0.85 * var(--impact, 0));
+  /* At rest it sits exactly on the well (never outside it, where it would
+     widen the page); at the hit it starts a little inside and spreads out. */
+  transform: scale(calc(1 - 0.06 * var(--impact, 0)));
+}
+
+/* Focus-visible ring — accent glow, keyboard only. */
+.echo-hw__cap:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)),
+    0 0 calc(12px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-ink, var(--echo-accent-glow)) 60%, transparent);
+}
+
+/* Disabled / loading. */
+.echo-hw__cap:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.echo-hw__cap[data-loading="true"] {
+  cursor: progress;
+}
+
+/* Engraved (debossed) label — carved into the cap. */
+.echo-hw__cap[data-engraved="true"] {
+  color: var(--echo-seam);
+  text-shadow:
+    0 -1px 1px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent),
+    0 1px 0.5px rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1)));
+}
+.echo-hw__cap[data-engraved="true"][data-variant="primary"] {
+  color: var(--echo-accent-6);
+}
+
+.echo-hw__content {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: inline-flex;
+  align-items: center;
+  /*
+   * HardwareButton is the sharp case: fixed heights (caps of 28/36/52px),
+   * no `min-width: 0`, no `text-overflow`, and `letter-spacing: 0.12em` on
+   * uppercase text, which makes a long label wider than it looks. The cap
+   * cannot grow taller, so a label that does not fit has to truncate.
+   */
+  min-width: 0;
+  gap: var(--hw-gap);
+}
+
+/* The label truncates. The icon slot is not a label: nothing in it is clipped. */
+.echo-hw__content > span:not(.echo-hw__icon) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Loading: keep content in the a11y tree but hide it visually behind the dots. */
+.echo-hw__content[data-hidden="true"] {
+  opacity: 0;
+}
+/* Centred, so a glyph taller than the slot (a key's digit) overhangs it evenly. */
+.echo-hw__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--hw-icon);
+  height: var(--hw-icon);
+}
+
+/*
+ * Specular highlight — the key light on the glossy cap. It comes up as the cap
+ * rises (--lift) and sits where the pointer is (--mx/--my, from
+ * useCapPhysics), so moving across the cap moves the reflection with you.
+ * Parked at the top centre until a pointer arrives.
+ */
+.echo-hw__glint {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: var(--echo-z-base, 0);
+  background: radial-gradient(
+    circle at var(--mx, 50%) var(--my, 0%),
+    rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))) 0%,
+    rgb(255 255 255 / calc(0.08 * var(--echo-gloss, 1))) 35%,
+    transparent 70%
+  );
+  /* Held past the click (--load), the cap sinks out of the light. */
+  opacity: calc(var(--lift, 0) * (1 - 0.6 * var(--press, 0)) * (1 - 0.5 * var(--load, 0)));
+  pointer-events: none;
+}
+.echo-hw__cap:disabled .echo-hw__glint {
+  opacity: 0;
+}
+
+/*
+ * Fill: the primary plastic poured into the cap from the start edge, up to
+ * --hw-fill. It sits under the label and the glint, so the label keeps the
+ * contrast it has on either plastic. The pour is that plastic on a dark
+ * device; on a light one it's the accent's pale stops, which the neutral
+ * cap's dark label reads on too.
+ */
+.echo-hw__fill {
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-base, 0);
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    var(--echo-pour-top, var(--echo-primary-cap-top)) 0%,
+    var(--echo-pour-mid, var(--echo-primary-cap-mid)) 45%,
+    var(--echo-pour-base, var(--echo-primary-cap-base)) 100%
+  );
+  clip-path: inset(0 calc((1 - var(--hw-fill, 0)) * 100%) 0 0);
+}
+.echo-hw__fill:dir(rtl) {
+  clip-path: inset(0 0 0 calc((1 - var(--hw-fill, 0)) * 100%));
+}
+
+/* Loading dots — overlaid, centered above the (hidden) content. */
+.echo-hw__dots {
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-top, 2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--echo-space-3);
+}
+.echo-hw__dots > i {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--echo-radius-full);
+  background: currentColor;
+  animation: echo-hw-pulse 1s infinite ease-in-out;
+}
+.echo-hw__dots > i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.echo-hw__dots > i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes echo-hw-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Caption under the button. */
+.echo-hw__caption {
+  /* It wraps rather than setting the button's width, which it did at
+     a doubled text size. */
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-semibold, 600);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  text-shadow: 0 1px 0 color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+/* Reduced-motion guard: no dot bounce. The cap's travel and the impact are
+   dropped in useCapPhysics, which still sets --lift and --press so the light
+   answers. */
+@media (prefers-reduced-motion: reduce) {
+  .echo-hw__dots > i {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/*
+ * Coarse-pointer target. `sm` is 32px outer, past 2.5.8's 24px but under
+ * the 44px a finger wants, so on a touch screen it grows to 44px outer. Only
+ * `sm` moves; `md` and `lg` already clear it.
+ */
+@media (pointer: coarse) {
+  .echo-hw[data-size="sm"] {
+    --hw-outer: 44px;
+  }
+  /* A square icon cap is as narrow as it is tall, so its hit area also
+     reaches sideways to 44px. A declared pad, not content overflow. */
+  .echo-hw__cap[data-icon-only="true"] {
+    --echo-hit-area: 44px;
+  }
+  .echo-hw__cap[data-icon-only="true"]::after {
+    inset-inline: min(0px, calc((var(--hw-h) - 44px) / 2));
+  }
+  /* A labelled cap is as wide as its label, and a short one ("$5", "OK")
+     would come out narrower than a finger: it's held to 44px too. */
+  .echo-hw[data-size="sm"] .echo-hw__cap:not([data-icon-only="true"]) {
+    min-inline-size: 44px;
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the cap's gradient and shadows,
+ * which is its whole edge. A system-color border keeps the button a button.
+ */
+@media (forced-colors: active) {
+  .echo-hw__well[data-impact]::after {
+    display: none;
+  }
+  .echo-hw__cap {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  /* The dots are painted with background: currentColor, which forced colors
+     resets to Canvas; a system color keeps the loading state visible. */
+  .echo-hw__dots > i {
+    background: ButtonText;
+    opacity: 1;
+  }
+  /* Loading shares the disabled cap's 45% opacity, which forced colors keeps:
+     the dots came out at about 30% strength. Here they read as working. */
+  .echo-hw__cap[data-loading="true"] {
+    opacity: 1;
+  }
+}

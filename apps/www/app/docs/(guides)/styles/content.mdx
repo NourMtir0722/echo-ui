@@ -1,0 +1,147 @@
+# Styles
+
+A style is a look your product wears on top of Echo. It changes the vocabulary: the colours, the
+type, how round and how dense the device is, what its plastic feels like, and the rules an agent
+builds screens by. It never changes the grammar: one key light, what each material is for, state in
+words and shape, motion as physics, sound as feedback, and the accessibility floor. Two products in
+two styles look like two devices from the same maker, not two skins on one.
+
+## Dark or light
+
+The chassis decides. A dark chassis makes a device with lit screens; a pale one makes a light
+device, like a white calculator, with screens of paper glass printed in ink. There's no mode to
+switch: a style carries its chassis, so it carries its device. [Theming](/docs/theming) says how
+each is derived.
+
+## Where styles come from
+
+Styles live in your own library, `~/Documents/styles` (or wherever `ECHO_STYLES_DIR` points). It's
+yours and private: a style is your taste, reused across products, and nothing in the library goes
+into a project unless you wear it. Echo publishes a library of its own: Echo's own style, `echo`,
+and **Drafting Index**, `drafting-index`, a light device drawn in one black ink, hollow until it's
+on. You can wear either without a board.
+
+Each of your styles is a folder:
+
+| File | What it is |
+| --- | --- |
+| `<name>.md` | The foundation: what the style is made of, the rules underneath it, where it fits, and how Echo wears it. |
+| `style.json` | What Echo applies: its settings, its rules and decisions for the agent, what it refused, and what you kept of what the slop police bans. |
+| `assets/` | The evidence: each reference, its sampled colours, and magnified details. |
+
+## From a moodboard
+
+`init` writes Echo's Design Eye into your project, a skill your agent uses. Save your moodboard as a
+PNG or JPEG, and ask your agent to read it. It asks what the product is for, if the project doesn't
+already say; groups the board by visual logic; samples each reference's real colours with
+`style sample`; reads its type, its buttons, and its surfaces and colour as three systems; asks you,
+in one message, what the board can't settle, each with the answer it suggests (the colour, counted
+in tiles; a tile that doesn't fit; which part is the main action); writes one foundation and one
+`style.json` per style it finds into your library, with the decisions every
+screen keeps (how something is made important, what the main action looks like, how the product
+talks); and checks each with `style check`. A tell on the board itself (a sparkle for "AI", a strip of
+round-number stats) is left out of the style, and named. A board drawn in line, with outlined parts
+that still look pressable, gets `render: drawn`: Echo's parts outlined in the ink instead of molded
+and lit.
+
+A foundation you wrote before Echo, with no `style.json`, doesn't need its board read again: Design
+Eye writes its Echo part from the document.
+
+## Choosing one
+
+Echo's Style Fit, the next skill `init` writes, picks the style a product wears. Ask your agent which
+style fits. It works out who the product is for, places it on the seven axes styles are placed on
+(warmth, volume, density, formality, era, craft, ornament) with how far a style may drift on each,
+and has `style fit` measure every style in your library and Echo's against that. It reads the best of
+them, argues for one in a decision it saves to your library, and wears it.
+
+## Wearing one
+
+```sh
+npx echo-ui-cli style use <name>
+```
+
+`style use` writes the style's settings to `echo.json` and `echo-theme.css`, says what the theme
+corrected for contrast and which fonts to get, and puts the style's rules in `DESIGN.md`, so every
+agent working on the project keeps to them. What Style Fit adapted for this product goes in
+`DESIGN.md` too, beside what the product is for. The foundation and the board stay in your library.
+When you know the style from the start, `init --style <name>` sets the project up already wearing it.
+
+## The slop police
+
+Some combinations read as made by AI the moment they appear: a cream ground with a terracotta
+accent; near-black with one acid green; indigo on white in a stock sans; cream, brass and a serif for
+anything "premium"; one stock face for everything. Each ingredient is fine on its own. Together,
+they're what a model reaches for when nobody decided.
+
+`style check` stops a style whose own settings make one of these pairings, names the ingredients, and
+asks the question for you. `style use` won't wear it, and `style fit` marks it on the list. You can
+keep one on purpose: your reason goes in the style's `keeps`, and it's never asked again. Your agent
+can't keep one for you; it asks. In the code, `check` looks for the same kind of thing around Echo's
+parts: gradient text, an emoji as an icon, the sparkle for AI, "Get started", a stand-in name or
+photo, a stripe down one edge of a card, spaced capitals made by hand. What your style kept isn't
+flagged; a stand-in name or photo always is.
+
+## Changing one setting
+
+```sh
+npx echo-ui-cli style set radius 0.8 finish 0.7
+```
+
+`style set` moves one setting, or a few, in this project only: rounder, glossier, denser, another
+accent or typeface. It checks every value before it writes anything, writes the theme and
+`DESIGN.md` again, and prints the line that puts it back. The style stays on, marked with what
+moved, and `style use` puts it back whole. Your library isn't touched. `style set` alone lists
+where each setting is, and `default` gives one back to Echo. A whole new look is a new style, not a
+pile of settings.
+
+## Where a look lives
+
+A project's look is in three files, and one of them is the source:
+
+| File | What it holds | Written by |
+| --- | --- | --- |
+| `echo.json` | **The source.** The seed (colours, shape, type), and the style it wears: its rules, decisions, fonts and what it refused, with what `style set` has moved since. | `init --seed`, `init --style`, `style use`, `style set` |
+| `echo-theme.css` | The theme, rendered from `echo.json`'s seed as plain CSS. | The same commands, every time the seed moves |
+| `DESIGN.md` | The look in Echo's terms for an agent, the style's rules beside it, stamped with the CLI version and the seed it was written from. | The same commands; `add` and `update` keep it current |
+
+So change the look with a command, never by editing the theme by hand: `style set` for one
+setting, `style use` for a whole style. Each writes all three, from the one seed. `check` says when
+`DESIGN.md` was written by another version or from another seed.
+
+A teammate who clones the project gets all of it: the seed, the style's rules and `DESIGN.md` are
+in the repository, so their agent builds in the same look. What stays on your machine is the
+style's foundation and its board, in your library: needed to read the style again or wear it in
+another product, not to build this one.
+
+Two places hand out the same look without a terminal. The [theme generator](/generator)
+downloads a `DESIGN.md` for a seed, and the MCP server's `wear_style` gives a style's theme CSS and
+`DESIGN.md` for a project with no terminal. Both open by telling an agent that does have one to run
+`init` instead, so the project ends up with all three files.
+
+## What a style can't do
+
+- **Move the grammar.** Parts that can't be pressed, like flat cards standing in for buttons,
+  aren't Echo: a board drawn in line still gets keys that travel, as a drawn device
+  ([`render: drawn`](/docs/theming#molded-or-drawn)), and one that wants glass or flat paint gets
+  the closest molded finish. A style that wants a second accent for errors keeps state in words and
+  shape. The foundation says what it refused and what it got instead.
+- **Keep its exact accent, on a molded device.** Every accent there is held to one lightness, so a
+  lit cap reads the same in every style: an acid yellow comes out olive. `style check` says when it
+  moves. A drawn device keeps the accent as it is, as the flat fill for what's on.
+- **Go past Echo's type scale.** It stops at the display step, 40px. Display type the size of the
+  page isn't in it; a loud style is loud through weight and its accent.
+- **Put a dark screen on a light body**, or a pale one on a dark body: one text colour can't be
+  readable on both.
+
+## The commands
+
+| Command | What it does |
+| --- | --- |
+| `style list` | Echo's styles and yours, with the device each makes. |
+| `style show <name>` | One style in full, and where its foundation is. |
+| `style fit --profile "W4 V2 D1 F2 E3 C3 O3"` | Every style, measured against a product's place on the seven axes. `--tolerance` sets how far each may drift; 0 locks an axis. |
+| `style use <name>` | Wears a style. |
+| `style set <setting> <value> …` | Moves one setting of this project's seed, or several; alone, it lists them. |
+| `style check <folder>` | Whether a `style.json` is one Echo can apply, which device it makes, what contrast corrects, what the slop police stops, and what the style leaves undecided. |
+| `style sample <image> --out <folder>` | A reference's real colours and magnified details: Design Eye's evidence. |

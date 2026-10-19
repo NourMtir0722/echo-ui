@@ -1,0 +1,96 @@
+/**
+ * NowPlaying. A screen well with the track and the time, a Slider to scrub
+ * along, and the transport keys in one ButtonGroup under it. Composes
+ * var(--echo-*) — no hex literals; the only fixed values are the key light.
+ */
+.echo-now-playing {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-8);
+  inline-size: min(100%, 360px);
+  min-inline-size: 0;
+}
+.echo-now-playing__screen {
+  display: grid;
+  gap: var(--echo-space-5);
+  box-sizing: border-box;
+  inline-size: 100%;
+  padding: var(--echo-space-7) var(--echo-space-8) var(--echo-space-8);
+  border-radius: var(--echo-radius-xl);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow: var(
+    --echo-shadow-well-deep,
+    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.9 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+.echo-now-playing__source {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-now-playing__track {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-6);
+  min-inline-size: 0;
+}
+.echo-now-playing__art {
+  flex: none;
+  inline-size: calc(var(--echo-control-large, 60px) - var(--echo-space-4));
+  block-size: calc(var(--echo-control-large, 60px) - var(--echo-space-4));
+  overflow: hidden;
+  border-radius: var(--echo-radius-md);
+}
+.echo-now-playing__art > * {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.echo-now-playing__names {
+  display: grid;
+  gap: var(--echo-space-1);
+  min-inline-size: 0;
+}
+.echo-now-playing__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-lg);
+  font-weight: var(--echo-weight-semibold, 600);
+  line-height: var(--echo-leading-tight, 1.25);
+  color: var(--echo-text);
+}
+.echo-now-playing__artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+.echo-now-playing__time {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+}
+.echo-now-playing__live {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+}
+
+@media (forced-colors: active) {
+  .echo-now-playing__screen {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+}

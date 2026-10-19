@@ -1,0 +1,236 @@
+/**
+ * Steps. Stations on a groove, in the controls'
+ * own language (2026-09-18): upcoming is an empty hole (the radio unchosen),
+ * current is the hole with a lit pip (the radio chosen), done is a lit cap
+ * with a tick (the checkbox checked). Three states, three SHAPES, so the
+ * state never rests on colour. Composes var(--echo-*).
+ */
+/*
+ * As a grid or flex item it would floor at its content width; the list inside
+ * declares its own scrolling, so the root is free to shrink with its container.
+ */
+.echo-steps {
+  min-width: 0;
+}
+
+.echo-steps__list {
+  display: flex;
+  align-items: flex-start;
+  /*
+   * A stepper is one row, like the segmented control (see segmented.css): when
+   * it runs out of room it scrolls rather than wrapping into a shape that no
+   * longer reads as one sequence. Every step stays reachable, and the arrow
+   * keys scroll the focused one into view.
+   */
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+}
+
+.echo-steps__list::-webkit-scrollbar {
+  display: none;
+}
+
+.echo-steps__step {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--echo-space-4);
+  min-width: 0;
+  padding: 0 var(--echo-space-4);
+  text-align: center;
+}
+
+/*
+ * The wire between stations — a recessed groove that STOPS short of each
+ * marker. It used to run centre to centre, under both markers, and showed
+ * through their insets as a line cutting the pips.
+ *
+ * Markers are 22px; the wire leaves a 6px gap either side: it starts at the
+ * previous marker's edge (−50% + 11px + 6px) and ends at this one's
+ * (50% + 11px + 6px), both measured from this step's centre.
+ */
+.echo-steps__step:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  inset-inline-start: calc(-50% + 17px);
+  inset-inline-end: calc(50% + 17px);
+  height: 2px;
+  border-radius: var(--echo-radius-full);
+  background: color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black));
+  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));
+}
+
+/* A finished stretch is lit — the same accent as everything lit. The light
+   runs along the wire when a step is reached, from the step behind it. */
+.echo-steps__step[data-state="complete"]::before,
+.echo-steps__step[data-state="current"]::before {
+  background:
+    linear-gradient(var(--echo-primary-cap-mid), var(--echo-primary-cap-mid)) no-repeat left / 100% 100%,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black));
+  box-shadow: none;
+  animation: echo-steps-wire var(--echo-duration-sweep) var(--echo-ease-sweep) both;
+}
+.echo-steps__step[data-state="complete"]:dir(rtl)::before,
+.echo-steps__step[data-state="current"]:dir(rtl)::before {
+  background-position: right;
+}
+@keyframes echo-steps-wire {
+  from {
+    background-size: 0% 100%, auto;
+  }
+}
+
+/* Upcoming: an empty recessed hole with a bezel, like the radio. */
+.echo-steps__marker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow:
+    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),
+    0 0 0 1px color-mix(in oklab, var(--echo-cap) 85%, transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-steps__pip {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--echo-radius-full);
+  background: transparent;
+}
+
+/* Current: the hole with a lit pip — the RadioGroup's chosen state. */
+.echo-steps__step[data-state="current"] .echo-steps__pip {
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));
+  /* It blooms into its hole once the wire's light arrives. */
+  animation: echo-steps-bloom var(--echo-duration-pop) var(--echo-ease-pop) var(--echo-duration-sweep) both;
+}
+@keyframes echo-steps-bloom {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* Complete: a lit cap with a cream tick — the Checkbox's checked state. */
+.echo-steps__step[data-state="complete"] .echo-steps__marker {
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/* Finishing a step pops its cap, and the tick draws in one stroke. */
+.echo-steps__step[data-state="complete"] .echo-steps__marker {
+  animation: echo-steps-pop var(--echo-duration-pop) var(--echo-ease-pop);
+}
+@keyframes echo-steps-pop {
+  from {
+    transform: scale(0.8);
+  }
+}
+
+.echo-steps__check {
+  width: 13px;
+  height: 13px;
+  stroke-dasharray: 1;
+  animation: echo-steps-tick var(--echo-duration-sweep) ease-out var(--echo-duration-tick) both;
+}
+@keyframes echo-steps-tick {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+.echo-steps__label {
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-snug, 1.4);
+  color: var(--echo-text-dim);
+}
+
+.echo-steps__step[data-state="current"] .echo-steps__label {
+  color: var(--echo-text);
+  font-weight: var(--echo-weight-semibold, 600);
+}
+
+/* Visually hidden, still announced — "Connect completed". */
+.echo-steps__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The same selectors as the rules that animate — a plainer one loses to them. */
+@media (prefers-reduced-motion: reduce) {
+  .echo-steps__step[data-state="complete"]::before,
+  .echo-steps__step[data-state="current"]::before,
+  .echo-steps__step[data-state="current"] .echo-steps__pip,
+  .echo-steps__step[data-state="complete"] .echo-steps__marker,
+  .echo-steps__check {
+    animation: none;
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops gradients and backgrounds —
+ * which were all that told the current step from an upcoming one.
+ * System colors draw the state instead: a rim on every hole, the current pip
+ * and the finished stretches of wire in Highlight, the rest of the wire in
+ * GrayText.
+ */
+@media (forced-colors: active) {
+  .echo-steps__marker {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-steps__step:not(:first-child)::before {
+    background: GrayText;
+  }
+  .echo-steps__step[data-state="complete"]::before,
+  .echo-steps__step[data-state="current"]::before {
+    background: Highlight;
+  }
+  .echo-steps__step[data-state="current"] .echo-steps__pip {
+    background: Highlight;
+  }
+  .echo-steps__step[data-state="complete"] .echo-steps__marker {
+    border-color: Highlight;
+    color: Highlight;
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "name": "now-playing",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "NowPlaying",
+  "description": "A small player: a screen with where it's from, what's playing and the time in lit segments, a strip to scrub along, and the transport keys under it, play the lit one. For music, podcasts, voice messages and recordings. Every part is an Echo part (SegmentDisplay, Slider, HardwareButtons in a ButtonGroup); you own the audio, this is the device you control it with.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "segment-display",
+    "slider",
+    "hardware-button",
+    "toolbar",
+    "scope"
+  ],
+  "files": [
+    {
+      "path": "now-playing/now-playing.tsx",
+      "sha256": "2817415e9eab52afaf110ef9bc46b06df4ed15c34a666dc5d7e98457c0835ad6",
+      "content": "\"use client\";\n\n/**\n * NowPlaying. A small player: a screen with where it's from, what's playing\n * and the time in lit segments, a strip to scrub along, and the transport\n * keys under it, play the lit one. Music, a podcast, a voice message, a\n * recording of a meeting.\n *\n * Every part is an Echo part: the time is a SegmentDisplay, the strip is a\n * Slider, the keys are HardwareButtons in one ButtonGroup. You own the\n * audio; this is the device you control it with.\n */\nimport type { ReactNode } from \"react\";\nimport { SegmentDisplay } from \"../segment-display\";\nimport { Slider } from \"../slider\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { ButtonGroup } from \"../toolbar\";\nimport { clock, lengthOf } from \"./clock\";\nimport \"../scope/scope.css\";\nimport \"./now-playing.css\";\n\nexport interface NowPlayingProps {\n  /** What's playing: the track, the episode, the message. */\n  title: string;\n  /** Who it's by, or what it's part of. */\n  artist?: string;\n  /** Where it's coming from, engraved over the rest: \"Fresh FM\", \"Voice memo\". */\n  source?: string;\n  /** Artwork beside the title, square. */\n  artwork?: ReactNode;\n  /** Playing now. */\n  playing: boolean;\n  onPlayingChange: (playing: boolean) => void;\n  /** Where it is, in seconds. */\n  position: number;\n  /** How long it is, in seconds. Leave out for a live stream. */\n  duration?: number;\n  /** Called with a new position when someone scrubs. Without it, the strip only shows. */\n  onSeek?: (seconds: number) => void;\n  /** Shows the previous key, and calls this when it's pressed. */\n  onPrevious?: () => void;\n  /** Shows the next key, and calls this when it's pressed. */\n  onNext?: () => void;\n  /** `emissive` (default): a dark screen that glows. `reflective`: the paper-coloured glass of a pocket calculator, printed in ink. */\n  screen?: \"emissive\" | \"reflective\";\n}\n\nconst glyph = (d: string) => (\n  <svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\" aria-hidden=\"true\">\n    <path d={d} />\n  </svg>\n);\nconst PLAY = glyph(\"M5 3.2v9.6L12.8 8z\");\nconst PAUSE = glyph(\"M4.5 3h2.6v10H4.5zM8.9 3h2.6v10H8.9z\");\nconst PREVIOUS = glyph(\"M4 3h1.8v10H4zM13 3.4v9.2L6.4 8z\");\nconst NEXT = glyph(\"M10.2 3H12v10h-1.8zM3 3.4v9.2L9.6 8z\");\n\nexport function NowPlaying({\n  title,\n  artist,\n  source,\n  artwork,\n  playing,\n  onPlayingChange,\n  position,\n  duration,\n  onSeek,\n  onPrevious,\n  onNext,\n  screen = \"emissive\",\n}: NowPlayingProps) {\n  // An <audio> element's duration is NaN until its metadata loads and\n  // Infinity for a live stream; both are handled here, not left to the caller.\n  const length = lengthOf(duration);\n  const live = length.kind === \"live\";\n  const at = Number.isFinite(position) ? Math.max(0, position) : 0;\n  return (\n    <section className=\"echo-now-playing\" aria-label={`Now playing: ${title}`}>\n      <div className=\"echo-now-playing__screen\" data-echo-screen={screen === \"reflective\" ? \"reflective\" : undefined}>\n        {source ? (\n          <span className=\"echo-now-playing__source\" aria-hidden=\"true\">\n            {source}\n          </span>\n        ) : null}\n        <div className=\"echo-now-playing__track\">\n          {artwork ? (\n            <span className=\"echo-now-playing__art\" aria-hidden=\"true\">\n              {artwork}\n            </span>\n          ) : null}\n          <span className=\"echo-now-playing__names\">\n            <span className=\"echo-now-playing__title\">{title}</span>\n            {artist ? <span className=\"echo-now-playing__artist\">{artist}</span> : null}\n          </span>\n        </div>\n        <div className=\"echo-now-playing__time\">\n          <SegmentDisplay variant=\"flush\" size=\"sm\" label=\"Elapsed\" value={clock(at)} />\n          {live ? (\n            <span className=\"echo-now-playing__live\">Live</span>\n          ) : (\n            <SegmentDisplay\n              variant=\"flush\"\n              size=\"sm\"\n              label=\"Length\"\n              value={length.kind === \"known\" ? clock(length.seconds) : \"--:--\"}\n              glow={false}\n            />\n          )}\n        </div>\n        {!live ? (\n          <Slider\n            size=\"sm\"\n            aria-label=\"Position\"\n            min={0}\n            max={length.kind === \"known\" ? Math.max(1, Math.round(length.seconds)) : 1}\n            value={length.kind === \"known\" ? Math.round(at) : 0}\n            onValueChange={(v) => onSeek?.(v)}\n            disabled={!onSeek || length.kind !== \"known\"}\n          />\n        ) : null}\n      </div>\n      <ButtonGroup aria-label=\"Playback\" size=\"lg\">\n        {onPrevious ? <HardwareButton iconOnly icon={PREVIOUS} aria-label=\"Previous\" onClick={onPrevious} /> : null}\n        <HardwareButton\n          iconOnly\n          variant=\"primary\"\n          icon={playing ? PAUSE : PLAY}\n          aria-label={playing ? \"Pause\" : \"Play\"}\n          onClick={() => onPlayingChange(!playing)}\n        />\n        {onNext ? <HardwareButton iconOnly icon={NEXT} aria-label=\"Next\" onClick={onNext} /> : null}\n      </ButtonGroup>\n    </section>\n  );\n}\n"
+    },
+    {
+      "path": "now-playing/now-playing.css",
+      "sha256": "2f3c46010dad7818e2f4ee6b11c0f8da72f71bf85ad0f5501f25023aaf34e605",
+      "content": "/**\n * NowPlaying. A screen well with the track and the time, a Slider to scrub\n * along, and the transport keys in one ButtonGroup under it. Composes\n * var(--echo-*) — no hex literals; the only fixed values are the key light.\n */\n.echo-now-playing {\n  display: grid;\n  justify-items: center;\n  gap: var(--echo-space-8);\n  inline-size: min(100%, 360px);\n  min-inline-size: 0;\n}\n.echo-now-playing__screen {\n  display: grid;\n  gap: var(--echo-space-5);\n  box-sizing: border-box;\n  inline-size: 100%;\n  padding: var(--echo-space-7) var(--echo-space-8) var(--echo-space-8);\n  border-radius: var(--echo-radius-xl);\n  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));\n  box-shadow: var(\n    --echo-shadow-well-deep,\n    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.9 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n.echo-now-playing__source {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n.echo-now-playing__track {\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-6);\n  min-inline-size: 0;\n}\n.echo-now-playing__art {\n  flex: none;\n  inline-size: calc(var(--echo-control-large, 60px) - var(--echo-space-4));\n  block-size: calc(var(--echo-control-large, 60px) - var(--echo-space-4));\n  overflow: hidden;\n  border-radius: var(--echo-radius-md);\n}\n.echo-now-playing__art > * {\n  inline-size: 100%;\n  block-size: 100%;\n  object-fit: cover;\n}\n.echo-now-playing__names {\n  display: grid;\n  gap: var(--echo-space-1);\n  min-inline-size: 0;\n}\n.echo-now-playing__title {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-lg);\n  font-weight: var(--echo-weight-semibold, 600);\n  line-height: var(--echo-leading-tight, 1.25);\n  color: var(--echo-text);\n}\n.echo-now-playing__artist {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n.echo-now-playing__time {\n  display: flex;\n  align-items: flex-end;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n}\n.echo-now-playing__live {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n}\n\n@media (forced-colors: active) {\n  .echo-now-playing__screen {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "now-playing/clock.ts",
+      "sha256": "1f4abdc16eeb00cd1814d2b33f72d86c690a106287f60d75e36e4fd29687e95a",
+      "content": "/**\n * Seconds as a clock: 84 → \"01:24\", 3725 → \"1:02:05\". A time that isn't\n * known (NaN, or Infinity) reads as dashes, never \"NaN:NaN\".\n */\nexport function clock(seconds: number): string {\n  if (!Number.isFinite(seconds)) return \"--:--\";\n  const s = Math.max(0, Math.floor(seconds));\n  const h = Math.floor(s / 3600);\n  const m = Math.floor((s % 3600) / 60);\n  const sec = s % 60;\n  const two = (n: number) => String(n).padStart(2, \"0\");\n  return h ? `${h}:${two(m)}:${two(sec)}` : `${two(m)}:${two(sec)}`;\n}\n\nexport type Length = { kind: \"live\" } | { kind: \"loading\" } | { kind: \"known\"; seconds: number };\n\n/**\n * What a duration says, including the two an <audio> element gives before it\n * has a number: Infinity for a live stream, NaN before its metadata loads.\n */\nexport function lengthOf(duration: number | undefined): Length {\n  if (duration === undefined || duration === Number.POSITIVE_INFINITY) return { kind: \"live\" };\n  if (!Number.isFinite(duration) || duration < 0) return { kind: \"loading\" };\n  return { kind: \"known\", seconds: duration };\n}\n"
+    },
+    {
+      "path": "now-playing/index.ts",
+      "sha256": "9642f15201c6e36e808af1122586ec43968a8722889b23f15229a9d394f6694b",
+      "content": "export { NowPlaying } from \"./now-playing\";\nexport type { NowPlayingProps } from \"./now-playing\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`NowPlaying`: a small player.** A screen with the source, the title and the time in lit segments, a `Slider` to scrub, and previous, play and next in one `ButtonGroup`. Leave out `duration` (or pass an `<audio>`'s `Infinity`) for a live stream; its `NaN` before the metadata loads reads \"--:--\". You own the audio; this is the device you control it with."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Reflective screens.** `screen=\"reflective\"` gives a screen the paper glass of a pocket calculator, printed in ink: digits, labels and ghost segments in the chassis colour, nothing glowing. The ink is held to AA on the glass under every theme. On `SegmentDisplay`, `Tuner`, `Keypad`, `DateTile`, `NowPlaying`, `Annunciator` and `DescriptionList`'s screen."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

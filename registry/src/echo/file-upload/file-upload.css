@@ -1,0 +1,213 @@
+/**
+ * FileUpload. Field's frame (field.css) around a recessed tray: a well you
+ * press or drop files on, its inner edge dashed at rest and lit while files
+ * are over it, the way Field's edge lights on focus. Each file is a low key
+ * on the chassis: its name, what's happening to it, a slim Progress strip
+ * while it goes up, and its own key. Composes var(--echo-*).
+ */
+.echo-file-upload__tray {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--echo-space-3);
+  inline-size: 100%;
+  min-block-size: calc(2 * var(--ctl-h));
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--echo-space-8);
+  border: 0;
+  border-radius: var(--ctl-radius);
+  background: var(--echo-drawn-hollow, linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),
+    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))
+  ));
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  color: var(--echo-text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  /* The dashed inner edge says "drop here" at rest. */
+  outline: var(--echo-border-hairline, 1px) dashed color-mix(in oklab, var(--echo-text-dim) 45%, transparent);
+  outline-offset: calc(-1 * var(--echo-space-3));
+  transition:
+    outline-color var(--echo-duration-swap) ease,
+    outline-offset var(--echo-duration-swap) ease;
+}
+/* Lit while files are over it, and while it has the keyboard: the inner edge in the accent. */
+.echo-file-upload__tray[data-dragging],
+.echo-file-upload__tray:focus-visible {
+  outline: var(--echo-border-thick, 2px) solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: calc(-1 * var(--echo-border-thick, 2px));
+}
+@media (hover: hover) {
+  .echo-file-upload__tray:not(:disabled):hover {
+    outline-color: color-mix(in oklch, var(--echo-accent-glow) 60%, transparent);
+  }
+}
+.echo-file-upload__tray:disabled {
+  cursor: not-allowed;
+}
+.echo-field[data-invalid] .echo-file-upload__tray:not([data-dragging]):not(:focus-visible) {
+  outline: var(--echo-border-fine, 1.5px) solid color-mix(in oklch, var(--echo-primary-cap-mid) 80%, transparent);
+  outline-offset: calc(-1 * var(--echo-border-fine, 1.5px));
+}
+
+.echo-file-upload__icon {
+  display: inline-flex;
+  color: var(--echo-accent-glow);
+}
+.echo-file-upload__icon > svg {
+  width: var(--echo-icon-xl, 28px);
+  height: var(--echo-icon-xl, 28px);
+}
+.echo-file-upload__prompt {
+  display: grid;
+  gap: var(--echo-space-1);
+}
+.echo-file-upload__choose {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  font-weight: var(--echo-weight-bold, 700);
+  color: var(--echo-text);
+}
+.echo-file-upload__drop {
+  font-size: var(--echo-text-xs);
+  color: var(--echo-text-dim);
+}
+
+.echo-file-upload__list {
+  display: grid;
+  gap: var(--echo-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.echo-file-upload__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "file keys"
+    "progress progress";
+  align-items: center;
+  column-gap: var(--echo-space-4);
+  row-gap: var(--echo-space-2);
+  min-block-size: var(--ctl-h);
+  box-sizing: border-box;
+  padding-block: var(--echo-space-3);
+  padding-inline: var(--echo-space-6) var(--echo-space-3);
+  border-radius: var(--echo-radius-lg);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--echo-cap) 55%, var(--echo-surface)), var(--echo-surface));
+  box-shadow: var(
+    --echo-shadow-key,
+    inset 0 1px 0 rgb(255 255 255 / calc(0.3 * var(--echo-gloss, 1))),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 2px 0 var(--echo-line-width, 0px) var(--echo-seam)
+  );
+}
+.echo-file-upload__file {
+  grid-area: file;
+  display: grid;
+  gap: var(--echo-space-1);
+  min-width: 0;
+}
+.echo-file-upload__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text);
+}
+.echo-file-upload__status {
+  display: flex;
+  align-items: baseline;
+  gap: var(--echo-space-3);
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--echo-text-dim);
+}
+/* Uploaded: a lit LED beside the word. Failed or refused: the danger's square pip, and the words in full. */
+.echo-file-upload__row[data-status="done"] .echo-file-upload__status::before,
+.echo-file-upload__row[data-status="error"] .echo-file-upload__status::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  align-self: center;
+}
+.echo-file-upload__row[data-status="done"] .echo-file-upload__status::before {
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));
+}
+.echo-file-upload__row[data-status="error"] .echo-file-upload__status {
+  color: var(--echo-text);
+}
+.echo-file-upload__row[data-status="error"] .echo-file-upload__status::before {
+  border-radius: var(--echo-radius-xs);
+  background: var(--echo-primary-cap-mid);
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+}
+.echo-file-upload__keys {
+  grid-area: keys;
+  display: inline-flex;
+  gap: var(--echo-space-1);
+}
+/* Progress's strip, slimmed to sit in a row. */
+.echo-file-upload__row .echo-file-upload__progress {
+  grid-area: progress;
+  max-width: none;
+  padding: var(--echo-space-1);
+}
+.echo-file-upload__progress .echo-progress__cell {
+  block-size: var(--echo-space-3);
+}
+
+.echo-file-upload__said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .echo-file-upload__row {
+    animation: echo-file-upload-arrive var(--echo-duration-swap) ease-out;
+  }
+}
+@keyframes echo-file-upload-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (forced-colors: active) {
+  .echo-file-upload__tray {
+    outline-color: CanvasText;
+  }
+  .echo-file-upload__tray[data-dragging],
+  .echo-file-upload__tray:focus-visible {
+    outline-color: Highlight;
+  }
+  .echo-file-upload__row {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-file-upload__row[data-status] .echo-file-upload__status::before {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+}

@@ -1,0 +1,234 @@
+/**
+ * SideNav. Links in the text voice under machine-voice headings; the current
+ * one sits on a faint cap and one lit rail (the accent, lit from inside)
+ * travels to it. Folded, only the icons show, with the label as a tip.
+ */
+.echo-side-nav {
+  position: relative;
+  display: grid;
+  gap: var(--echo-space-10);
+  width: 15rem;
+  max-width: 100%;
+  transition: width var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-side-nav[data-collapsed] {
+  width: calc(var(--echo-control-default) + var(--echo-space-4));
+}
+.echo-side-nav__group {
+  display: grid;
+  gap: var(--echo-space-3);
+}
+.echo-side-nav__heading {
+  padding: 0 var(--echo-space-5);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.echo-side-nav[data-collapsed] .echo-side-nav__heading {
+  visibility: hidden;
+  height: 0;
+  padding: 0;
+}
+.echo-side-nav__list {
+  display: grid;
+  gap: var(--echo-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.echo-side-nav__list > li {
+  position: relative;
+}
+.echo-side-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: var(--echo-space-3) var(--echo-space-5);
+  padding-inline-start: calc(var(--echo-space-5) + var(--depth, 0) * var(--echo-space-8));
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  text-align: start;
+  text-decoration: none;
+  font: inherit;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+  background: transparent;
+  transition:
+    background var(--echo-duration-tick) ease,
+    color var(--echo-duration-tick) ease;
+}
+@media (hover: hover) {
+  .echo-side-nav__link:hover {
+    color: var(--echo-text);
+    background: color-mix(in oklab, var(--echo-cap) 30%, transparent);
+  }
+}
+.echo-side-nav__link[aria-current="page"] {
+  color: var(--echo-text);
+  background: color-mix(in oklab, var(--echo-cap) 38%, transparent);
+}
+.echo-side-nav__link:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: -2px;
+}
+.echo-side-nav__icon {
+  display: inline-flex;
+  flex: none;
+  width: var(--echo-icon-md, 16px);
+  height: var(--echo-icon-md, 16px);
+}
+.echo-side-nav__icon > svg {
+  width: 100%;
+  height: 100%;
+}
+.echo-side-nav__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.echo-side-nav__badge {
+  flex: none;
+  min-width: 18px;
+  padding: var(--echo-space-1) var(--echo-space-3);
+  border-radius: var(--echo-radius-full);
+  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+  background: var(--echo-lcd);
+  box-shadow: inset 0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-side-nav__sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.echo-side-nav__chevron {
+  flex: none;
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+  transition: transform var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-side-nav__folder[data-panel-open] .echo-side-nav__chevron {
+  transform: rotate(90deg);
+}
+.echo-side-nav__folder[data-panel-open] .echo-side-nav__chevron:dir(rtl) {
+  transform: rotate(-90deg);
+}
+.echo-side-nav__panel {
+  overflow: hidden;
+  height: var(--collapsible-panel-height);
+  transition: height var(--echo-duration-pop) cubic-bezier(0.32, 0.72, 0, 1);
+}
+.echo-side-nav__panel[data-starting-style],
+.echo-side-nav__panel[data-ending-style] {
+  height: 0;
+}
+
+/* The one rail: moved to the current link (side-nav.tsx) on a drop's curve. */
+.echo-side-nav__rail {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  z-index: var(--echo-z-raised, 1);
+  width: 2px;
+  height: 0;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));
+  opacity: 0;
+  pointer-events: none;
+}
+.echo-side-nav[data-placed] .echo-side-nav__rail {
+  transition:
+    transform var(--echo-duration-pop) var(--echo-ease-pop),
+    height var(--echo-duration-pop) var(--echo-ease-pop),
+    opacity var(--echo-duration-swap) ease;
+}
+
+/* Folded: icons only; the label shows as a tip on hover or focus. */
+.echo-side-nav[data-collapsed] .echo-side-nav__text,
+.echo-side-nav[data-collapsed] .echo-side-nav__chevron {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.echo-side-nav[data-collapsed] .echo-side-nav__link {
+  justify-content: center;
+  padding-inline: 0;
+}
+.echo-side-nav[data-collapsed] .echo-side-nav__badge {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 2px;
+  min-width: 0;
+  padding: 0 var(--echo-space-1);
+}
+/*
+ * Collapsed, the rail names each link beside it: on keyboard focus always, and
+ * on hover only where there's a pointer to hover with (a tap would leave the
+ * name up).
+ */
+.echo-side-nav[data-collapsed] [data-tip]::after {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: calc(100% + var(--echo-space-4));
+  z-index: var(--echo-z-popover, 300);
+  translate: 0 -50%;
+  padding: var(--echo-space-2) var(--echo-space-5);
+  border-radius: var(--echo-radius-sm);
+  font-size: var(--echo-text-xs);
+  white-space: nowrap;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--echo-text);
+  background: var(--echo-cap);
+  box-shadow: 0 6px 16px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+  pointer-events: none;
+}
+.echo-side-nav[data-collapsed] [data-tip]:focus-within::after {
+  content: attr(data-tip);
+}
+@media (hover: hover) {
+  .echo-side-nav[data-collapsed] [data-tip]:hover::after {
+    content: attr(data-tip);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-side-nav,
+  .echo-side-nav[data-placed] .echo-side-nav__rail,
+  .echo-side-nav__panel,
+  .echo-side-nav__chevron {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-side-nav__link[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .echo-side-nav__rail {
+    display: none;
+  }
+}

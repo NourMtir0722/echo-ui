@@ -1,0 +1,55 @@
+/**
+ * Scope, and the vocabulary it carries. A Scope draws nothing: its accent is
+ * a set of role variables everything inside reads, and soft molding sets the
+ * pillow the caps are built to take.
+ *
+ * Reflective screens live here too, because they're the same kind of choice:
+ * a component that has a screen sets `data-echo-screen="reflective"` on it and
+ * imports this sheet. The screen's glass turns to the paper colour, and what's
+ * printed on it (digits, labels, the ghost segments) turns to ink: the
+ * chassis colour, held to AA on it under every theme. Nothing glows on a
+ * reflective screen; lit segments are simply dark.
+ *
+ * On a light device every screen is already paper glass printed in ink, and
+ * the theme says what they are (`--echo-screen-*`): a reflective screen there
+ * is the same glass and the same ink. A dark theme resets those values, so
+ * the formulas after the commas are what a dark device's reflective screen
+ * has always been.
+ */
+.echo-scope {
+  display: contents;
+  /*
+   * The shadow recipes that read the accent, declared again with this Scope's
+   * accent. CSS resolves the var()s inside a custom property where it's
+   * declared, so the page's recipes carry the page's accent; these carry the
+   * one set inline on this element.
+   */
+  --echo-shadow-cap-lit:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))), inset 0 -2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent), 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent), 0 4px 0 var(--echo-line-width, 0px) var(--echo-lit-edge, var(--echo-accent-6)), 0 calc(8px * (1 - var(--echo-drawn, 0))) calc(20px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-4) 40%, transparent);
+  --echo-shadow-ring: 0 0 0 2px var(--echo-surface), 0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));
+  --echo-shadow-ring-inset: inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow));
+  --echo-shadow-glow: 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);
+}
+
+/* Soft molding: rounder caps, a pillow of light across their tops, deeper shade under them. */
+.echo-scope[data-molding="soft"] {
+  --echo-pillow: 1;
+  --echo-radius-scale: 1.9;
+}
+
+/* Reflective screens: the glass is paper, the print is ink. */
+[data-echo-screen="reflective"] {
+  --echo-well: var(--echo-screen-well, color-mix(in oklab, var(--echo-text) 84%, var(--echo-surface)));
+  --echo-lcd: var(--echo-screen-glass, color-mix(in oklab, var(--echo-text) 93%, var(--echo-surface)));
+}
+[data-echo-screen="reflective"] * {
+  --echo-text: var(--echo-screen-ink, var(--echo-surface));
+  --echo-text-dim: var(--echo-screen-ink-dim, color-mix(in oklab, var(--echo-surface) 72%, var(--echo-lcd)));
+  --echo-accent-glow: var(--echo-screen-ink, var(--echo-surface));
+  --echo-accent-ink: var(--echo-screen-ink, var(--echo-surface));
+  --echo-lcd-glow: transparent;
+  /* The recipes that read the glow, declared again so they read this one. */
+  --echo-shadow-ring: 0 0 0 2px var(--echo-surface), 0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));
+  --echo-shadow-ring-inset: inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow));
+  --echo-shadow-glow: 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);
+}

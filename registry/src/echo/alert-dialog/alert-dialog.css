@@ -1,0 +1,187 @@
+/*
+ * AlertDialog.
+ *
+ * Severity is NOT red/amber/green. Destructive reads as the DEEP END OF
+ * THE ACCENT RAMP — the same language Banner's `danger` tone already speaks —
+ * so a reseeded device stays coherent instead of sprouting a hue the seed
+ * never defined. On the default seed that lands as a deep purple; on a sky
+ * seed it is a deep blue. It is still unmistakably the heavy answer,
+ * because weight and depth carry the message, not hue.
+ *
+ * Composes var(--echo-*) only.
+ */
+
+.echo-alert__backdrop {
+  position: fixed;
+  /* Modal's scale. The site chrome's sticky rail is at 40. */
+  z-index: var(--echo-z-overlay, 200);
+  inset: 0;
+  background: color-mix(in oklab, var(--echo-seam) 88%, black);
+  opacity: 0.66;
+  transition: opacity var(--echo-duration-swap) ease;
+}
+
+.echo-alert__backdrop[data-starting-style],
+.echo-alert__backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+.echo-alert__popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--echo-z-modal, 210);
+  box-sizing: border-box;
+  width: min(27rem, calc(100vw - 2.5rem));
+  padding: var(--echo-space-10);
+  border-radius: var(--echo-radius-2xl);
+  transform: translate(-50%, -50%);
+  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 44%);
+  color: var(--echo-text);
+  outline: none;
+  box-shadow: var(
+    --echo-shadow-modal,
+    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 46%, transparent),
+    inset 0 0 0 1px var(--echo-seam),
+    0 40px 80px -24px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 calc(6px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+  transition:
+    opacity var(--echo-duration-glide) ease,
+    transform var(--echo-duration-glide) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.echo-alert__popup[data-starting-style],
+.echo-alert__popup[data-ending-style] {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+}
+/* With motion running (usePopupMotion), GSAP draws the arrival and exit:
+   the CSS fade stands down so the two never fight. */
+.echo-alert__popup[data-motion],
+.echo-alert__popup[data-motion][data-starting-style],
+.echo-alert__popup[data-motion][data-ending-style] {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  transition: none;
+}
+
+/*
+ * A destructive dialog carries a lit rail at its top edge — one lit thing,
+ * at the top of the panel, in the ramp's emissive stop.
+ */
+.echo-alert__popup[data-destructive]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline-start: 26px;
+  inset-inline-end: 26px;
+  height: 2px;
+  border-radius: 0 0 var(--echo-radius-xs) var(--echo-radius-xs);
+  background: var(--echo-accent-3);
+  box-shadow: 0 0 10px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);
+}
+
+.echo-alert__title {
+  margin: 0 0 var(--echo-space-3);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-lg);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-tight, -0.01em);
+  color: var(--echo-text);
+}
+
+.echo-alert__desc {
+  margin: 0;
+  font-size: var(--echo-text-sm);
+  line-height: var(--echo-leading-body, 1.55);
+  color: var(--echo-text-dim);
+}
+
+.echo-alert__body {
+  margin-top: var(--echo-space-7);
+  font-size: var(--echo-text-sm);
+  line-height: var(--echo-leading-body, 1.55);
+  color: var(--echo-text-dim);
+}
+
+.echo-alert__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--echo-space-5);
+  margin-top: var(--echo-space-10);
+}
+
+/* --- the two answers ----------------------------------------------------- */
+
+.echo-alert__cancel,
+.echo-alert__confirm,
+.echo-alert__trigger {
+  height: calc(38px * var(--echo-density, 1));
+  padding: 0 var(--echo-space-8);
+  border: 0;
+  border-radius: var(--echo-radius-lg);
+  cursor: pointer;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-sm);
+  font-weight: var(--echo-weight-semibold, 600);
+}
+
+/* Cancel is the plain cap — the safe answer is the ordinary one. */
+.echo-alert__cancel,
+.echo-alert__trigger {
+  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 62%);
+  color: var(--echo-text);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 60%, transparent),
+    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-cap-shadow);
+}
+
+.echo-alert__confirm {
+  background: var(--echo-cap);
+  color: var(--echo-text);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 60%, transparent),
+    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-cap-shadow);
+}
+
+/*
+ * The destructive answer: deep ramp stops for the cap, the palest stop for the
+ * legend. The theme holds that pairing to AA on every accent, and the theme
+ * tests check it ("alert-dialog/destructive confirm"), so it survives a reseed.
+ */
+.echo-alert__confirm[data-destructive] {
+  background: linear-gradient(180deg, var(--echo-accent-5) 0%, var(--echo-accent-6) 100%);
+  color: var(--echo-accent-1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.2 * var(--echo-gloss, 1))),
+    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-accent-7),
+    0 6px 16px color-mix(in oklch, var(--echo-accent-glow) 30%, transparent);
+}
+
+/* The press is usePressable's: the cap travels onto its seam, which shortens
+   under it (--press). No :active jump here — it would fight the stroke. */
+
+.echo-alert__cancel:focus-visible,
+.echo-alert__confirm:focus-visible,
+.echo-alert__trigger:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-alert__popup {
+    transition-duration: var(--echo-duration-glitch);
+  }
+  .echo-alert__popup[data-starting-style],
+  .echo-alert__popup[data-ending-style] {
+    transform: translate(-50%, -50%);
+  }
+}

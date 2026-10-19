@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "name": "roll",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "useRoll",
+  "description": "A readout that rolls to a new value instead of swapping it: each digit steps through the ones in between, all together, fast when it's far and slowest on the last step. It's the drum SplitFlap turns on, and what roll does on LcdChip, StatTile and NumberField. useRoll(text, options) returns the text to draw, which is in between values while it rolls, so draw it aria-hidden and give the real value to assistive technology.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "roll/drum.ts",
+      "sha256": "204138214cec4916c101caa783bc3362287109e73d326f4fcb2a0310b4c9d0c2",
+      "content": "/**\n * The drum a rolling character turns on. Pure: no React, no DOM, so the\n * stepping rule can be tested on its own and shared by everything that rolls\n * (SplitFlap's flaps, LcdChip's, StatTile's and NumberField's digits).\n *\n * A character on the drum reaches its target by passing every character in\n * between, one turn at a time. A character that isn't on the drum (a comma,\n * a unit, a character a text drum lacks) has no in-between: it swaps.\n */\n\n/** Digits, in order. */\nexport const DIGITS = \"0123456789\";\n/** A departures board's letters, digits and marks, in order. */\nexport const CHARS = \" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:-!?\";\n\n/** Which way a drum turns: 1 forward (0→1→2), -1 back (2→1→0). */\nexport type Turn = 1 | -1;\n\n/** How many turns `from` is from `to`, going `dir`. 0 when they're equal, -1 when either is off the drum. */\nexport function turnsLeft(from: string, to: string, drum: string, dir: Turn = 1): number {\n  if (from === to) return 0;\n  const at = drum.indexOf(from);\n  const end = drum.indexOf(to);\n  if (at < 0 || end < 0) return -1;\n  return ((end - at) * dir + drum.length) % drum.length;\n}\n\n/** The character one turn on from `from` toward `to`; `to` itself when there's nothing in between. */\nexport function turn(from: string, to: string, drum: string, dir: Turn = 1): string {\n  if (turnsLeft(from, to, drum, dir) <= 0) return to;\n  const at = drum.indexOf(from);\n  return drum[(at + dir + drum.length) % drum.length]!;\n}\n\n/** How long one turn takes with `left` to go: fast when it's far, the last one slowest. */\nexport function turnMs(left: number): number {\n  return left > 3 ? 55 : left > 1 ? 80 : 120;\n}\n\n/**\n * One turn of a whole readout: every character that isn't there yet moves one\n * step. The two are right-aligned, the way a counter's digits are, so 99 → 100\n * turns the nines over and a 1 appears in front.\n *\n * Returns the next text and the most turns any character still has to go\n * after this one (0 when it has arrived).\n */\nexport function rollStep(from: string, to: string, drum: string, dir: Turn = 1): { next: string; left: number } {\n  const n = Math.max(from.length, to.length);\n  const a = from.padStart(n, \" \");\n  const b = to.padStart(n, \" \");\n  let next = \"\";\n  let left = 0;\n  for (let i = 0; i < n; i++) {\n    const c = turn(a[i]!, b[i]!, drum, dir);\n    next += c;\n    left = Math.max(left, turnsLeft(c, b[i]!, drum, dir));\n  }\n  return { next: left === 0 ? to : next, left };\n}\n\n/** The number a readout shows, if it shows one: \"1,024\" → 1024, \"07:42\" → null. */\nexport function readNumber(text: string): number | null {\n  const plain = text.replace(/[\\s,_\\u00a0\\u202f]/g, \"\");\n  if (!/^[-+]?(\\d+\\.?\\d*|\\.\\d+)$/.test(plain)) return null;\n  return Number(plain);\n}\n\n/** Which way to roll from one reading to the next: back when a number falls, forward otherwise. */\nexport function rollDirection(from: string, to: string): Turn {\n  const a = readNumber(from);\n  const b = readNumber(to);\n  return a !== null && b !== null && b < a ? -1 : 1;\n}\n"
+    },
+    {
+      "path": "roll/roll.ts",
+      "sha256": "5502f8f6746b3be07fb2ef343bbe1f8216e8165c3a16fb34692b51377730291b",
+      "content": "\"use client\";\n\n/**\n * useRoll. A readout that rolls to a new value instead of swapping it: each\n * digit steps through the ones in between, all together, fast when it's far\n * and slowest on the last step — the drum a SplitFlap turns on, without the\n * flaps. It's how LcdChip, StatTile and NumberField change digits when you\n * pass `roll`, and SplitFlap turns on the same drum.\n *\n *   const shown = useRoll(String(count));\n *\n * A falling number rolls back and a rising one forward; text that isn't a\n * number rolls forward, like a departures board. What isn't on the drum (a\n * comma, a colon) swaps at once.\n *\n * It returns the text to draw, which is in between values while it rolls, so\n * draw it aria-hidden and give the real value to assistive technology. Under\n * reduced motion, or with `enabled: false`, it returns the value itself.\n */\nimport { useEffect, useRef, useState } from \"react\";\nimport { useReducedMotion } from \"echo-ui-core/tactile\";\nimport { DIGITS, rollDirection, rollStep, turnMs, type Turn } from \"./drum\";\n\nexport interface RollOptions {\n  /** The characters in order, each one a step. Defaults to the digits. */\n  drum?: string;\n  /** Roll at all. `false` swaps the value outright. Default true. */\n  enabled?: boolean;\n  /** Called on every step, for a tick. */\n  onTurn?: () => void;\n}\n\nexport function useRoll(text: string, { drum = DIGITS, enabled = true, onTurn }: RollOptions = {}): string {\n  const reduced = useReducedMotion();\n  const [shown, setShown] = useState(text);\n  const tick = useRef(onTurn);\n  const dir = useRef<Turn>(1);\n  const target = useRef(text);\n\n  useEffect(() => {\n    tick.current = onTurn;\n  });\n\n  // Which way to go is set by the change of target, not by where the roll\n  // has got to: 12 → 9 rolls back even if it's already showing 10.\n  useEffect(() => {\n    if (target.current === text) return;\n    dir.current = rollDirection(target.current, text);\n    target.current = text;\n  }, [text]);\n\n  const rolling = enabled && !reduced;\n  useEffect(() => {\n    if (shown === text) return;\n    if (!rolling) {\n      setShown(text);\n      return;\n    }\n    const { next, left } = rollStep(shown, text, drum, dir.current);\n    const id = setTimeout(() => {\n      tick.current?.();\n      setShown(next);\n    }, turnMs(left + 1));\n    return () => clearTimeout(id);\n  }, [shown, text, drum, rolling]);\n\n  return rolling ? shown : text;\n}\n"
+    },
+    {
+      "path": "roll/index.ts",
+      "sha256": "338959c537daea6be942a10020daaeb3e680794d577c3ac02d41675c7256f301",
+      "content": "export { useRoll } from \"./roll\";\nexport type { RollOptions } from \"./roll\";\nexport { CHARS, DIGITS, rollStep, turn, turnMs, turnsLeft } from \"./drum\";\nexport type { Turn } from \"./drum\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Digits that roll: `roll` on `LcdChip`, `StatTile` and `NumberField`, and the `useRoll` hook under them.** Pass `roll` and a new value steps each digit through the ones in between, all together, fast when it's far and slowest on the last step: 18 → 21 shows 29, 20, 21. A falling number rolls back, 99 → 100 turns the nines over and puts a 1 in front, and anything that isn't a digit (a comma, a colon) swaps at once. The digits in between are drawn but hidden from assistive technology, so the value is still read once, as it is; under reduced motion it doesn't roll. On `NumberField` it replaces the slide a step used to give the whole number, and typing never rolls. It's off by default, so nothing changes until you pass it. `SplitFlap` now turns on the same drum (`echo-roll`, which each of these installs with it); it looks and sounds the same."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

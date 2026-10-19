@@ -1,0 +1,3397 @@
+{
+  "name": "echo-ui",
+  "homepage": "https://echo-ui.com",
+  "items": [
+    {
+      "name": "echo-modal",
+      "type": "registry:component",
+      "title": "Modal",
+      "description": "Base UI Dialog (focus trap, Esc, scroll-lock, a11y) skinned as an Echo device panel. motion.summon enter, GSAP exit that completes before unmount, sound.transition on open.",
+      "dependencies": [
+        "gsap",
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/modal/modal.css",
+          "type": "registry:component",
+          "target": "echo/modal/modal.css"
+        },
+        {
+          "path": "src/echo/modal/modal.tsx",
+          "type": "registry:component",
+          "target": "echo/modal/modal.tsx"
+        },
+        {
+          "path": "src/echo/modal/index.ts",
+          "type": "registry:component",
+          "target": "echo/modal/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-menu",
+      "type": "registry:component",
+      "title": "Menu",
+      "description": "Base UI Menu (typeahead, roving focus, submenu timing, checkbox/radio items) skinned as an Echo floating panel — the Select's molded cap trigger and the same lit dot for what is on. sound.transition on open, sound.select on item commit. Exports ContextMenu for the right-click case.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/menu/menu.css",
+          "type": "registry:component",
+          "target": "echo/menu/menu.css"
+        },
+        {
+          "path": "src/echo/menu/menu.tsx",
+          "type": "registry:component",
+          "target": "echo/menu/menu.tsx"
+        },
+        {
+          "path": "src/echo/menu/index.ts",
+          "type": "registry:component",
+          "target": "echo/menu/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-sheet",
+      "type": "registry:component",
+      "title": "Sheet",
+      "description": "A molded chassis panel that slides in from an edge — the console side panel and the mobile nav. Built on Base UI's Drawer, so it carries swipe-to-dismiss and a backdrop that tracks the swipe. sound.transition on open.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/sheet/sheet.css",
+          "type": "registry:component",
+          "target": "echo/sheet/sheet.css"
+        },
+        {
+          "path": "src/echo/sheet/sheet.tsx",
+          "type": "registry:component",
+          "target": "echo/sheet/sheet.tsx"
+        },
+        {
+          "path": "src/echo/sheet/index.ts",
+          "type": "registry:component",
+          "target": "echo/sheet/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-alert-dialog",
+      "type": "registry:component",
+      "title": "AlertDialog",
+      "description": "A destructive confirm. Modal covers the structure; this is the semantics — role=alertdialog, a required description, and no dismissal by clicking away. sound.caution on open, sound.error on a destructive confirm. Severity is the deep end of the accent ramp, never an imported red.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/alert-dialog/alert-dialog.css",
+          "type": "registry:component",
+          "target": "echo/alert-dialog/alert-dialog.css"
+        },
+        {
+          "path": "src/echo/alert-dialog/alert-dialog.tsx",
+          "type": "registry:component",
+          "target": "echo/alert-dialog/alert-dialog.tsx"
+        },
+        {
+          "path": "src/echo/alert-dialog/index.ts",
+          "type": "registry:component",
+          "target": "echo/alert-dialog/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-size",
+      "type": "registry:component",
+      "title": "SizeProvider",
+      "description": "One size scale for everything with a height: sm, md and lg are the control heights, so a button, a field and a select of the same size line up in a row.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/echo/size/size.tsx",
+          "type": "registry:component",
+          "target": "echo/size/size.tsx"
+        },
+        {
+          "path": "src/echo/size/index.ts",
+          "type": "registry:component",
+          "target": "echo/size/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-scope",
+      "type": "registry:component",
+      "title": "Scope",
+      "description": "A part of the page with its own accent or softer molding, derived by the theme engine.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/scope/scope.tsx",
+          "type": "registry:component",
+          "target": "echo/scope/scope.tsx"
+        },
+        {
+          "path": "src/echo/scope/scope.css",
+          "type": "registry:component",
+          "target": "echo/scope/scope.css"
+        },
+        {
+          "path": "src/echo/scope/index.ts",
+          "type": "registry:component",
+          "target": "echo/scope/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-hardware-button",
+      "type": "registry:component",
+      "title": "HardwareButton",
+      "description": "The molded tactile button: a cap in a recessed well with real press travel + sound. primary/neutral/ghost, sm/md/lg, icon slots, icon-only, loading, engraved. Built on semantic vars + useTactile.",
+      "dependencies": [
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/hardware-button/hardware-button.css",
+          "type": "registry:component",
+          "target": "echo/hardware-button/hardware-button.css"
+        },
+        {
+          "path": "src/echo/hardware-button/hardware-button.tsx",
+          "type": "registry:component",
+          "target": "echo/hardware-button/hardware-button.tsx"
+        },
+        {
+          "path": "src/echo/hardware-button/treatment.ts",
+          "type": "registry:component",
+          "target": "echo/hardware-button/treatment.ts"
+        },
+        {
+          "path": "src/echo/hardware-button/index.ts",
+          "type": "registry:component",
+          "target": "echo/hardware-button/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-popover",
+      "type": "registry:component",
+      "title": "Popover",
+      "description": "Base UI Popover (anchoring, focus, dismiss, a11y) skinned as an Echo panel. useGsapPresence summon-in / GSAP exit before unmount; sound.select on open.",
+      "dependencies": [
+        "gsap",
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/popover/popover.css",
+          "type": "registry:component",
+          "target": "echo/popover/popover.css"
+        },
+        {
+          "path": "src/echo/popover/popover.tsx",
+          "type": "registry:component",
+          "target": "echo/popover/popover.tsx"
+        },
+        {
+          "path": "src/echo/popover/index.ts",
+          "type": "registry:component",
+          "target": "echo/popover/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-tooltip",
+      "type": "registry:component",
+      "title": "Tooltip",
+      "description": "Base UI Tooltip (hover/focus, delay, a11y) skinned as a compact molded chip. Same useGsapPresence bridge as Modal/Popover.",
+      "dependencies": [
+        "gsap",
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/tooltip/tooltip.css",
+          "type": "registry:component",
+          "target": "echo/tooltip/tooltip.css"
+        },
+        {
+          "path": "src/echo/tooltip/tooltip.tsx",
+          "type": "registry:component",
+          "target": "echo/tooltip/tooltip.tsx"
+        },
+        {
+          "path": "src/echo/tooltip/index.ts",
+          "type": "registry:component",
+          "target": "echo/tooltip/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-select",
+      "type": "registry:component",
+      "title": "Select",
+      "description": "Base UI Select (typeahead, keyboard, a11y) skinned as an Echo dropdown — a molded cap trigger and a floating panel with a lit dot on the selected option. CSS fade/scale; sound.select on change.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/select/select.css",
+          "type": "registry:component",
+          "target": "echo/select/select.css"
+        },
+        {
+          "path": "src/echo/select/select.tsx",
+          "type": "registry:component",
+          "target": "echo/select/select.tsx"
+        },
+        {
+          "path": "src/echo/select/index.ts",
+          "type": "registry:component",
+          "target": "echo/select/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-command",
+      "type": "registry:component",
+      "title": "Command",
+      "description": "The command palette as a dot-matrix readout — the query line is the LcdChip's recessed screen well with an emissive caret and a scanline wash. Base UI Autocomplete for the input and listbox semantics, Base UI Dialog for the frame. Cmd/Ctrl+K by default; matches hidden keywords as well as labels.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/command/command.css",
+          "type": "registry:component",
+          "target": "echo/command/command.css"
+        },
+        {
+          "path": "src/echo/command/command.tsx",
+          "type": "registry:component",
+          "target": "echo/command/command.tsx"
+        },
+        {
+          "path": "src/echo/command/index.ts",
+          "type": "registry:component",
+          "target": "echo/command/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-tabs",
+      "type": "registry:component",
+      "title": "Tabs",
+      "description": "Base UI Tabs (roving focus, arrow-key nav, a11y) marked with the library's one \"you are here\": a 2px lit rail slides under the open tab, over a hairline baseline. Labels stay on the chassis. sound.select on change. Compound API.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/tabs/tabs.css",
+          "type": "registry:component",
+          "target": "echo/tabs/tabs.css"
+        },
+        {
+          "path": "src/echo/tabs/tabs.tsx",
+          "type": "registry:component",
+          "target": "echo/tabs/tabs.tsx"
+        },
+        {
+          "path": "src/echo/tabs/index.ts",
+          "type": "registry:component",
+          "target": "echo/tabs/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-accordion",
+      "type": "registry:component",
+      "title": "Accordion",
+      "description": "Base UI Accordion (keyboard, a11y, height measurement) skinned as molded device panels that expand. Click sound on toggle; height animates via CSS. Compound API.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/accordion/accordion.css",
+          "type": "registry:component",
+          "target": "echo/accordion/accordion.css"
+        },
+        {
+          "path": "src/echo/accordion/accordion.tsx",
+          "type": "registry:component",
+          "target": "echo/accordion/accordion.tsx"
+        },
+        {
+          "path": "src/echo/accordion/index.ts",
+          "type": "registry:component",
+          "target": "echo/accordion/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-switch",
+      "type": "registry:component",
+      "title": "Switch",
+      "description": "Base UI Switch (role=switch, keyboard, a11y) with a hardware-toggle skin — a molded thumb sliding in a recessed track — and a click sound on toggle.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/switch/switch.css",
+          "type": "registry:component",
+          "target": "echo/switch/switch.css"
+        },
+        {
+          "path": "src/echo/switch/switch.tsx",
+          "type": "registry:component",
+          "target": "echo/switch/switch.tsx"
+        },
+        {
+          "path": "src/echo/switch/index.ts",
+          "type": "registry:component",
+          "target": "echo/switch/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-checkbox",
+      "type": "registry:component",
+      "title": "Checkbox",
+      "description": "Base UI Checkbox (keyboard, indeterminate, a11y) with a molded box skin that fills accent and shows a check when set. Select sound on change.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/checkbox/checkbox.css",
+          "type": "registry:component",
+          "target": "echo/checkbox/checkbox.css"
+        },
+        {
+          "path": "src/echo/checkbox/checkbox.tsx",
+          "type": "registry:component",
+          "target": "echo/checkbox/checkbox.tsx"
+        },
+        {
+          "path": "src/echo/checkbox/index.ts",
+          "type": "registry:component",
+          "target": "echo/checkbox/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-slider",
+      "type": "registry:component",
+      "title": "Slider",
+      "description": "Base UI Slider (keyboard, drag, track-press, a11y) with a recessed rail + molded knob and a scrubbing tick sound on each step.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/slider/slider.css",
+          "type": "registry:component",
+          "target": "echo/slider/slider.css"
+        },
+        {
+          "path": "src/echo/slider/slider.tsx",
+          "type": "registry:component",
+          "target": "echo/slider/slider.tsx"
+        },
+        {
+          "path": "src/echo/slider/index.ts",
+          "type": "registry:component",
+          "target": "echo/slider/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-segmented",
+      "type": "registry:component",
+      "title": "Segmented",
+      "description": "A hardware segmented selector — molded uppercase segments in a recessed well, the active one on the lit primary cap. A radiogroup value selector (roving focus, arrow-key select, select sound), distinct from Tabs which switches content panels.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/segmented/segmented.css",
+          "type": "registry:component",
+          "target": "echo/segmented/segmented.css"
+        },
+        {
+          "path": "src/echo/segmented/segmented.tsx",
+          "type": "registry:component",
+          "target": "echo/segmented/segmented.tsx"
+        },
+        {
+          "path": "src/echo/segmented/index.ts",
+          "type": "registry:component",
+          "target": "echo/segmented/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-field",
+      "type": "registry:component",
+      "title": "Field",
+      "description": "A text input sunk into a recessed well. The inner edge lights in the accent on focus; a mono eyebrow label and an optional machine (mono) value voice.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/field/field.css",
+          "type": "registry:component",
+          "target": "echo/field/field.css"
+        },
+        {
+          "path": "src/echo/field/field.tsx",
+          "type": "registry:component",
+          "target": "echo/field/field.tsx"
+        },
+        {
+          "path": "src/echo/field/index.ts",
+          "type": "registry:component",
+          "target": "echo/field/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-date-field",
+      "type": "registry:component",
+      "title": "DateField",
+      "description": "A date typed into wheels, day, month and year in the order the locale writes them, each a row of small flaps that turn over to the value. Field's recessed well, on the same size scale; the value is an ISO date.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size",
+        "@echo/echo-field"
+      ],
+      "files": [
+        {
+          "path": "src/echo/date-field/date-field.css",
+          "type": "registry:component",
+          "target": "echo/date-field/date-field.css"
+        },
+        {
+          "path": "src/echo/date-field/date-field.tsx",
+          "type": "registry:component",
+          "target": "echo/date-field/date-field.tsx"
+        },
+        {
+          "path": "src/echo/date-field/date.ts",
+          "type": "registry:component",
+          "target": "echo/date-field/date.ts"
+        },
+        {
+          "path": "src/echo/date-field/locale.ts",
+          "type": "registry:component",
+          "target": "echo/date-field/locale.ts"
+        },
+        {
+          "path": "src/echo/date-field/index.ts",
+          "type": "registry:component",
+          "target": "echo/date-field/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-calendar",
+      "type": "registry:component",
+      "title": "Calendar",
+      "description": "A month on a device screen: the days are its lit segments, the chosen day lit with the one lit accent and today on a lit rail. A grid with one Tab stop and the calendar keys; the value is an ISO date.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-date-field",
+        "@echo/echo-hardware-button",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/calendar/calendar.css",
+          "type": "registry:component",
+          "target": "echo/calendar/calendar.css"
+        },
+        {
+          "path": "src/echo/calendar/calendar.tsx",
+          "type": "registry:component",
+          "target": "echo/calendar/calendar.tsx"
+        },
+        {
+          "path": "src/echo/calendar/index.ts",
+          "type": "registry:component",
+          "target": "echo/calendar/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-date-picker",
+      "type": "registry:component",
+      "title": "DatePicker",
+      "description": "A DateField with a calendar key in its well: type the date, or choose it on a Calendar that opens under the field. The value is an ISO date.",
+      "dependencies": [],
+      "registryDependencies": [
+        "@echo/echo-date-field",
+        "@echo/echo-calendar",
+        "@echo/echo-popover",
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/date-picker/date-picker.css",
+          "type": "registry:component",
+          "target": "echo/date-picker/date-picker.css"
+        },
+        {
+          "path": "src/echo/date-picker/date-picker.tsx",
+          "type": "registry:component",
+          "target": "echo/date-picker/date-picker.tsx"
+        },
+        {
+          "path": "src/echo/date-picker/index.ts",
+          "type": "registry:component",
+          "target": "echo/date-picker/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-file-upload",
+      "type": "registry:component",
+      "title": "FileUpload",
+      "description": "A recessed tray you press to choose files or drop them on; its inner edge lights while files are over it. Each file becomes a row with a Progress strip while your handler uploads it, and a key to cancel, retry or remove it.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-field",
+        "@echo/echo-hardware-button",
+        "@echo/echo-progress",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/file-upload/file-upload.css",
+          "type": "registry:component",
+          "target": "echo/file-upload/file-upload.css"
+        },
+        {
+          "path": "src/echo/file-upload/file-upload.tsx",
+          "type": "registry:component",
+          "target": "echo/file-upload/file-upload.tsx"
+        },
+        {
+          "path": "src/echo/file-upload/index.ts",
+          "type": "registry:component",
+          "target": "echo/file-upload/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-textarea",
+      "type": "registry:component",
+      "title": "Textarea",
+      "description": "Field's recessed well, multi-line and autosizing. The height is measured from the browser's own layout rather than counted from newlines, so it stays right when lines wrap and when the container resizes.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/textarea/textarea.css",
+          "type": "registry:component",
+          "target": "echo/textarea/textarea.css"
+        },
+        {
+          "path": "src/echo/textarea/textarea.tsx",
+          "type": "registry:component",
+          "target": "echo/textarea/textarea.tsx"
+        },
+        {
+          "path": "src/echo/textarea/index.ts",
+          "type": "registry:component",
+          "target": "echo/textarea/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-badge",
+      "type": "registry:component",
+      "title": "Badge",
+      "description": "A small molded/LCD status label: neutral, accent, lcd, outline. Static; composes var(--echo-*).",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/badge/badge.css",
+          "type": "registry:component",
+          "target": "echo/badge/badge.css"
+        },
+        {
+          "path": "src/echo/badge/badge.tsx",
+          "type": "registry:component",
+          "target": "echo/badge/badge.tsx"
+        },
+        {
+          "path": "src/echo/badge/index.ts",
+          "type": "registry:component",
+          "target": "echo/badge/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-kbd",
+      "type": "registry:component",
+      "title": "Kbd",
+      "description": "A molded keycap for keyboard hints. Uses the <kbd> element; composes var(--echo-*).",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/kbd/kbd.css",
+          "type": "registry:component",
+          "target": "echo/kbd/kbd.css"
+        },
+        {
+          "path": "src/echo/kbd/kbd.tsx",
+          "type": "registry:component",
+          "target": "echo/kbd/kbd.tsx"
+        },
+        {
+          "path": "src/echo/kbd/index.ts",
+          "type": "registry:component",
+          "target": "echo/kbd/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-divider",
+      "type": "registry:component",
+      "title": "Divider",
+      "description": "A panel seam — a hairline with a faint light lip. Horizontal or vertical; role=separator.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/divider/divider.css",
+          "type": "registry:component",
+          "target": "echo/divider/divider.css"
+        },
+        {
+          "path": "src/echo/divider/divider.tsx",
+          "type": "registry:component",
+          "target": "echo/divider/divider.tsx"
+        },
+        {
+          "path": "src/echo/divider/index.ts",
+          "type": "registry:component",
+          "target": "echo/divider/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-stat-tile",
+      "type": "registry:component",
+      "title": "StatTile",
+      "description": "A recessed LCD readout: a glowing value over a machine label in a dark well. Static; composes var(--echo-*).",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-roll"
+      ],
+      "files": [
+        {
+          "path": "src/echo/stat-tile/stat-tile.css",
+          "type": "registry:component",
+          "target": "echo/stat-tile/stat-tile.css"
+        },
+        {
+          "path": "src/echo/stat-tile/stat-tile.tsx",
+          "type": "registry:component",
+          "target": "echo/stat-tile/stat-tile.tsx"
+        },
+        {
+          "path": "src/echo/stat-tile/index.ts",
+          "type": "registry:component",
+          "target": "echo/stat-tile/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-chart",
+      "type": "registry:component",
+      "title": "Chart",
+      "description": "StatTile's dot-matrix language applied to a series: a column per sample, cells lit from the bottom, in the recessed screen well LcdChip and Progress use. Quantises to whole cells by construction — a readout, not a charting library.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/chart/chart.css",
+          "type": "registry:component",
+          "target": "echo/chart/chart.css"
+        },
+        {
+          "path": "src/echo/chart/chart.tsx",
+          "type": "registry:component",
+          "target": "echo/chart/chart.tsx"
+        },
+        {
+          "path": "src/echo/chart/index.ts",
+          "type": "registry:component",
+          "target": "echo/chart/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-app-shell",
+      "type": "registry:component",
+      "title": "AppShell",
+      "description": "The app frame: a molded chassis rail, a sticky sidebar, and the content between them. Slots, not props. Ships the skip link by construction and derives the sidebar's sticky offset from the rail's height.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/app-shell/app-shell.css",
+          "type": "registry:component",
+          "target": "echo/app-shell/app-shell.css"
+        },
+        {
+          "path": "src/echo/app-shell/app-shell.tsx",
+          "type": "registry:component",
+          "target": "echo/app-shell/app-shell.tsx"
+        },
+        {
+          "path": "src/echo/app-shell/index.ts",
+          "type": "registry:component",
+          "target": "echo/app-shell/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-panel",
+      "type": "registry:component",
+      "title": "Panel",
+      "description": "The two halves of the device material law as a container: raised molded plastic (things you touch) or a recessed dark screen (things you read).",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/panel/panel.css",
+          "type": "registry:component",
+          "target": "echo/panel/panel.css"
+        },
+        {
+          "path": "src/echo/panel/panel.tsx",
+          "type": "registry:component",
+          "target": "echo/panel/panel.tsx"
+        },
+        {
+          "path": "src/echo/panel/index.ts",
+          "type": "registry:component",
+          "target": "echo/panel/index.ts"
+        },
+        {
+          "path": "src/echo/panel/ripple-surface.ts",
+          "type": "registry:component",
+          "target": "echo/panel/ripple-surface.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-progress",
+      "type": "registry:component",
+      "title": "Progress",
+      "description": "A discrete LED cell meter in a recessed strip — filled cells are lit accent LEDs with a bloom. Steppy by construction; role=progressbar.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/progress/progress.css",
+          "type": "registry:component",
+          "target": "echo/progress/progress.css"
+        },
+        {
+          "path": "src/echo/progress/progress.tsx",
+          "type": "registry:component",
+          "target": "echo/progress/progress.tsx"
+        },
+        {
+          "path": "src/echo/progress/index.ts",
+          "type": "registry:component",
+          "target": "echo/progress/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-loader",
+      "type": "registry:component",
+      "title": "Loader",
+      "description": "Three accent LEDs breathing in sequence — the device thinking. role=status; reduced motion holds the dots steady.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/loader/loader.css",
+          "type": "registry:component",
+          "target": "echo/loader/loader.css"
+        },
+        {
+          "path": "src/echo/loader/loader.tsx",
+          "type": "registry:component",
+          "target": "echo/loader/loader.tsx"
+        },
+        {
+          "path": "src/echo/loader/index.ts",
+          "type": "registry:component",
+          "target": "echo/loader/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-status-dot",
+      "type": "registry:component",
+      "title": "StatusDot",
+      "description": "A tiny LED — lit accent with a bloom, or dead plastic gray. Decorative (aria-hidden) unless given a label.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/status-dot/status-dot.css",
+          "type": "registry:component",
+          "target": "echo/status-dot/status-dot.css"
+        },
+        {
+          "path": "src/echo/status-dot/status-dot.tsx",
+          "type": "registry:component",
+          "target": "echo/status-dot/status-dot.tsx"
+        },
+        {
+          "path": "src/echo/status-dot/index.ts",
+          "type": "registry:component",
+          "target": "echo/status-dot/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-toast",
+      "type": "registry:component",
+      "title": "Toast",
+      "description": "A raised glass notification slab with a status LED — lit accent when active. Presentational (role=status); queueing stays in the consumer.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/toast/toast.css",
+          "type": "registry:component",
+          "target": "echo/toast/toast.css"
+        },
+        {
+          "path": "src/echo/toast/toast.tsx",
+          "type": "registry:component",
+          "target": "echo/toast/toast.tsx"
+        },
+        {
+          "path": "src/echo/toast/index.ts",
+          "type": "registry:component",
+          "target": "echo/toast/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-status-island",
+      "type": "registry:component",
+      "title": "StatusIsland",
+      "description": "Background work in a floating pill that blooms open for detail.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-status-dot",
+        "@echo/echo-lcd-chip",
+        "@echo/echo-progress",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/status-island/status-island.tsx",
+          "type": "registry:component",
+          "target": "echo/status-island/status-island.tsx"
+        },
+        {
+          "path": "src/echo/status-island/status-island.css",
+          "type": "registry:component",
+          "target": "echo/status-island/status-island.css"
+        },
+        {
+          "path": "src/echo/status-island/index.ts",
+          "type": "registry:component",
+          "target": "echo/status-island/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-receipt",
+      "type": "registry:component",
+      "title": "Receipt",
+      "description": "A summary that feeds out of a slot a line at a time, on paper you tear off.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/receipt/receipt.tsx",
+          "type": "registry:component",
+          "target": "echo/receipt/receipt.tsx"
+        },
+        {
+          "path": "src/echo/receipt/receipt.css",
+          "type": "registry:component",
+          "target": "echo/receipt/receipt.css"
+        },
+        {
+          "path": "src/echo/receipt/barcode.ts",
+          "type": "registry:component",
+          "target": "echo/receipt/barcode.ts"
+        },
+        {
+          "path": "src/echo/receipt/index.ts",
+          "type": "registry:component",
+          "target": "echo/receipt/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-ticket",
+      "type": "registry:component",
+      "title": "Ticket",
+      "description": "A paper pass whose stub tears off along its perforation.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-receipt"
+      ],
+      "files": [
+        {
+          "path": "src/echo/ticket/ticket.tsx",
+          "type": "registry:component",
+          "target": "echo/ticket/ticket.tsx"
+        },
+        {
+          "path": "src/echo/ticket/ticket.css",
+          "type": "registry:component",
+          "target": "echo/ticket/ticket.css"
+        },
+        {
+          "path": "src/echo/ticket/index.ts",
+          "type": "registry:component",
+          "target": "echo/ticket/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-now-playing",
+      "type": "registry:component",
+      "title": "NowPlaying",
+      "description": "A small player: a screen, a strip to scrub, the transport keys.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-segment-display",
+        "@echo/echo-slider",
+        "@echo/echo-hardware-button",
+        "@echo/echo-toolbar",
+        "@echo/echo-scope"
+      ],
+      "files": [
+        {
+          "path": "src/echo/now-playing/now-playing.tsx",
+          "type": "registry:component",
+          "target": "echo/now-playing/now-playing.tsx"
+        },
+        {
+          "path": "src/echo/now-playing/now-playing.css",
+          "type": "registry:component",
+          "target": "echo/now-playing/now-playing.css"
+        },
+        {
+          "path": "src/echo/now-playing/clock.ts",
+          "type": "registry:component",
+          "target": "echo/now-playing/clock.ts"
+        },
+        {
+          "path": "src/echo/now-playing/index.ts",
+          "type": "registry:component",
+          "target": "echo/now-playing/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-lcd-chip",
+      "type": "registry:component",
+      "title": "LcdChip",
+      "description": "An inline recessed LCD readout — a glowing accent value beside a machine label, sunk into a dark well. The chip form of StatTile.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-roll"
+      ],
+      "files": [
+        {
+          "path": "src/echo/lcd-chip/lcd-chip.css",
+          "type": "registry:component",
+          "target": "echo/lcd-chip/lcd-chip.css"
+        },
+        {
+          "path": "src/echo/lcd-chip/lcd-chip.tsx",
+          "type": "registry:component",
+          "target": "echo/lcd-chip/lcd-chip.tsx"
+        },
+        {
+          "path": "src/echo/lcd-chip/index.ts",
+          "type": "registry:component",
+          "target": "echo/lcd-chip/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-segment-display",
+      "type": "registry:component",
+      "title": "SegmentDisplay",
+      "description": "A seven-segment readout whose dark segments stay faintly visible, with dim padding zeros.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-roll",
+        "@echo/echo-scope"
+      ],
+      "files": [
+        {
+          "path": "src/echo/segment-display/segment-display.tsx",
+          "type": "registry:component",
+          "target": "echo/segment-display/segment-display.tsx"
+        },
+        {
+          "path": "src/echo/segment-display/segment-display.css",
+          "type": "registry:component",
+          "target": "echo/segment-display/segment-display.css"
+        },
+        {
+          "path": "src/echo/segment-display/segments.ts",
+          "type": "registry:component",
+          "target": "echo/segment-display/segments.ts"
+        },
+        {
+          "path": "src/echo/segment-display/index.ts",
+          "type": "registry:component",
+          "target": "echo/segment-display/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-date-tile",
+      "type": "registry:component",
+      "title": "DateTile",
+      "description": "A desk calendar's page: weekday and month engraved, the day lit on a screen.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-segment-display",
+        "@echo/echo-panel",
+        "@echo/echo-scope"
+      ],
+      "files": [
+        {
+          "path": "src/echo/date-tile/date-tile.tsx",
+          "type": "registry:component",
+          "target": "echo/date-tile/date-tile.tsx"
+        },
+        {
+          "path": "src/echo/date-tile/date-tile.css",
+          "type": "registry:component",
+          "target": "echo/date-tile/date-tile.css"
+        },
+        {
+          "path": "src/echo/date-tile/dates.ts",
+          "type": "registry:component",
+          "target": "echo/date-tile/dates.ts"
+        },
+        {
+          "path": "src/echo/date-tile/index.ts",
+          "type": "registry:component",
+          "target": "echo/date-tile/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-annunciator",
+      "type": "registry:component",
+      "title": "Annunciator",
+      "description": "Fixed marks on a screen's glass that light when what they name is happening.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/annunciator/annunciator.tsx",
+          "type": "registry:component",
+          "target": "echo/annunciator/annunciator.tsx"
+        },
+        {
+          "path": "src/echo/annunciator/annunciator.css",
+          "type": "registry:component",
+          "target": "echo/annunciator/annunciator.css"
+        },
+        {
+          "path": "src/echo/annunciator/index.ts",
+          "type": "registry:component",
+          "target": "echo/annunciator/index.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@echo/echo-scope"
+      ]
+    },
+    {
+      "name": "echo-led-key",
+      "type": "registry:component",
+      "title": "LedKey",
+      "description": "A molded pill key with an indicator LED that breathes while lit. The latching sibling of HardwareButton — for a key whose own state is part of the answer.",
+      "dependencies": [
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/led-key/led-key.css",
+          "type": "registry:component",
+          "target": "echo/led-key/led-key.css"
+        },
+        {
+          "path": "src/echo/led-key/led-key.tsx",
+          "type": "registry:component",
+          "target": "echo/led-key/led-key.tsx"
+        },
+        {
+          "path": "src/echo/led-key/index.ts",
+          "type": "registry:component",
+          "target": "echo/led-key/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-engraved-plate",
+      "type": "registry:component",
+      "title": "EngravedPlate",
+      "description": "A paper-coloured metal plate with text cut into it and rivets at the edges — the one non-emissive readout. For a fact fixed to the device, where LcdChip is for a live value.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/engraved-plate/engraved-plate.css",
+          "type": "registry:component",
+          "target": "echo/engraved-plate/engraved-plate.css"
+        },
+        {
+          "path": "src/echo/engraved-plate/engraved-plate.tsx",
+          "type": "registry:component",
+          "target": "echo/engraved-plate/engraved-plate.tsx"
+        },
+        {
+          "path": "src/echo/engraved-plate/index.ts",
+          "type": "registry:component",
+          "target": "echo/engraved-plate/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-textures",
+      "type": "registry:component",
+      "title": "Textures",
+      "description": "The grain law as composable overlays: Dither, Noise, Halftone, Scanlines, plus GrainField and Textured. Inline SVG tiles, no asset files; decorative and pointer-events-free.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/textures/textures.css",
+          "type": "registry:component",
+          "target": "echo/textures/textures.css"
+        },
+        {
+          "path": "src/echo/textures/tiles.ts",
+          "type": "registry:component",
+          "target": "echo/textures/tiles.ts"
+        },
+        {
+          "path": "src/echo/textures/textures.tsx",
+          "type": "registry:component",
+          "target": "echo/textures/textures.tsx"
+        },
+        {
+          "path": "src/echo/textures/index.ts",
+          "type": "registry:component",
+          "target": "echo/textures/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-shader-field",
+      "type": "registry:component",
+      "title": "ShaderField",
+      "description": "The live brand field — a WebGL domain-warped fbm gradient sampled from the accent ramp, blooming toward the cursor. Reduced motion draws one static frame; no WebGL falls back to a CSS gradient.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/shader-field/shader-field.css",
+          "type": "registry:component",
+          "target": "echo/shader-field/shader-field.css"
+        },
+        {
+          "path": "src/echo/shader-field/shader.ts",
+          "type": "registry:component",
+          "target": "echo/shader-field/shader.ts"
+        },
+        {
+          "path": "src/echo/shader-field/shader-field.tsx",
+          "type": "registry:component",
+          "target": "echo/shader-field/shader-field.tsx"
+        },
+        {
+          "path": "src/echo/shader-field/index.ts",
+          "type": "registry:component",
+          "target": "echo/shader-field/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-radio-group",
+      "type": "registry:component",
+      "title": "RadioGroup",
+      "description": "One choice from a small set, as molded selector caps with a pip that lights accent when chosen. Base UI owns roving focus and arrow-key selection.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/radio-group/radio-group.css",
+          "type": "registry:component",
+          "target": "echo/radio-group/radio-group.css"
+        },
+        {
+          "path": "src/echo/radio-group/radio-group.tsx",
+          "type": "registry:component",
+          "target": "echo/radio-group/radio-group.tsx"
+        },
+        {
+          "path": "src/echo/radio-group/index.ts",
+          "type": "registry:component",
+          "target": "echo/radio-group/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-otp-field",
+      "type": "registry:component",
+      "title": "OTP field",
+      "description": "The one-time code a sign-in asks for, as a row of lit digit windows. Built on Base UI's OTP Field: paste fills the row, arrow keys and Backspace walk it, and autocomplete=\"one-time-code\" lets a phone offer the code.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/otp-field/otp-field.css",
+          "type": "registry:component",
+          "target": "echo/otp-field/otp-field.css"
+        },
+        {
+          "path": "src/echo/otp-field/otp-field.tsx",
+          "type": "registry:component",
+          "target": "echo/otp-field/otp-field.tsx"
+        },
+        {
+          "path": "src/echo/otp-field/index.ts",
+          "type": "registry:component",
+          "target": "echo/otp-field/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-number-field",
+      "type": "registry:component",
+      "title": "NumberField",
+      "description": "A machined readout between two molded step caps, with the label doubling as a drag-to-scrub handle. Base UI owns typing, arrow keys, step sizes, and clamping.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-roll",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/number-field/number-field.css",
+          "type": "registry:component",
+          "target": "echo/number-field/number-field.css"
+        },
+        {
+          "path": "src/echo/number-field/number-field.tsx",
+          "type": "registry:component",
+          "target": "echo/number-field/number-field.tsx"
+        },
+        {
+          "path": "src/echo/number-field/index.ts",
+          "type": "registry:component",
+          "target": "echo/number-field/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-avatar",
+      "type": "registry:component",
+      "title": "Avatar",
+      "description": "A person or device as a molded disc — image in a well, or initials engraved into the plastic when there is no image or it fails to load.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/avatar/avatar.css",
+          "type": "registry:component",
+          "target": "echo/avatar/avatar.css"
+        },
+        {
+          "path": "src/echo/avatar/avatar.tsx",
+          "type": "registry:component",
+          "target": "echo/avatar/avatar.tsx"
+        },
+        {
+          "path": "src/echo/avatar/index.ts",
+          "type": "registry:component",
+          "target": "echo/avatar/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-tag",
+      "type": "registry:component",
+      "title": "Tag",
+      "description": "A label the user applied, optionally removable. Badge reports what the system knows; Tag is a small plate that can be peeled off.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/tag/tag.css",
+          "type": "registry:component",
+          "target": "echo/tag/tag.css"
+        },
+        {
+          "path": "src/echo/tag/tag.tsx",
+          "type": "registry:component",
+          "target": "echo/tag/tag.tsx"
+        },
+        {
+          "path": "src/echo/tag/index.ts",
+          "type": "registry:component",
+          "target": "echo/tag/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-count-badge",
+      "type": "registry:component",
+      "title": "CountBadge",
+      "description": "A number worth noticing — the lit sibling of Badge. Disappears at zero, caps its face at max while still announcing the true count.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/count-badge/count-badge.css",
+          "type": "registry:component",
+          "target": "echo/count-badge/count-badge.css"
+        },
+        {
+          "path": "src/echo/count-badge/count-badge.tsx",
+          "type": "registry:component",
+          "target": "echo/count-badge/count-badge.tsx"
+        },
+        {
+          "path": "src/echo/count-badge/index.ts",
+          "type": "registry:component",
+          "target": "echo/count-badge/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-skeleton",
+      "type": "registry:component",
+      "title": "Skeleton",
+      "description": "The shape of content that has not arrived: a recess with a slow sheen. aria-hidden by default; one label announces the wait for the whole region.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/skeleton/skeleton.css",
+          "type": "registry:component",
+          "target": "echo/skeleton/skeleton.css"
+        },
+        {
+          "path": "src/echo/skeleton/skeleton.tsx",
+          "type": "registry:component",
+          "target": "echo/skeleton/skeleton.tsx"
+        },
+        {
+          "path": "src/echo/skeleton/index.ts",
+          "type": "registry:component",
+          "target": "echo/skeleton/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-banner",
+      "type": "registry:component",
+      "title": "Banner",
+      "description": "A persistent inline message strip for a condition that is still true. Severity by luminance and a tone pip, not by hues the seed does not own.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/banner/banner.css",
+          "type": "registry:component",
+          "target": "echo/banner/banner.css"
+        },
+        {
+          "path": "src/echo/banner/banner.tsx",
+          "type": "registry:component",
+          "target": "echo/banner/banner.tsx"
+        },
+        {
+          "path": "src/echo/banner/index.ts",
+          "type": "registry:component",
+          "target": "echo/banner/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-empty-state",
+      "type": "registry:component",
+      "title": "EmptyState",
+      "description": "Nothing here, and what to do about it — a quiet recess with the way forward built into the API.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/empty-state/empty-state.css",
+          "type": "registry:component",
+          "target": "echo/empty-state/empty-state.css"
+        },
+        {
+          "path": "src/echo/empty-state/empty-state.tsx",
+          "type": "registry:component",
+          "target": "echo/empty-state/empty-state.tsx"
+        },
+        {
+          "path": "src/echo/empty-state/index.ts",
+          "type": "registry:component",
+          "target": "echo/empty-state/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-creature",
+      "type": "registry:component",
+      "title": "Creature",
+      "description": "A companion that reports what's happening: Echo, or your own, as a vector or in dots.",
+      "dependencies": [
+        "echo-ui-core",
+        "gsap"
+      ],
+      "files": [
+        {
+          "path": "src/echo/creature/creature.tsx",
+          "type": "registry:component",
+          "target": "echo/creature/creature.tsx"
+        },
+        {
+          "path": "src/echo/creature/creature.css",
+          "type": "registry:component",
+          "target": "echo/creature/creature.css"
+        },
+        {
+          "path": "src/echo/creature/character.ts",
+          "type": "registry:component",
+          "target": "echo/creature/character.ts"
+        },
+        {
+          "path": "src/echo/creature/dots.ts",
+          "type": "registry:component",
+          "target": "echo/creature/dots.ts"
+        },
+        {
+          "path": "src/echo/creature/rasterize.ts",
+          "type": "registry:component",
+          "target": "echo/creature/rasterize.ts"
+        },
+        {
+          "path": "src/echo/creature/rig.ts",
+          "type": "registry:component",
+          "target": "echo/creature/rig.ts"
+        },
+        {
+          "path": "src/echo/creature/index.ts",
+          "type": "registry:component",
+          "target": "echo/creature/index.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@echo/echo-scope"
+      ]
+    },
+    {
+      "name": "echo-perch",
+      "type": "registry:component",
+      "title": "Perch",
+      "description": "A creature on a card's top edge, sitting or peeking.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-creature"
+      ],
+      "files": [
+        {
+          "path": "src/echo/perch/perch.tsx",
+          "type": "registry:component",
+          "target": "echo/perch/perch.tsx"
+        },
+        {
+          "path": "src/echo/perch/perch.css",
+          "type": "registry:component",
+          "target": "echo/perch/perch.css"
+        },
+        {
+          "path": "src/echo/perch/index.ts",
+          "type": "registry:component",
+          "target": "echo/perch/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-table",
+      "type": "registry:component",
+      "title": "Table",
+      "description": "Rows of data in a recessed screen well. Real table semantics, a required caption, tabular figures for numbers, and a scroll region that keyboard users can reach. Given columns and rows, it sorts, selects, filters and windows them.",
+      "dependencies": [
+        "gsap",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/table/table.css",
+          "type": "registry:component",
+          "target": "echo/table/table.css"
+        },
+        {
+          "path": "src/echo/table/table.tsx",
+          "type": "registry:component",
+          "target": "echo/table/table.tsx"
+        },
+        {
+          "path": "src/echo/table/table-data.tsx",
+          "type": "registry:component",
+          "target": "echo/table/table-data.tsx"
+        },
+        {
+          "path": "src/echo/table/index.ts",
+          "type": "registry:component",
+          "target": "echo/table/index.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@echo/echo-checkbox"
+      ]
+    },
+    {
+      "name": "echo-description-list",
+      "type": "registry:component",
+      "title": "DescriptionList",
+      "description": "Things and their values, on the page or on a screen.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/description-list/description-list.tsx",
+          "type": "registry:component",
+          "target": "echo/description-list/description-list.tsx"
+        },
+        {
+          "path": "src/echo/description-list/description-list.css",
+          "type": "registry:component",
+          "target": "echo/description-list/description-list.css"
+        },
+        {
+          "path": "src/echo/description-list/index.ts",
+          "type": "registry:component",
+          "target": "echo/description-list/index.ts"
+        }
+      ],
+      "registryDependencies": [
+        "@echo/echo-scope"
+      ]
+    },
+    {
+      "name": "echo-shortcut-map",
+      "type": "registry:component",
+      "title": "ShortcutMap",
+      "description": "A keyboard of Kbd caps over the list of shortcuts, lighting each one's keys.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-kbd"
+      ],
+      "files": [
+        {
+          "path": "src/echo/shortcut-map/shortcut-map.tsx",
+          "type": "registry:component",
+          "target": "echo/shortcut-map/shortcut-map.tsx"
+        },
+        {
+          "path": "src/echo/shortcut-map/shortcut-map.css",
+          "type": "registry:component",
+          "target": "echo/shortcut-map/shortcut-map.css"
+        },
+        {
+          "path": "src/echo/shortcut-map/board.ts",
+          "type": "registry:component",
+          "target": "echo/shortcut-map/board.ts"
+        },
+        {
+          "path": "src/echo/shortcut-map/index.ts",
+          "type": "registry:component",
+          "target": "echo/shortcut-map/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-widget-grid",
+      "type": "registry:component",
+      "title": "WidgetGrid",
+      "description": "Widgets at fixed footprints that people arrange, by drag or by key.",
+      "dependencies": [
+        "echo-ui-core",
+        "gsap"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/widget-grid/widget-grid.tsx",
+          "type": "registry:component",
+          "target": "echo/widget-grid/widget-grid.tsx"
+        },
+        {
+          "path": "src/echo/widget-grid/widget-grid.css",
+          "type": "registry:component",
+          "target": "echo/widget-grid/widget-grid.css"
+        },
+        {
+          "path": "src/echo/widget-grid/order.ts",
+          "type": "registry:component",
+          "target": "echo/widget-grid/order.ts"
+        },
+        {
+          "path": "src/echo/widget-grid/index.ts",
+          "type": "registry:component",
+          "target": "echo/widget-grid/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-breadcrumb",
+      "type": "registry:component",
+      "title": "Breadcrumb",
+      "description": "Where you are in the hierarchy, as an engraved trail. Labelled nav around an ordered list; the current page is text with aria-current, not a link.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/breadcrumb/breadcrumb.css",
+          "type": "registry:component",
+          "target": "echo/breadcrumb/breadcrumb.css"
+        },
+        {
+          "path": "src/echo/breadcrumb/breadcrumb.tsx",
+          "type": "registry:component",
+          "target": "echo/breadcrumb/breadcrumb.tsx"
+        },
+        {
+          "path": "src/echo/breadcrumb/index.ts",
+          "type": "registry:component",
+          "target": "echo/breadcrumb/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-pagination",
+      "type": "registry:component",
+      "title": "Pagination",
+      "description": "Molded number caps with the current page lit. The window never elides a single page and never changes width as you page through.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/pagination/pagination.css",
+          "type": "registry:component",
+          "target": "echo/pagination/pagination.css"
+        },
+        {
+          "path": "src/echo/pagination/range.ts",
+          "type": "registry:component",
+          "target": "echo/pagination/range.ts"
+        },
+        {
+          "path": "src/echo/pagination/pagination.tsx",
+          "type": "registry:component",
+          "target": "echo/pagination/pagination.tsx"
+        },
+        {
+          "path": "src/echo/pagination/index.ts",
+          "type": "registry:component",
+          "target": "echo/pagination/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-steps",
+      "type": "registry:component",
+      "title": "Steps",
+      "description": "How far through a sequence you are, as LED stations on a wire. aria-current on the current station; the done state reaches screen readers as words, not colour.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/steps/steps.css",
+          "type": "registry:component",
+          "target": "echo/steps/steps.css"
+        },
+        {
+          "path": "src/echo/steps/steps.tsx",
+          "type": "registry:component",
+          "target": "echo/steps/steps.tsx"
+        },
+        {
+          "path": "src/echo/steps/index.ts",
+          "type": "registry:component",
+          "target": "echo/steps/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-card",
+      "type": "registry:component",
+      "title": "Card",
+      "description": "A Panel with an anatomy: media, header, body and footer, spaced by size; the whole card can be one link or button.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-panel",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/card/card.tsx",
+          "type": "registry:component",
+          "target": "echo/card/card.tsx"
+        },
+        {
+          "path": "src/echo/card/card.css",
+          "type": "registry:component",
+          "target": "echo/card/card.css"
+        },
+        {
+          "path": "src/echo/card/index.ts",
+          "type": "registry:component",
+          "target": "echo/card/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-item",
+      "type": "registry:component",
+      "title": "Item",
+      "description": "The row every list is made of: media, title, description, trailing content, and actions behind it that a swipe or Tab reveals.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/item/item.tsx",
+          "type": "registry:component",
+          "target": "echo/item/item.tsx"
+        },
+        {
+          "path": "src/echo/item/item.css",
+          "type": "registry:component",
+          "target": "echo/item/item.css"
+        },
+        {
+          "path": "src/echo/item/index.ts",
+          "type": "registry:component",
+          "target": "echo/item/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-layout",
+      "type": "registry:component",
+      "title": "Stack & Grid",
+      "description": "The two layouts a screen is made of, with gaps on the space scale.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/echo/layout/layout.tsx",
+          "type": "registry:component",
+          "target": "echo/layout/layout.tsx"
+        },
+        {
+          "path": "src/echo/layout/layout.css",
+          "type": "registry:component",
+          "target": "echo/layout/layout.css"
+        },
+        {
+          "path": "src/echo/layout/index.ts",
+          "type": "registry:component",
+          "target": "echo/layout/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-collapsible",
+      "type": "registry:component",
+      "title": "Collapsible",
+      "description": "One disclosure on its own: a ruled row with a chevron that opens a panel.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/collapsible/collapsible.tsx",
+          "type": "registry:component",
+          "target": "echo/collapsible/collapsible.tsx"
+        },
+        {
+          "path": "src/echo/collapsible/collapsible.css",
+          "type": "registry:component",
+          "target": "echo/collapsible/collapsible.css"
+        },
+        {
+          "path": "src/echo/collapsible/index.ts",
+          "type": "registry:component",
+          "target": "echo/collapsible/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-scroll-area",
+      "type": "registry:component",
+      "title": "ScrollArea",
+      "description": "A region that scrolls inside itself, with a groove and a molded thumb, and shade where the content continues.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/echo/scroll-area/scroll-area.tsx",
+          "type": "registry:component",
+          "target": "echo/scroll-area/scroll-area.tsx"
+        },
+        {
+          "path": "src/echo/scroll-area/scroll-area.css",
+          "type": "registry:component",
+          "target": "echo/scroll-area/scroll-area.css"
+        },
+        {
+          "path": "src/echo/scroll-area/index.ts",
+          "type": "registry:component",
+          "target": "echo/scroll-area/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-link",
+      "type": "registry:component",
+      "title": "Link",
+      "description": "Inline text that goes somewhere: readable words with the accent as the underline.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/echo/link/link.tsx",
+          "type": "registry:component",
+          "target": "echo/link/link.tsx"
+        },
+        {
+          "path": "src/echo/link/link.css",
+          "type": "registry:component",
+          "target": "echo/link/link.css"
+        },
+        {
+          "path": "src/echo/link/index.ts",
+          "type": "registry:component",
+          "target": "echo/link/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-toggle",
+      "type": "registry:component",
+      "title": "Toggle",
+      "description": "The quiet key of a toolbar: on is the cap held down in its well. ToggleGroup puts several in one well.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size",
+        "@echo/echo-toolbar"
+      ],
+      "files": [
+        {
+          "path": "src/echo/toggle/toggle.tsx",
+          "type": "registry:component",
+          "target": "echo/toggle/toggle.tsx"
+        },
+        {
+          "path": "src/echo/toggle/toggle.css",
+          "type": "registry:component",
+          "target": "echo/toggle/toggle.css"
+        },
+        {
+          "path": "src/echo/toggle/index.ts",
+          "type": "registry:component",
+          "target": "echo/toggle/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-toolbar",
+      "type": "registry:component",
+      "title": "Toolbar",
+      "description": "Several caps sharing one long well: ButtonGroup, and Toolbar with one tab stop and arrow keys.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/toolbar/toolbar.tsx",
+          "type": "registry:component",
+          "target": "echo/toolbar/toolbar.tsx"
+        },
+        {
+          "path": "src/echo/toolbar/toolbar-context.ts",
+          "type": "registry:component",
+          "target": "echo/toolbar/toolbar-context.ts"
+        },
+        {
+          "path": "src/echo/toolbar/toolbar.css",
+          "type": "registry:component",
+          "target": "echo/toolbar/toolbar.css"
+        },
+        {
+          "path": "src/echo/toolbar/index.ts",
+          "type": "registry:component",
+          "target": "echo/toolbar/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-range-slider",
+      "type": "registry:component",
+      "title": "RangeSlider",
+      "description": "Two knobs on one rail for a span, with Slider's weight.",
+      "dependencies": [
+        "@base-ui/react",
+        "gsap",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-slider"
+      ],
+      "files": [
+        {
+          "path": "src/echo/range-slider/range-slider.tsx",
+          "type": "registry:component",
+          "target": "echo/range-slider/range-slider.tsx"
+        },
+        {
+          "path": "src/echo/range-slider/range-slider.css",
+          "type": "registry:component",
+          "target": "echo/range-slider/range-slider.css"
+        },
+        {
+          "path": "src/echo/range-slider/index.ts",
+          "type": "registry:component",
+          "target": "echo/range-slider/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-knob",
+      "type": "registry:component",
+      "title": "Knob",
+      "description": "A molded rotary cap with detents, a lit scale and every slider key.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/knob/knob.tsx",
+          "type": "registry:component",
+          "target": "echo/knob/knob.tsx"
+        },
+        {
+          "path": "src/echo/knob/knob.css",
+          "type": "registry:component",
+          "target": "echo/knob/knob.css"
+        },
+        {
+          "path": "src/echo/knob/index.ts",
+          "type": "registry:component",
+          "target": "echo/knob/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-tuner",
+      "type": "registry:component",
+      "title": "Tuner",
+      "description": "A number tuned like a radio: a scale slides under a lit needle and a segment reading follows.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-segment-display",
+        "@echo/echo-scope"
+      ],
+      "files": [
+        {
+          "path": "src/echo/tuner/tuner.tsx",
+          "type": "registry:component",
+          "target": "echo/tuner/tuner.tsx"
+        },
+        {
+          "path": "src/echo/tuner/tuner.css",
+          "type": "registry:component",
+          "target": "echo/tuner/tuner.css"
+        },
+        {
+          "path": "src/echo/tuner/scale.ts",
+          "type": "registry:component",
+          "target": "echo/tuner/scale.ts"
+        },
+        {
+          "path": "src/echo/tuner/index.ts",
+          "type": "registry:component",
+          "target": "echo/tuner/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-keypad",
+      "type": "registry:component",
+      "title": "Keypad",
+      "description": "A payment terminal's keys: an amount, a PIN or a code entered on HardwareButton caps.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-segment-display",
+        "@echo/echo-status-dot",
+        "@echo/echo-scope"
+      ],
+      "files": [
+        {
+          "path": "src/echo/keypad/keypad.tsx",
+          "type": "registry:component",
+          "target": "echo/keypad/keypad.tsx"
+        },
+        {
+          "path": "src/echo/keypad/keypad.css",
+          "type": "registry:component",
+          "target": "echo/keypad/keypad.css"
+        },
+        {
+          "path": "src/echo/keypad/entry.ts",
+          "type": "registry:component",
+          "target": "echo/keypad/entry.ts"
+        },
+        {
+          "path": "src/echo/keypad/index.ts",
+          "type": "registry:component",
+          "target": "echo/keypad/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-filter-tray",
+      "type": "registry:component",
+      "title": "FilterTray",
+      "description": "Filter pads in one well that fold into the action when applied.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph",
+        "@echo/echo-size",
+        "@echo/echo-scope"
+      ],
+      "files": [
+        {
+          "path": "src/echo/filter-tray/filter-tray.tsx",
+          "type": "registry:component",
+          "target": "echo/filter-tray/filter-tray.tsx"
+        },
+        {
+          "path": "src/echo/filter-tray/filter-tray.css",
+          "type": "registry:component",
+          "target": "echo/filter-tray/filter-tray.css"
+        },
+        {
+          "path": "src/echo/filter-tray/index.ts",
+          "type": "registry:component",
+          "target": "echo/filter-tray/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-week-strip",
+      "type": "registry:component",
+      "title": "WeekStrip",
+      "description": "A week of days to tap through, today on a lit rail, busy days with a pip.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-segmented",
+        "@echo/echo-date-tile"
+      ],
+      "files": [
+        {
+          "path": "src/echo/week-strip/week-strip.tsx",
+          "type": "registry:component",
+          "target": "echo/week-strip/week-strip.tsx"
+        },
+        {
+          "path": "src/echo/week-strip/week-strip.css",
+          "type": "registry:component",
+          "target": "echo/week-strip/week-strip.css"
+        },
+        {
+          "path": "src/echo/week-strip/index.ts",
+          "type": "registry:component",
+          "target": "echo/week-strip/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-switch-bank",
+      "type": "registry:component",
+      "title": "SwitchBank",
+      "description": "A table of Switches for settings that come in a grid, a Checkbox per column.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-table",
+        "@echo/echo-switch",
+        "@echo/echo-checkbox"
+      ],
+      "files": [
+        {
+          "path": "src/echo/switch-bank/switch-bank.tsx",
+          "type": "registry:component",
+          "target": "echo/switch-bank/switch-bank.tsx"
+        },
+        {
+          "path": "src/echo/switch-bank/switch-bank.css",
+          "type": "registry:component",
+          "target": "echo/switch-bank/switch-bank.css"
+        },
+        {
+          "path": "src/echo/switch-bank/index.ts",
+          "type": "registry:component",
+          "target": "echo/switch-bank/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-jog-wheel",
+      "type": "registry:component",
+      "title": "JogWheel",
+      "description": "A knob with no ends: slow for a step, spin for a long way.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-knob"
+      ],
+      "files": [
+        {
+          "path": "src/echo/jog-wheel/jog-wheel.tsx",
+          "type": "registry:component",
+          "target": "echo/jog-wheel/jog-wheel.tsx"
+        },
+        {
+          "path": "src/echo/jog-wheel/jog-wheel.css",
+          "type": "registry:component",
+          "target": "echo/jog-wheel/jog-wheel.css"
+        },
+        {
+          "path": "src/echo/jog-wheel/spin.ts",
+          "type": "registry:component",
+          "target": "echo/jog-wheel/spin.ts"
+        },
+        {
+          "path": "src/echo/jog-wheel/index.ts",
+          "type": "registry:component",
+          "target": "echo/jog-wheel/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-quick-tile",
+      "type": "registry:component",
+      "title": "QuickTile",
+      "description": "A quick-settings tile: a big key that lights when the thing is on.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-status-dot",
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/quick-tile/quick-tile.tsx",
+          "type": "registry:component",
+          "target": "echo/quick-tile/quick-tile.tsx"
+        },
+        {
+          "path": "src/echo/quick-tile/quick-tile.css",
+          "type": "registry:component",
+          "target": "echo/quick-tile/quick-tile.css"
+        },
+        {
+          "path": "src/echo/quick-tile/index.ts",
+          "type": "registry:component",
+          "target": "echo/quick-tile/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-fill-slider",
+      "type": "registry:component",
+      "title": "FillSlider",
+      "description": "A tall tube that fills with lit plastic as you push it up.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/fill-slider/fill-slider.tsx",
+          "type": "registry:component",
+          "target": "echo/fill-slider/fill-slider.tsx"
+        },
+        {
+          "path": "src/echo/fill-slider/fill-slider.css",
+          "type": "registry:component",
+          "target": "echo/fill-slider/fill-slider.css"
+        },
+        {
+          "path": "src/echo/fill-slider/index.ts",
+          "type": "registry:component",
+          "target": "echo/fill-slider/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-patch-bay",
+      "type": "registry:component",
+      "title": "PatchBay",
+      "description": "Sockets on two sides and cables between: a Select per source is the control.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-select",
+        "@echo/echo-status-dot"
+      ],
+      "files": [
+        {
+          "path": "src/echo/patch-bay/patch-bay.tsx",
+          "type": "registry:component",
+          "target": "echo/patch-bay/patch-bay.tsx"
+        },
+        {
+          "path": "src/echo/patch-bay/patch-bay.css",
+          "type": "registry:component",
+          "target": "echo/patch-bay/patch-bay.css"
+        },
+        {
+          "path": "src/echo/patch-bay/cable.ts",
+          "type": "registry:component",
+          "target": "echo/patch-bay/cable.ts"
+        },
+        {
+          "path": "src/echo/patch-bay/index.ts",
+          "type": "registry:component",
+          "target": "echo/patch-bay/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-meter",
+      "type": "registry:component",
+      "title": "Meter",
+      "description": "A measurement in a known range: a tube of lit plastic that settles to its level.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/meter/meter.tsx",
+          "type": "registry:component",
+          "target": "echo/meter/meter.tsx"
+        },
+        {
+          "path": "src/echo/meter/meter.css",
+          "type": "registry:component",
+          "target": "echo/meter/meter.css"
+        },
+        {
+          "path": "src/echo/meter/index.ts",
+          "type": "registry:component",
+          "target": "echo/meter/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-level-meter",
+      "type": "registry:component",
+      "title": "LevelMeter",
+      "description": "A live level as LED cells with real ballistics and a held peak.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/level-meter/level-meter.tsx",
+          "type": "registry:component",
+          "target": "echo/level-meter/level-meter.tsx"
+        },
+        {
+          "path": "src/echo/level-meter/level-meter.css",
+          "type": "registry:component",
+          "target": "echo/level-meter/level-meter.css"
+        },
+        {
+          "path": "src/echo/level-meter/index.ts",
+          "type": "registry:component",
+          "target": "echo/level-meter/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-combobox",
+      "type": "registry:component",
+      "title": "Combobox",
+      "description": "A Select you can type into; multiple keeps choices as tags; creatable adds what you typed.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size",
+        "@echo/echo-select",
+        "@echo/echo-tag"
+      ],
+      "files": [
+        {
+          "path": "src/echo/combobox/combobox.tsx",
+          "type": "registry:component",
+          "target": "echo/combobox/combobox.tsx"
+        },
+        {
+          "path": "src/echo/combobox/combobox.css",
+          "type": "registry:component",
+          "target": "echo/combobox/combobox.css"
+        },
+        {
+          "path": "src/echo/combobox/index.ts",
+          "type": "registry:component",
+          "target": "echo/combobox/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-tags-input",
+      "type": "registry:component",
+      "title": "TagsInput",
+      "description": "Free-form tags typed into Field's well: Enter or a comma adds, Backspace removes.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-size",
+        "@echo/echo-tag",
+        "@echo/echo-combobox"
+      ],
+      "files": [
+        {
+          "path": "src/echo/tags-input/tags-input.tsx",
+          "type": "registry:component",
+          "target": "echo/tags-input/tags-input.tsx"
+        },
+        {
+          "path": "src/echo/tags-input/tags-input.css",
+          "type": "registry:component",
+          "target": "echo/tags-input/tags-input.css"
+        },
+        {
+          "path": "src/echo/tags-input/index.ts",
+          "type": "registry:component",
+          "target": "echo/tags-input/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-fieldset",
+      "type": "registry:component",
+      "title": "Fieldset",
+      "description": "A named group of fields with a legend.",
+      "dependencies": [
+        "@base-ui/react"
+      ],
+      "files": [
+        {
+          "path": "src/echo/fieldset/fieldset.tsx",
+          "type": "registry:component",
+          "target": "echo/fieldset/fieldset.tsx"
+        },
+        {
+          "path": "src/echo/fieldset/fieldset.css",
+          "type": "registry:component",
+          "target": "echo/fieldset/fieldset.css"
+        },
+        {
+          "path": "src/echo/fieldset/index.ts",
+          "type": "registry:component",
+          "target": "echo/fieldset/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-checkbox-group",
+      "type": "registry:component",
+      "title": "CheckboxGroup",
+      "description": "A named set of checkboxes sharing one value, with an optional parent.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-checkbox"
+      ],
+      "files": [
+        {
+          "path": "src/echo/checkbox-group/checkbox-group.tsx",
+          "type": "registry:component",
+          "target": "echo/checkbox-group/checkbox-group.tsx"
+        },
+        {
+          "path": "src/echo/checkbox-group/checkbox-group.css",
+          "type": "registry:component",
+          "target": "echo/checkbox-group/checkbox-group.css"
+        },
+        {
+          "path": "src/echo/checkbox-group/index.ts",
+          "type": "registry:component",
+          "target": "echo/checkbox-group/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-form",
+      "type": "registry:component",
+      "title": "Form",
+      "description": "A form that fails well: a summary of what to fix, each a link to its field.",
+      "dependencies": [],
+      "files": [
+        {
+          "path": "src/echo/form/form.tsx",
+          "type": "registry:component",
+          "target": "echo/form/form.tsx"
+        },
+        {
+          "path": "src/echo/form/form.css",
+          "type": "registry:component",
+          "target": "echo/form/form.css"
+        },
+        {
+          "path": "src/echo/form/index.ts",
+          "type": "registry:component",
+          "target": "echo/form/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-hold-button",
+      "type": "registry:component",
+      "title": "HoldButton",
+      "description": "Confirm by holding: the cap fills while pressed and drains if let go.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-size"
+      ],
+      "files": [
+        {
+          "path": "src/echo/hold-button/hold-button.tsx",
+          "type": "registry:component",
+          "target": "echo/hold-button/hold-button.tsx"
+        },
+        {
+          "path": "src/echo/hold-button/hold-button.css",
+          "type": "registry:component",
+          "target": "echo/hold-button/hold-button.css"
+        },
+        {
+          "path": "src/echo/hold-button/index.ts",
+          "type": "registry:component",
+          "target": "echo/hold-button/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-choice-cards",
+      "type": "registry:component",
+      "title": "ChoiceCards",
+      "description": "Options that need more than a word, as cards; the chosen one lights its edge.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-panel"
+      ],
+      "files": [
+        {
+          "path": "src/echo/choice-cards/choice-cards.tsx",
+          "type": "registry:component",
+          "target": "echo/choice-cards/choice-cards.tsx"
+        },
+        {
+          "path": "src/echo/choice-cards/choice-cards.css",
+          "type": "registry:component",
+          "target": "echo/choice-cards/choice-cards.css"
+        },
+        {
+          "path": "src/echo/choice-cards/index.ts",
+          "type": "registry:component",
+          "target": "echo/choice-cards/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-side-nav",
+      "type": "registry:component",
+      "title": "SideNav",
+      "description": "The navigation down the side of an app, with one lit rail that travels to where you are.",
+      "dependencies": [
+        "@base-ui/react",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/side-nav/side-nav.tsx",
+          "type": "registry:component",
+          "target": "echo/side-nav/side-nav.tsx"
+        },
+        {
+          "path": "src/echo/side-nav/side-nav.css",
+          "type": "registry:component",
+          "target": "echo/side-nav/side-nav.css"
+        },
+        {
+          "path": "src/echo/side-nav/index.ts",
+          "type": "registry:component",
+          "target": "echo/side-nav/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-tab-bar",
+      "type": "registry:component",
+      "title": "TabBar",
+      "description": "A phone app's bottom navigation: a floating molded dock whose cap travels to the place you're on.",
+      "dependencies": [
+        "gsap",
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/tab-bar/tab-bar.tsx",
+          "type": "registry:component",
+          "target": "echo/tab-bar/tab-bar.tsx"
+        },
+        {
+          "path": "src/echo/tab-bar/tab-bar.css",
+          "type": "registry:component",
+          "target": "echo/tab-bar/tab-bar.css"
+        },
+        {
+          "path": "src/echo/tab-bar/index.ts",
+          "type": "registry:component",
+          "target": "echo/tab-bar/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-notification-center",
+      "type": "registry:component",
+      "title": "NotificationCenter",
+      "description": "A bell with the unread count, opening an inbox of notifications.",
+      "dependencies": [],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-popover",
+        "@echo/echo-count-badge",
+        "@echo/echo-item"
+      ],
+      "files": [
+        {
+          "path": "src/echo/notification-center/notification-center.tsx",
+          "type": "registry:component",
+          "target": "echo/notification-center/notification-center.tsx"
+        },
+        {
+          "path": "src/echo/notification-center/notification-center.css",
+          "type": "registry:component",
+          "target": "echo/notification-center/notification-center.css"
+        },
+        {
+          "path": "src/echo/notification-center/index.ts",
+          "type": "registry:component",
+          "target": "echo/notification-center/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-pull-to-refresh",
+      "type": "registry:component",
+      "title": "PullToRefresh",
+      "description": "A list you pull down to reload: a rubber band, a key that clicks at the detent, and a real Refresh button beside the gesture.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-loader"
+      ],
+      "files": [
+        {
+          "path": "src/echo/pull-to-refresh/pull-to-refresh.css",
+          "type": "registry:component",
+          "target": "echo/pull-to-refresh/pull-to-refresh.css"
+        },
+        {
+          "path": "src/echo/pull-to-refresh/pull-to-refresh.tsx",
+          "type": "registry:component",
+          "target": "echo/pull-to-refresh/pull-to-refresh.tsx"
+        },
+        {
+          "path": "src/echo/pull-to-refresh/index.ts",
+          "type": "registry:component",
+          "target": "echo/pull-to-refresh/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-console",
+      "type": "registry:block",
+      "title": "Console screen",
+      "description": "A device dashboard as a front panel: AppShell, six StatTile readouts, an LED level matrix, a takes Table and Pagination. Proves density and data at scale.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-app-shell",
+        "@echo/echo-panel",
+        "@echo/echo-table",
+        "@echo/echo-stat-tile",
+        "@echo/echo-lcd-chip",
+        "@echo/echo-status-dot",
+        "@echo/echo-chart",
+        "@echo/echo-badge",
+        "@echo/echo-menu",
+        "@echo/echo-segmented",
+        "@echo/echo-engraved-plate",
+        "@echo/echo-pagination"
+      ],
+      "files": [
+        {
+          "path": "src/echo/console/console.css",
+          "type": "registry:block",
+          "target": "echo/console/console.css"
+        },
+        {
+          "path": "src/echo/console/console.tsx",
+          "type": "registry:block",
+          "target": "echo/console/console.tsx"
+        },
+        {
+          "path": "src/echo/console/index.ts",
+          "type": "registry:block",
+          "target": "echo/console/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-chat",
+      "type": "registry:block",
+      "title": "Chat screen",
+      "description": "One conversation as a front panel: Avatar + StatusDot header, a message log, a Loader typing indicator, and a Textarea composer with one lit Send cap. Proves the material language survives running text.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-avatar",
+        "@echo/echo-textarea",
+        "@echo/echo-hardware-button",
+        "@echo/echo-loader",
+        "@echo/echo-status-dot",
+        "@echo/echo-kbd"
+      ],
+      "files": [
+        {
+          "path": "src/echo/chat/chat.css",
+          "type": "registry:block",
+          "target": "echo/chat/chat.css"
+        },
+        {
+          "path": "src/echo/chat/chat.tsx",
+          "type": "registry:block",
+          "target": "echo/chat/chat.tsx"
+        },
+        {
+          "path": "src/echo/chat/index.ts",
+          "type": "registry:block",
+          "target": "echo/chat/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-morph",
+      "type": "registry:component",
+      "title": "Morph",
+      "description": "Wrap your own HardwareButtons and render any state: when the buttons change, the old ones flow into the new. The base for DoneButton, ConfirmButton and ActionFan.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/morph/morph.css",
+          "type": "registry:component",
+          "target": "echo/morph/morph.css"
+        },
+        {
+          "path": "src/echo/morph/morph.tsx",
+          "type": "registry:component",
+          "target": "echo/morph/morph.tsx"
+        },
+        {
+          "path": "src/echo/morph/index.ts",
+          "type": "registry:component",
+          "target": "echo/morph/index.ts"
+        },
+        {
+          "path": "src/echo/morph/crossfade.ts",
+          "type": "registry:component",
+          "target": "echo/morph/crossfade.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-done-button",
+      "type": "registry:component",
+      "title": "DoneButton",
+      "description": "\"Mark as done\" divides into a lit \"Done\" and an \"Undo\".",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph"
+      ],
+      "files": [
+        {
+          "path": "src/echo/done-button/done-button.css",
+          "type": "registry:component",
+          "target": "echo/done-button/done-button.css"
+        },
+        {
+          "path": "src/echo/done-button/done-button.tsx",
+          "type": "registry:component",
+          "target": "echo/done-button/done-button.tsx"
+        },
+        {
+          "path": "src/echo/done-button/index.ts",
+          "type": "registry:component",
+          "target": "echo/done-button/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-confirm-button",
+      "type": "registry:component",
+      "title": "ConfirmButton",
+      "description": "A destructive action that asks for its second press where the hand already is.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph"
+      ],
+      "files": [
+        {
+          "path": "src/echo/confirm-button/confirm-button.tsx",
+          "type": "registry:component",
+          "target": "echo/confirm-button/confirm-button.tsx"
+        },
+        {
+          "path": "src/echo/confirm-button/index.ts",
+          "type": "registry:component",
+          "target": "echo/confirm-button/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-action-fan",
+      "type": "registry:component",
+      "title": "ActionFan",
+      "description": "One action opens into its choices; the × folds them back.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph"
+      ],
+      "files": [
+        {
+          "path": "src/echo/action-fan/action-fan.tsx",
+          "type": "registry:component",
+          "target": "echo/action-fan/action-fan.tsx"
+        },
+        {
+          "path": "src/echo/action-fan/index.ts",
+          "type": "registry:component",
+          "target": "echo/action-fan/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-save-button",
+      "type": "registry:component",
+      "title": "SaveButton",
+      "description": "The button becomes its own progress, then its own answer: Save narrows into a busy cap while your save runs, widens into a lit Saved, and flows back.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph"
+      ],
+      "files": [
+        {
+          "path": "src/echo/save-button/save-button.css",
+          "type": "registry:component",
+          "target": "echo/save-button/save-button.css"
+        },
+        {
+          "path": "src/echo/save-button/save-button.tsx",
+          "type": "registry:component",
+          "target": "echo/save-button/save-button.tsx"
+        },
+        {
+          "path": "src/echo/save-button/index.ts",
+          "type": "registry:component",
+          "target": "echo/save-button/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-timer",
+      "type": "registry:component",
+      "title": "Timer",
+      "description": "A timer that is one button.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph"
+      ],
+      "files": [
+        {
+          "path": "src/echo/timer/timer.css",
+          "type": "registry:component",
+          "target": "echo/timer/timer.css"
+        },
+        {
+          "path": "src/echo/timer/timer.tsx",
+          "type": "registry:component",
+          "target": "echo/timer/timer.tsx"
+        },
+        {
+          "path": "src/echo/timer/index.ts",
+          "type": "registry:component",
+          "target": "echo/timer/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-stopwatch",
+      "type": "registry:component",
+      "title": "Stopwatch",
+      "description": "Start becomes the running time (lit) and a Lap button beside it; each lap is a drop that leaves Lap and lands in the lap count.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph",
+        "@echo/echo-count-badge",
+        "@echo/echo-bud-off"
+      ],
+      "files": [
+        {
+          "path": "src/echo/stopwatch/stopwatch.css",
+          "type": "registry:component",
+          "target": "echo/stopwatch/stopwatch.css"
+        },
+        {
+          "path": "src/echo/stopwatch/stopwatch.tsx",
+          "type": "registry:component",
+          "target": "echo/stopwatch/stopwatch.tsx"
+        },
+        {
+          "path": "src/echo/stopwatch/index.ts",
+          "type": "registry:component",
+          "target": "echo/stopwatch/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-voice-note",
+      "type": "registry:component",
+      "title": "VoiceNote",
+      "description": "Record a voice note in one button.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-morph"
+      ],
+      "files": [
+        {
+          "path": "src/echo/voice-note/voice-note.css",
+          "type": "registry:component",
+          "target": "echo/voice-note/voice-note.css"
+        },
+        {
+          "path": "src/echo/voice-note/voice-note.tsx",
+          "type": "registry:component",
+          "target": "echo/voice-note/voice-note.tsx"
+        },
+        {
+          "path": "src/echo/voice-note/index.ts",
+          "type": "registry:component",
+          "target": "echo/voice-note/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-add-to-bag",
+      "type": "registry:component",
+      "title": "AddToBag",
+      "description": "Press it and a drop buds out of the button and lands in the count beside it, which swells and goes up — the eye follows the thing you added to where it went.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button",
+        "@echo/echo-count-badge",
+        "@echo/echo-bud-off"
+      ],
+      "files": [
+        {
+          "path": "src/echo/add-to-bag/add-to-bag.css",
+          "type": "registry:component",
+          "target": "echo/add-to-bag/add-to-bag.css"
+        },
+        {
+          "path": "src/echo/add-to-bag/add-to-bag.tsx",
+          "type": "registry:component",
+          "target": "echo/add-to-bag/add-to-bag.tsx"
+        },
+        {
+          "path": "src/echo/add-to-bag/index.ts",
+          "type": "registry:component",
+          "target": "echo/add-to-bag/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-bud-off",
+      "type": "registry:component",
+      "title": "useBudOff",
+      "description": "A drop of the primary plastic buds out of one element, flies to another and is swallowed by it, which swells as it lands — so the eye follows cause to effect.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/bud-off/bud-off.css",
+          "type": "registry:component",
+          "target": "echo/bud-off/bud-off.css"
+        },
+        {
+          "path": "src/echo/bud-off/bud-off.ts",
+          "type": "registry:component",
+          "target": "echo/bud-off/bud-off.ts"
+        },
+        {
+          "path": "src/echo/bud-off/index.ts",
+          "type": "registry:component",
+          "target": "echo/bud-off/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-pull-cord",
+      "type": "registry:component",
+      "title": "PullCord",
+      "description": "A switch you pull.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-switch"
+      ],
+      "files": [
+        {
+          "path": "src/echo/pull-cord/pull-cord.css",
+          "type": "registry:component",
+          "target": "echo/pull-cord/pull-cord.css"
+        },
+        {
+          "path": "src/echo/pull-cord/pull-cord.tsx",
+          "type": "registry:component",
+          "target": "echo/pull-cord/pull-cord.tsx"
+        },
+        {
+          "path": "src/echo/pull-cord/index.ts",
+          "type": "registry:component",
+          "target": "echo/pull-cord/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-roll",
+      "type": "registry:component",
+      "title": "useRoll",
+      "description": "A readout that rolls to a new value instead of swapping it: each digit steps through the ones in between, all together, fast when it's far and slowest on the last step.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "files": [
+        {
+          "path": "src/echo/roll/drum.ts",
+          "type": "registry:component",
+          "target": "echo/roll/drum.ts"
+        },
+        {
+          "path": "src/echo/roll/roll.ts",
+          "type": "registry:component",
+          "target": "echo/roll/roll.ts"
+        },
+        {
+          "path": "src/echo/roll/index.ts",
+          "type": "registry:component",
+          "target": "echo/roll/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-split-flap",
+      "type": "registry:component",
+      "title": "SplitFlap",
+      "description": "A readout that turns over like a departures board: each character flips through the ones between where it is and where it's going, flap by flap — fast when it's far, slowest on the last one — and each flap ticks.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-roll"
+      ],
+      "files": [
+        {
+          "path": "src/echo/split-flap/split-flap.css",
+          "type": "registry:component",
+          "target": "echo/split-flap/split-flap.css"
+        },
+        {
+          "path": "src/echo/split-flap/split-flap.tsx",
+          "type": "registry:component",
+          "target": "echo/split-flap/split-flap.tsx"
+        },
+        {
+          "path": "src/echo/split-flap/index.ts",
+          "type": "registry:component",
+          "target": "echo/split-flap/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-light-source",
+      "type": "registry:component",
+      "title": "LightSource",
+      "description": "Your pointer becomes the light the caps inside it are lit by: each HardwareButton's shine turns toward it and its shadow falls away from it, the nearest most.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/light-source/light-source.css",
+          "type": "registry:component",
+          "target": "echo/light-source/light-source.css"
+        },
+        {
+          "path": "src/echo/light-source/light-source.tsx",
+          "type": "registry:component",
+          "target": "echo/light-source/light-source.tsx"
+        },
+        {
+          "path": "src/echo/light-source/index.ts",
+          "type": "registry:component",
+          "target": "echo/light-source/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-magnetic",
+      "type": "registry:component",
+      "title": "Magnetic",
+      "description": "The HardwareButtons inside it feel your hand before you touch them: each leans toward the pointer and comes up a little, the nearest most, and springs home when you move away.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-hardware-button"
+      ],
+      "files": [
+        {
+          "path": "src/echo/magnetic/magnetic.css",
+          "type": "registry:component",
+          "target": "echo/magnetic/magnetic.css"
+        },
+        {
+          "path": "src/echo/magnetic/magnetic.tsx",
+          "type": "registry:component",
+          "target": "echo/magnetic/magnetic.tsx"
+        },
+        {
+          "path": "src/echo/magnetic/index.ts",
+          "type": "registry:component",
+          "target": "echo/magnetic/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-throw-stack",
+      "type": "registry:component",
+      "title": "ThrowStack",
+      "description": "A stack of cards you can throw: drag the top one and flick it, and it keeps the speed you gave it, spins from where you held it (grabbed low, it swings the other way), flies off and tucks back in underneath.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-panel"
+      ],
+      "files": [
+        {
+          "path": "src/echo/throw-stack/throw-stack.css",
+          "type": "registry:component",
+          "target": "echo/throw-stack/throw-stack.css"
+        },
+        {
+          "path": "src/echo/throw-stack/throw-stack.tsx",
+          "type": "registry:component",
+          "target": "echo/throw-stack/throw-stack.tsx"
+        },
+        {
+          "path": "src/echo/throw-stack/index.ts",
+          "type": "registry:component",
+          "target": "echo/throw-stack/index.ts"
+        }
+      ]
+    },
+    {
+      "name": "echo-ripple",
+      "type": "registry:component",
+      "title": "Ripple",
+      "description": "A surface of dots that answers a press like water: a wave runs out from where you pressed, and pressing longer presses deeper and sends a bigger one.",
+      "dependencies": [
+        "echo-ui-core"
+      ],
+      "registryDependencies": [
+        "@echo/echo-panel"
+      ],
+      "files": [
+        {
+          "path": "src/echo/ripple/ripple.css",
+          "type": "registry:component",
+          "target": "echo/ripple/ripple.css"
+        },
+        {
+          "path": "src/echo/ripple/ripple.tsx",
+          "type": "registry:component",
+          "target": "echo/ripple/ripple.tsx"
+        },
+        {
+          "path": "src/echo/ripple/index.ts",
+          "type": "registry:component",
+          "target": "echo/ripple/index.ts"
+        }
+      ]
+    }
+  ]
+}

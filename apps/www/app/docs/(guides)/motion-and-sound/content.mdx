@@ -1,0 +1,137 @@
+import { DurationScale, MotionMeaning, MotionTable, SoundMeaning, SoundTable } from "@/components/guides/live";
+
+# Motion & sound
+
+Colour and type say what a thing is. Motion and sound say what it is **doing**: a cap going down, a
+panel arriving, a readout ticking over. In Echo both are tokens — named, shared, and swappable — so
+the whole device moves and sounds like one object.
+
+Hear them in the [Sound audition](/audition); feel them together on the [Tactile bench](/tactile).
+
+## What each token means
+
+The tables further down are the physics — a waveform, a duration, a curve. This is the part you
+have to decide: which token belongs to what you are building. Pick by meaning, never by how the
+name sounds.
+
+<MotionMeaning />
+
+<SoundMeaning />
+
+A token nothing uses yet is not a gap; it is there for your own controls. But if you find yourself
+wanting a meaning that is not on this list, add a token rather than an inline duration — that is
+how a motion system stays one system.
+
+## Motion
+
+Motion tokens are GSAP timings. Components name a token — `press`, `summon` — instead of writing a
+duration and a curve.
+
+<MotionTable />
+
+The rule behind them: **glass moves smooth, pixels move steppy.** Panels and caps ease; anything on
+an LCD screen changes in steps (`glitch`), the way a real segment display does. A readout that eases
+smoothly looks wrong on this material.
+
+CSS transitions use a matching scale, emitted by the theme:
+
+<DurationScale />
+
+### Reduced motion
+
+When the OS asks for reduced motion, every token follows its own rule, shown above: most stop moving
+entirely, and the ones that bring something on screen (`summon`, `flood`) fade instead. Nothing is
+left moving that the reader asked to stop.
+
+## Sound
+
+A sound token is a **recipe**, not a file: a waveform, a pitch, a length and a volume, played by a
+tiny WebAudio synthesiser. There are no audio assets to load or license, and a recipe is data you
+can edit.
+
+<SoundTable />
+
+The aim is dry, short and hardware: clicks and chirps from a device, not notes from an instrument.
+Every play varies the pitch by up to 3% and the volume by up to 10%, so repeated presses do not sound
+mechanical.
+
+### SoundProvider
+
+Components play sound through a provider, and are silent without one:
+
+```tsx
+import { SoundProvider } from "echo-ui-core/sound";
+
+<SoundProvider masterGain={0.5} muteOnReducedMotion>
+  {children}
+</SoundProvider>
+```
+
+It takes care of the parts that are easy to get wrong:
+
+- **No audio before a gesture.** The audio context starts on the first pointer press, as browsers
+  require, and closes when the provider unmounts, so one inside a page leaves nothing running.
+- **It starts muted.** Someone who hasn't chosen yet hears nothing until they turn sound on, so a
+  first visit makes no sound nobody asked for. Give them a switch (`setMuted` below), or pass
+  `defaultMuted={false}` where sound is the point from the first press.
+- **Mute is remembered**, in `localStorage` (`echo-sound-muted`), and a stored choice always wins.
+- **Silent when you are not looking** — nothing plays in a hidden or unfocused tab.
+- **Reduced motion mutes too**, by default (`muteOnReducedMotion`).
+- **Master volume** at half the recipe level by default (`masterGain`).
+
+Read and change it with `useSound()`:
+
+```tsx
+const { play, muted, setMuted, masterGain, setMasterGain } = useSound();
+play("notify");
+```
+
+### Haptics
+
+On a phone that can vibrate, the tokens that mark a moment also buzz: `select` a short tick when a
+choice changes, `notify` and `celebrate` a success, `caution` a warning, `error` an error (the
+Haptic column above). A tap or a press never buzzes. Haptics don't wait for sound to be turned on,
+stay still in a hidden tab, and never start before the person has touched the page.
+
+```tsx
+const { play, buzz } = useSound();
+play("select");                 // a tick, and the sound when it's on
+play("press", { haptic: "warn" }); // another haptic, or false for none
+buzz("success");                // a haptic on its own
+```
+
+`<SoundProvider haptics={false}>` turns them off. Android browsers vibrate; iPhones can't be made to
+from a web page, so they stay still.
+
+## useTactile
+
+`useTactile` binds motion and sound to the phases of an interaction, so a custom control feels like
+the built-in ones:
+
+```tsx
+import { useTactile } from "echo-ui-core/tactile";
+
+const { ref, handlers } = useTactile<HTMLButtonElement>({
+  press: { motion: "press", sound: "press" },
+  release: { motion: "pop", sound: "release" },
+});
+
+return <button ref={ref} {...handlers}>Record</button>;
+```
+
+- **Phases:** `press`, `release`, `hover`, `leave`, `focus`, `blur`, `activate`.
+- **Keyboard parity:** Space and Enter give the same press and release as a pointer.
+- **Reduced motion** is applied per token, as above; sound follows the provider.
+- **Haptics** come with a phase's sound; `haptic` names another, or `false` for none.
+- **Escape hatch:** pass raw GSAP vars or a recipe object instead of a token name.
+
+For Base UI popups that need a GSAP exit before unmounting, use
+[`useGsapPresence`](/docs/use-gsap-presence).
+
+## Don't
+
+- Don't put a soft ease on anything on a screen. LCD and dot-matrix surfaces take `glitch`.
+- Don't invent a duration inline. If the tokens do not cover a gesture, add a token.
+- Don't set `transform` in CSS on an element `useTactile` animates — GSAP owns it.
+- Don't gate sound on reduced motion yourself; the provider already does.
+- Don't add reverb or long tails to a recipe. A device, not an instrument.

@@ -1,0 +1,322 @@
+/*
+ * Pulled in (PulledIn.tsx): a stage the width of the window, held under the
+ * site's bar while the scroll flies the camera through four stops; still,
+ * where there's no flight (no JavaScript, reduced motion, no WebGL), it's the
+ * last stop.
+ */
+
+.pull {
+  /* The room under the site's bar (its measured height, PulledIn.tsx): one stop's worth of scroll, and the stage's height. */
+  --pull-top: var(--pull-bar, var(--echo-shell-rail-h, 56px));
+  --room: calc(100svh - var(--pull-top));
+  --pull-ink: #0d0d0d;
+  /* The off-white the world settles into, the page's ground while the white goes on (WhiteRun.tsx). */
+  --pull-paper: var(--white-ground, #f4f6fb);
+  /* How the words move: out of their slots, quick off the mark and settling long. */
+  --pull-ease: cubic-bezier(0.2, 0.85, 0.25, 1);
+  position: relative;
+  margin-top: clamp(4rem, 8vw, 7rem);
+}
+.pull__track {
+  position: relative;
+}
+/* The flight: the stage slides in, then is held while the track scrolls by (LENGTH windows: timeline.ts, set on the track). */
+.pull[data-live] .pull__track {
+  height: calc(var(--room) * (var(--pull-length) + 1));
+}
+.pull__stop {
+  position: absolute;
+  left: 0;
+  top: calc(var(--room) * var(--at));
+  width: 1px;
+  height: var(--room);
+  pointer-events: none;
+}
+
+.pull__stage {
+  position: relative;
+  height: var(--room);
+  min-height: 34rem;
+  overflow: hidden;
+  isolation: isolate;
+  /* Still: the white it ends in (scene.ts settles into the same). */
+  background: var(--pull-paper);
+}
+.pull[data-live] .pull__stage {
+  position: sticky;
+  top: var(--pull-top);
+  min-height: 0;
+  background: none;
+}
+
+.pull__world {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+.pull[data-live] .pull__world {
+  display: block;
+}
+
+/* Echo's perch: at the light's edge as the stage slides in (where it's caught from), on the key when still. */
+.pull__perch--light {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  translate: -50% -100%;
+  --guide-size: calc(var(--room) * 0.16);
+}
+.pull__perch--key {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  translate: -50% 14%;
+  --guide-size: clamp(64px, 9vh, 96px);
+}
+
+/* --- words that rise out of their slots ------------------------------------------------ */
+
+/*
+ * A word's slot: it clips the word below its line until the word rises into it, room left for descenders.
+ * Up and down only (`clip` lets the other axis stay visible): a letter's side is never cut, and the slot
+ * never runs past its line, which a sideways padding pulled back by a margin did by 2px on a phone.
+ */
+.pull__w {
+  display: inline-block;
+  overflow-x: visible;
+  overflow-y: clip;
+  vertical-align: top;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
+.pull__w > span,
+.pull__ch {
+  display: inline-block;
+}
+.pull[data-live] .pull__w > span {
+  transform: translateY(112%);
+  transition: transform 0.36s cubic-bezier(0.5, 0, 0.75, 0);
+}
+.pull__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- the two lines ---------------------------------------------------------------- */
+
+.pull__line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  max-width: 7.2em;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(30px, 4.6vw, 76px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  color: #fff;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+/*
+ * Flying, the lines, the lockup and the key are moved and faded by the scroll (PulledIn.tsx), never hidden
+ * from assistive technology: the heading, the lines and the link are there wherever the scroll is. Until the
+ * key has risen in, a pointer goes through it; and a keyboard that reaches it early brings it in at once, so
+ * focus never lands on a key nobody can see.
+ */
+.pull[data-live] .pull__line,
+.pull[data-live] .pull__mark {
+  opacity: 0;
+}
+.pull[data-live] .pull__key {
+  opacity: 0;
+  pointer-events: none;
+}
+.pull[data-live] .pull__key:focus-within {
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+}
+.pull__line--left {
+  transform-origin: left center;
+}
+.pull__line--right {
+  transform-origin: right center;
+  text-align: right;
+}
+/* The storm reached: a word at a time, the left line first, then the right. */
+.pull__stage[data-lines] .pull__line .pull__w > span {
+  transform: none;
+  transition: transform 0.7s var(--pull-ease) calc(0.05s + var(--i) * 0.075s);
+}
+/* Still: the lines sit in the white's corners, in ink. */
+.pull:not([data-live]) .pull__line {
+  max-width: 9em;
+  font-size: clamp(20px, 2.4vw, 34px);
+  color: var(--pull-ink);
+}
+.pull:not([data-live]) .pull__line--left {
+  left: clamp(1.25rem, 5vw, 4rem);
+  top: 12%;
+}
+.pull:not([data-live]) .pull__line--right {
+  left: auto;
+  top: auto;
+  right: clamp(1.25rem, 5vw, 4rem);
+  bottom: 18%;
+}
+
+/* --- the end: the mark, the words round it, the key ----------------------------------- */
+
+.pull__end {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Room between the mark and the key for Echo, standing on the key. */
+  gap: clamp(5.5rem, 15vh, 9rem);
+  pointer-events: none;
+}
+.pull__title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  color: var(--pull-ink);
+}
+.pull__lead {
+  display: block;
+  font-size: clamp(17px, 1.7vw, 26px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: color-mix(in oklab, var(--pull-ink) 62%, transparent);
+}
+/* The lockup: OpenAI's mark and the word, as Spotify's sits at the middle of its picture. */
+.pull__mark {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 0.28em;
+  font-size: clamp(52px, 8.4vw, 132px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+.pull__blossom {
+  flex: none;
+  width: 0.92em;
+  height: 0.92em;
+}
+/* The word's slot: the letters rise into it, one after another (clipped up and down only, as a word's). */
+.pull__name {
+  display: inline-block;
+  overflow-x: visible;
+  overflow-y: clip;
+  padding: 0.04em 0 0.1em;
+  margin: -0.04em 0 -0.1em;
+}
+
+/*
+ * The lockup's words, played once the mark has come out of the light: the mark, alone in the middle, steps
+ * aside (only moved: OpenAI's mark is never turned, taken apart or lit), "ChatGPT" rises in beside it a
+ * letter at a time once the mark has passed where they stand (it starts over the middle of the word), and
+ * "Echo UI is now in" over it a word at a time.
+ */
+.pull[data-live] .pull__blossom {
+  transform: translateX(var(--shift, 0px));
+  transition: transform 0.5s cubic-bezier(0.5, 0, 0.75, 0);
+}
+.pull[data-live] .pull__ch {
+  transform: translateY(105%);
+  transition: transform 0.3s cubic-bezier(0.5, 0, 0.75, 0);
+}
+.pull__stage[data-lockup] .pull__blossom {
+  transform: none;
+  transition: transform 0.7s cubic-bezier(0.5, 0, 0.1, 1);
+}
+.pull__stage[data-lockup] .pull__ch {
+  transform: none;
+  transition: transform 0.6s var(--pull-ease) calc(0.46s + var(--i) * 0.04s);
+}
+.pull__stage[data-lockup] .pull__lead .pull__w > span {
+  transform: none;
+  transition: transform 0.6s var(--pull-ease) calc(0.72s + var(--i) * 0.06s);
+}
+
+.pull__key {
+  position: relative;
+  pointer-events: auto;
+  transform-origin: 50% 50%;
+}
+.pull__key .echo-hw__cap {
+  letter-spacing: 0.08em;
+}
+.pull__key-icon {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+/* Where the stage flies Echo and holds it: moved every frame. */
+.pull__dock {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 40rem) {
+  .pull__line {
+    font-size: clamp(26px, 8vw, 40px);
+    max-width: 6.4em;
+  }
+}
+
+@media (forced-colors: active) {
+  .pull__world {
+    display: none;
+  }
+}
+
+/* The white run (WhiteRun.tsx): the page's ground from ChatGPT to the end of the blueprint, under everything. */
+.white-run {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--white-ground, #f4f6fb);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.white-run[data-on] {
+  opacity: 1;
+  visibility: visible;
+}
+/* The turn at the letter: played, quick, so the ground is never left half-way (a grey) under a resting page. */
+.white-run[data-turn] {
+  transition:
+    opacity 0.75s cubic-bezier(0.45, 0, 0.2, 1),
+    visibility 0s linear 0.75s;
+}
+.white-run[data-turn][data-on] {
+  transition:
+    opacity 0.75s cubic-bezier(0.45, 0, 0.2, 1),
+    visibility 0s;
+}
+@media (forced-colors: active) {
+  .white-run {
+    display: none;
+  }
+}

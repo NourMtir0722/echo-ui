@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "name": "panel",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Panel",
+  "description": "The two halves of the device material law as a container: raised molded plastic (things you touch) or a recessed dark screen (things you read). Consumes var(--echo-*).",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "panel/panel.css",
+      "sha256": "823375de33adf2529e654c719bef32a9b894a976ee3e4e76ed25e21043602942",
+      "content": "/**\n * Panel. Raised molded plastic or a recessed dark screen — the two halves\n * of the device material law. Composes var(--echo-*).\n */\n.echo-panel {\n  position: relative;\n  /* Padding counts inside a width a consumer sets, rather than on top of it. */\n  box-sizing: border-box;\n  overflow: hidden;\n  padding: var(--echo-space-9);\n  border-radius: var(--echo-radius-2xl);\n}\n\n.echo-panel[data-variant=\"raised\"] {\n  background: var(--echo-cap);\n  box-shadow: var(\n    --echo-shadow-panel,\n    0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent),\n    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n\n/* Top rim light — the 145° key light catching the molded edge. */\n.echo-panel[data-variant=\"raised\"]::before {\n  content: \"\";\n  position: absolute;\n  inset: 0 0 auto 0;\n  height: 1px;\n  pointer-events: none;\n  background: linear-gradient(90deg, transparent, rgb(255 255 255 / calc(0.18 * var(--echo-gloss, 1))), transparent);\n}\n\n.echo-panel[data-variant=\"screen\"] {\n  /* Drawn, the glass is flat: there's no light to sheen it. */\n  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));\n  box-shadow: var(\n    --echo-shadow-well,\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n\n/*\n * pressable: the wave is drawn on a canvas under the content (useRippleSurface),\n * and the content sits in one layer above it that takes the Panel's layout.\n */\n.echo-panel[data-pressable] {\n  touch-action: manipulation;\n}\n.echo-panel__ripple {\n  position: absolute;\n  inset: 0;\n  z-index: var(--echo-z-base, 0);\n  inline-size: 100%;\n  block-size: 100%;\n  pointer-events: none;\n}\n.echo-panel__content {\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  display: inherit;\n  flex-direction: inherit;\n  flex-wrap: inherit;\n  grid-template-columns: inherit;\n  grid-template-rows: inherit;\n  place-items: inherit;\n  place-content: inherit;\n  gap: inherit;\n  min-block-size: 100%;\n}\n\n@media (forced-colors: active) {\n  .echo-panel__ripple {\n    display: none;\n  }\n}\n"
+    },
+    {
+      "path": "panel/panel.tsx",
+      "sha256": "368c5dc7c20fac26920d6e2801d6df1bd2ffa96aaad4d8b7770ccf31568f323a",
+      "content": "\"use client\";\n\n/**\n * Panel — raised molded plastic or a recessed dark screen. Consumes only\n * var(--echo-*) via panel.css.\n *\n * `pressable` makes the surface answer a press like water (useRippleSurface):\n * a wave of dots runs out from where you pressed, bigger for a longer press,\n * and a key press on a control on it sends one from that control. At rest it\n * looks exactly like any Panel. The content then sits in one layer above the\n * wave, which takes the Panel's own layout (display, gap, alignment).\n */\nimport { useRef, type HTMLAttributes } from \"react\";\nimport { useRippleSurface } from \"./ripple-surface\";\nimport \"./panel.css\";\n\nexport type PanelVariant = \"raised\" | \"screen\";\n\nexport interface PanelProps extends HTMLAttributes<HTMLDivElement> {\n  variant?: PanelVariant;\n  /**\n   * The surface answers a press: a wave runs out from where you pressed, and\n   * a longer press sends a bigger one. Decoration only: it adds no role, and\n   * nothing moves under reduced motion.\n   */\n  pressable?: boolean;\n}\n\nexport function Panel({ variant = \"raised\", pressable = false, className, children, ...rest }: PanelProps) {\n  const root = useRef<HTMLDivElement>(null);\n  const canvas = useRef<HTMLCanvasElement>(null);\n  useRippleSurface(root, canvas, { enabled: pressable });\n  return (\n    <div\n      ref={root}\n      className={[\"echo-panel\", className].filter(Boolean).join(\" \")}\n      data-variant={variant}\n      data-pressable={pressable ? \"\" : undefined}\n      {...rest}\n    >\n      {pressable ? (\n        <>\n          <canvas ref={canvas} className=\"echo-panel__ripple\" aria-hidden=\"true\" />\n          <div className=\"echo-panel__content\">{children}</div>\n        </>\n      ) : (\n        children\n      )}\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "panel/index.ts",
+      "sha256": "9af333bf54c87724a2c6b191683820fed9f6df789a2dbaba160d4de30386ecbe",
+      "content": "export { Panel } from \"./panel\";\nexport type { PanelProps, PanelVariant } from \"./panel\";\nexport { useRippleSurface } from \"./ripple-surface\";\nexport type { RippleSurfaceOptions } from \"./ripple-surface\";\n"
+    },
+    {
+      "path": "panel/ripple-surface.ts",
+      "sha256": "29ae4bff2a8845d023a770a18f5dcec48be8ba413e5f153ff014ac706353a495",
+      "content": "\"use client\";\n\n/**\n * useRippleSurface. A surface that answers a press like water: a wave runs\n * out from where you pressed, and pressing longer presses deeper and sends a\n * bigger one. A key press (Enter or Space) on a control on the surface sends a\n * wave from that control. It's what `pressable` does on Panel, and what Ripple\n * shows with its dots always out.\n *\n * The wave is drawn as dots on a canvas you give it, in the theme's own roles\n * (dim text, and the primary plastic where a wave lifts them), read from the\n * page so it relights with the seed. With `dots: \"always\"` the dots are there\n * at rest and dip under the pointer; with `\"moving\"` (Panel's) there are none\n * until a press, so the surface looks exactly as it did.\n *\n * It draws only while something moves, then stops. Decoration: the canvas is\n * the caller's to hide from assistive tech; under reduced motion no wave runs.\n * A press on the surface itself thuds; a press on a control on it doesn't,\n * since the control makes its own sound.\n */\nimport { useEffect, useRef, type RefObject } from \"react\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\n\nexport interface RippleSurfaceOptions {\n  /** Answer presses at all. Default true. */\n  enabled?: boolean;\n  /** Distance between dots, px. Default 16. */\n  spacing?: number;\n  /** `\"always\"`: the dots show at rest. `\"moving\"`: only where a wave is. Default \"moving\". */\n  dots?: \"always\" | \"moving\";\n  /** Called when a wave is sent, with how hard (0–1). */\n  onRipple?: (strength: number) => void;\n}\n\nconst THUD: SoundRecipe = { wave: \"sine\", freq: 150, decay: 0.28, gain: 0.22, bend: -70 };\nconst CONTROL = \"button, a[href], input, select, textarea, summary, [role='button'], [tabindex]\";\n\nexport function useRippleSurface(\n  root: RefObject<HTMLElement | null>,\n  canvas: RefObject<HTMLCanvasElement | null>,\n  { enabled = true, spacing = 16, dots = \"moving\", onRipple }: RippleSurfaceOptions = {},\n) {\n  const sound = useSoundOptional();\n  const play = useRef(sound?.play);\n  const rippled = useRef(onRipple);\n  useEffect(() => {\n    play.current = sound?.play;\n    rippled.current = onRipple;\n  });\n\n  useEffect(() => {\n    const el = root.current;\n    const c = canvas.current;\n    const ctx = enabled ? c?.getContext(\"2d\") : null;\n    if (!el || !c || !ctx) return;\n    const reduced = typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n    const always = dots === \"always\";\n    let W = 0;\n    let H = 0;\n    const size = () => {\n      const r = el.getBoundingClientRect();\n      const dpr = window.devicePixelRatio || 1;\n      W = r.width;\n      H = r.height;\n      c.width = Math.max(1, Math.round(W * dpr));\n      c.height = Math.max(1, Math.round(H * dpr));\n      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);\n    };\n\n    // The theme's colours, re-read now and then so a reseed relights it.\n    let dim = \"#888\";\n    let hot = \"#e05\";\n    let read = -Infinity;\n    const colours = (now: number) => {\n      if (now - read < 500) return;\n      read = now;\n      const cs = getComputedStyle(el);\n      dim = cs.getPropertyValue(\"--echo-text-dim\").trim() || dim;\n      hot = cs.getPropertyValue(\"--echo-primary-cap-mid\").trim() || hot;\n    };\n\n    const waves: { x: number; y: number; t0: number; a: number }[] = [];\n    let hover: { x: number; y: number } | null = null;\n    let hold: { x: number; y: number; t0: number } | null = null;\n    let id = 0;\n\n    const draw = (now: number) => {\n      colours(now);\n      ctx.clearRect(0, 0, W, H);\n      // A wave is done when it has died down, or its tail has left the surface.\n      for (let i = waves.length - 1; i >= 0; i--) {\n        const w = waves[i]!;\n        const t = (now - w.t0) / 1000;\n        const far = Math.hypot(Math.max(w.x, W - w.x), Math.max(w.y, H - w.y));\n        if (t > 2.2 || t * 260 - 140 > far) waves.splice(i, 1);\n      }\n      for (let y = spacing / 2; y < H; y += spacing) {\n        for (let x = spacing / 2; x < W; x += spacing) {\n          let lift = 0;\n          for (const w of waves) {\n            const t = (now - w.t0) / 1000;\n            const d = Math.hypot(x - w.x, y - w.y);\n            const front = d - t * 260;\n            if (front > 0 || front < -140) continue;\n            lift += w.a * Math.exp(-t * 1.6) * Math.sin(front / 14) * (1 + front / 140);\n          }\n          let dent = 0;\n          if (hover && always) dent = Math.max(0, 1 - Math.hypot(x - hover.x, y - hover.y) / 70);\n          if (hold) {\n            const k = Math.min(1, (now - hold.t0) / 900);\n            dent = Math.max(dent, k * Math.max(0, 1 - Math.hypot(x - hold.x, y - hold.y) / (70 + 80 * k)));\n          }\n          const alpha = Math.min(1, (always ? 0.35 : 0) + Math.abs(lift) * 0.5 + dent * 0.2);\n          if (alpha < 0.02) continue;\n          const r = Math.max(0.4, 1.8 + lift * 1.6 - dent * 1.3);\n          ctx.globalAlpha = alpha;\n          ctx.fillStyle = lift > 0.35 ? hot : dim;\n          ctx.beginPath();\n          ctx.arc(x, y - lift * 3, r, 0, Math.PI * 2);\n          ctx.fill();\n        }\n      }\n      ctx.globalAlpha = 1;\n    };\n    // Frames only while something moves: a wave, or a press deepening.\n    const frame = (now: number) => {\n      draw(now);\n      id = !reduced && (waves.length > 0 || hold) ? requestAnimationFrame(frame) : 0;\n    };\n    const kick = () => {\n      if (!id) id = requestAnimationFrame(frame);\n    };\n\n    size();\n    // Sizing a canvas clears it; draw it again (BUG-71). The observer also\n    // fires once as it starts.\n    const ro = new ResizeObserver(() => {\n      size();\n      draw(performance.now());\n    });\n    ro.observe(el);\n\n    const onControl = (t: EventTarget | null) => {\n      const control = t instanceof Element ? t.closest(CONTROL) : null;\n      return control !== null && control !== el && el.contains(control);\n    };\n    const send = (x: number, y: number, k: number, thud: boolean) => {\n      rippled.current?.(k);\n      if (thud) play.current?.({ ...THUD, gain: 0.12 + 0.14 * k, freq: 170 - 50 * k });\n      if (reduced) return;\n      waves.push({ x, y, t0: performance.now(), a: 0.9 + 1.6 * k });\n      kick();\n    };\n    const pos = (e: PointerEvent) => {\n      const r = el.getBoundingClientRect();\n      return { x: e.clientX - r.left, y: e.clientY - r.top };\n    };\n    let pressedControl = false;\n    const move = (e: PointerEvent) => {\n      hover = pos(e);\n      if (hold) Object.assign(hold, hover);\n      if (always && !reduced && !id) draw(performance.now());\n    };\n    const down = (e: PointerEvent) => {\n      if (e.button !== 0) return;\n      pressedControl = onControl(e.target);\n      hold = { ...pos(e), t0: performance.now() };\n      kick();\n    };\n    const up = () => {\n      if (!hold) return;\n      // Held longer, pressed deeper: the wave it sends is bigger.\n      send(hold.x, hold.y, Math.min(1, (performance.now() - hold.t0) / 900), !pressedControl);\n      hold = null;\n    };\n    const leave = () => {\n      hover = null;\n      hold = null;\n      if (!id) draw(performance.now());\n    };\n    const key = (e: KeyboardEvent) => {\n      if ((e.key !== \"Enter\" && e.key !== \" \") || e.repeat) return;\n      const t = (e.target as Element).getBoundingClientRect();\n      const r = el.getBoundingClientRect();\n      send(t.left + t.width / 2 - r.left, t.top + t.height / 2 - r.top, 0.4, false);\n    };\n    el.addEventListener(\"pointermove\", move);\n    el.addEventListener(\"pointerdown\", down);\n    el.addEventListener(\"pointerup\", up);\n    el.addEventListener(\"pointercancel\", leave);\n    el.addEventListener(\"pointerleave\", leave);\n    el.addEventListener(\"keydown\", key);\n    return () => {\n      cancelAnimationFrame(id);\n      ro.disconnect();\n      el.removeEventListener(\"pointermove\", move);\n      el.removeEventListener(\"pointerdown\", down);\n      el.removeEventListener(\"pointerup\", up);\n      el.removeEventListener(\"pointercancel\", leave);\n      el.removeEventListener(\"pointerleave\", leave);\n      el.removeEventListener(\"keydown\", key);\n    };\n  }, [root, canvas, enabled, spacing, dots]);\n}\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**`<Panel pressable>`: any Panel can give like water.** Press the surface and a wave of dots runs out from where you pressed, bigger for a longer press; Enter or Space on a control on it sends one from that control. At rest it looks exactly like any Panel, it adds no role, and under reduced motion no wave runs. It's `Ripple`'s wave, which now lives in Panel as `useRippleSurface`; `Ripple` is that surface with its dots always out, and installs Panel with it. Two things change for `Ripple` itself: it only draws while something moves (a wave, a press, the pointer), where it used to redraw every frame for as long as it was on the page, and a press on a button on it no longer thuds on top of the button's own sound."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "name": "side-nav",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "SideNav",
+  "description": "The navigation down the side of an app: groups under machine-voice headings, items with an icon and a count, nested items that fold away (and open by themselves around the current page), and one lit rail that travels to where you are as a drop. collapsed folds it to its icons. Closed and data-driven; renderLink hands links to your router.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "side-nav/side-nav.tsx",
+      "sha256": "382c20aac05592191c3b70ccea8e14b98a7f6f880999bfa74e4e30b8a599d9db",
+      "content": "\"use client\";\n\n/**\n * SideNav. The navigation down the side of an app: groups under machine-voice\n * headings, items with an icon and a count, nested items that fold away, and\n * one lit rail that marks where you are. Navigate and the rail travels to the\n * new item as a drop, stretching toward it and settling, so the eye follows.\n *\n * `collapsed` folds it to its icons (for AppShell's sidebar on a narrow\n * desktop); every link keeps its name, and its label shows as a tip on\n * hover or focus. Nested groups open by themselves when they hold the\n * current page.\n *\n * Closed and data-driven: `groups` of `items`, `current` is the href you're\n * on, and `renderLink` hands each link to your router.\n */\nimport { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from \"react\";\nimport { Collapsible as BaseCollapsible } from \"@base-ui/react/collapsible\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport \"./side-nav.css\";\n\nexport interface SideNavItem {\n  label: string;\n  href?: string;\n  icon?: ReactNode;\n  /** A count beside it: unread, open, new. */\n  badge?: number;\n  /** Nested items: this one becomes a group that folds open. */\n  items?: SideNavItem[];\n}\n\nexport interface SideNavGroup {\n  /** The group's heading; leave it out for an ungrouped list. */\n  label?: string;\n  items: SideNavItem[];\n}\n\nexport interface LinkProps {\n  href: string;\n  className: string;\n  \"aria-current\"?: \"page\";\n  children: ReactNode;\n  onClick?: () => void;\n}\n\nexport interface SideNavProps {\n  /** Names the navigation landmark (\"Main\", \"Workspace\"). */\n  label: string;\n  groups: SideNavGroup[];\n  /** The href of the page you're on. */\n  current?: string;\n  /** Folded to its icons. */\n  collapsed?: boolean;\n  /** Called after any link is followed (close a mobile sheet here). */\n  onNavigate?: () => void;\n  /** Render each link through your router: `(props) => <NextLink {...props} />`. */\n  renderLink?: (props: LinkProps) => ReactElement;\n}\n\nconst holds = (item: SideNavItem, current?: string): boolean =>\n  !!current && (item.href === current || !!item.items?.some((i) => holds(i, current)));\n\nfunction Chevron() {\n  return (\n    <svg className=\"echo-side-nav__chevron\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" aria-hidden>\n      <path d=\"M6 4l4 4-4 4\" strokeLinecap=\"round\" strokeLinejoin=\"round\" />\n    </svg>\n  );\n}\n\nexport function SideNav({ label, groups, current, collapsed = false, onNavigate, renderLink }: SideNavProps) {\n  const root = useRef<HTMLElement>(null);\n  const rail = useRef<HTMLSpanElement>(null);\n  const sound = useSoundOptional();\n  const [placed, setPlaced] = useState(false);\n  const uid = useId();\n\n  // The one rail: moved to the current link, stretched toward it on the way.\n  useLayoutEffect(() => {\n    const el = root.current;\n    const r = rail.current;\n    if (!el || !r) return;\n    const place = () => {\n      const link = el.querySelector<HTMLElement>('[aria-current=\"page\"]');\n      if (!link || link.offsetParent === null) {\n        r.style.opacity = \"0\";\n        return;\n      }\n      const box = link.getBoundingClientRect();\n      const frame = el.getBoundingClientRect();\n      r.style.opacity = \"1\";\n      r.style.transform = `translateY(${(box.top - frame.top + el.scrollTop).toFixed(1)}px)`;\n      r.style.height = `${box.height.toFixed(1)}px`;\n    };\n    place();\n    setPlaced(true);\n    const ro = new ResizeObserver(place);\n    ro.observe(el);\n    return () => ro.disconnect();\n  }, [current, collapsed]);\n\n  const link = (item: SideNavItem, depth: number) => {\n    const here = item.href === current;\n    const content = (\n      <>\n        {item.icon ? (\n          <span className=\"echo-side-nav__icon\" aria-hidden=\"true\">\n            {item.icon}\n          </span>\n        ) : null}\n        <span className=\"echo-side-nav__text\">{item.label}</span>\n        {item.badge ? (\n          <span className=\"echo-side-nav__badge\">\n            {item.badge > 99 ? \"99+\" : item.badge}\n            <span className=\"echo-side-nav__sr\"> new</span>\n          </span>\n        ) : null}\n      </>\n    );\n    const props: LinkProps = {\n      href: item.href!,\n      className: \"echo-side-nav__link\",\n      ...(here ? { \"aria-current\": \"page\" as const } : {}),\n      onClick: () => {\n        sound?.play(\"tap\");\n        onNavigate?.();\n      },\n      children: content,\n    };\n    return (\n      <li key={item.href ?? item.label} style={{ \"--depth\": depth } as CSSProperties} data-tip={collapsed ? item.label : undefined}>\n        {renderLink ? renderLink(props) : <a {...props} />}\n      </li>\n    );\n  };\n\n  const entry = (item: SideNavItem, depth: number): ReactNode => {\n    if (!item.items?.length) return link(item, depth);\n    return (\n      <li key={item.label} style={{ \"--depth\": depth } as CSSProperties}>\n        <BaseCollapsible.Root defaultOpen={holds(item, current)}>\n          <BaseCollapsible.Trigger className=\"echo-side-nav__link echo-side-nav__folder\" data-tip={collapsed ? item.label : undefined}>\n            {item.icon ? (\n              <span className=\"echo-side-nav__icon\" aria-hidden=\"true\">\n                {item.icon}\n              </span>\n            ) : null}\n            <span className=\"echo-side-nav__text\">{item.label}</span>\n            <Chevron />\n          </BaseCollapsible.Trigger>\n          <BaseCollapsible.Panel className=\"echo-side-nav__panel\">\n            <ul className=\"echo-side-nav__list\">{item.items.map((i) => entry(i, depth + 1))}</ul>\n          </BaseCollapsible.Panel>\n        </BaseCollapsible.Root>\n      </li>\n    );\n  };\n\n  return (\n    <nav ref={root} className=\"echo-side-nav\" aria-label={label} data-collapsed={collapsed ? \"\" : undefined} data-placed={placed ? \"\" : undefined}>\n      <span ref={rail} className=\"echo-side-nav__rail\" aria-hidden=\"true\" />\n      {groups.map((g, gi) => (\n        <div key={g.label ?? gi} className=\"echo-side-nav__group\">\n          {g.label ? (\n            <span className=\"echo-side-nav__heading\" id={`${uid}-${gi}`}>\n              {g.label}\n            </span>\n          ) : null}\n          <ul\n            className=\"echo-side-nav__list\"\n            {...(g.label ? { \"aria-labelledby\": `${uid}-${gi}` } : {})}\n          >\n            {g.items.map((i) => entry(i, 0))}\n          </ul>\n        </div>\n      ))}\n    </nav>\n  );\n}\n"
+    },
+    {
+      "path": "side-nav/side-nav.css",
+      "sha256": "edc688c8c12a232fc3cf6fe261d0555c42a6014fb5591c9d9c33c11a214545d2",
+      "content": "/**\n * SideNav. Links in the text voice under machine-voice headings; the current\n * one sits on a faint cap and one lit rail (the accent, lit from inside)\n * travels to it. Folded, only the icons show, with the label as a tip.\n */\n.echo-side-nav {\n  position: relative;\n  display: grid;\n  gap: var(--echo-space-10);\n  width: 15rem;\n  max-width: 100%;\n  transition: width var(--echo-duration-pop) var(--echo-ease-pop);\n}\n.echo-side-nav[data-collapsed] {\n  width: calc(var(--echo-control-default) + var(--echo-space-4));\n}\n.echo-side-nav__group {\n  display: grid;\n  gap: var(--echo-space-3);\n}\n.echo-side-nav__heading {\n  padding: 0 var(--echo-space-5);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.echo-side-nav[data-collapsed] .echo-side-nav__heading {\n  visibility: hidden;\n  height: 0;\n  padding: 0;\n}\n.echo-side-nav__list {\n  display: grid;\n  gap: var(--echo-space-1);\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n.echo-side-nav__list > li {\n  position: relative;\n}\n.echo-side-nav__link {\n  position: relative;\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-5);\n  box-sizing: border-box;\n  width: 100%;\n  min-height: 36px;\n  padding: var(--echo-space-3) var(--echo-space-5);\n  padding-inline-start: calc(var(--echo-space-5) + var(--depth, 0) * var(--echo-space-8));\n  border: 0;\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  text-align: start;\n  text-decoration: none;\n  font: inherit;\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n  background: transparent;\n  transition:\n    background var(--echo-duration-tick) ease,\n    color var(--echo-duration-tick) ease;\n}\n@media (hover: hover) {\n  .echo-side-nav__link:hover {\n    color: var(--echo-text);\n    background: color-mix(in oklab, var(--echo-cap) 30%, transparent);\n  }\n}\n.echo-side-nav__link[aria-current=\"page\"] {\n  color: var(--echo-text);\n  background: color-mix(in oklab, var(--echo-cap) 38%, transparent);\n}\n.echo-side-nav__link:focus-visible {\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: -2px;\n}\n.echo-side-nav__icon {\n  display: inline-flex;\n  flex: none;\n  width: var(--echo-icon-md, 16px);\n  height: var(--echo-icon-md, 16px);\n}\n.echo-side-nav__icon > svg {\n  width: 100%;\n  height: 100%;\n}\n.echo-side-nav__text {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.echo-side-nav__badge {\n  flex: none;\n  min-width: 18px;\n  padding: var(--echo-space-1) var(--echo-space-3);\n  border-radius: var(--echo-radius-full);\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-2xs);\n  font-variant-numeric: tabular-nums;\n  text-align: center;\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n  background: var(--echo-lcd);\n  box-shadow: inset 0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-side-nav__sr {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n.echo-side-nav__chevron {\n  flex: none;\n  width: var(--echo-icon-sm, 14px);\n  height: var(--echo-icon-sm, 14px);\n  transition: transform var(--echo-duration-pop) var(--echo-ease-pop);\n}\n.echo-side-nav__folder[data-panel-open] .echo-side-nav__chevron {\n  transform: rotate(90deg);\n}\n.echo-side-nav__folder[data-panel-open] .echo-side-nav__chevron:dir(rtl) {\n  transform: rotate(-90deg);\n}\n.echo-side-nav__panel {\n  overflow: hidden;\n  height: var(--collapsible-panel-height);\n  transition: height var(--echo-duration-pop) cubic-bezier(0.32, 0.72, 0, 1);\n}\n.echo-side-nav__panel[data-starting-style],\n.echo-side-nav__panel[data-ending-style] {\n  height: 0;\n}\n\n/* The one rail: moved to the current link (side-nav.tsx) on a drop's curve. */\n.echo-side-nav__rail {\n  position: absolute;\n  top: 0;\n  inset-inline-start: 0;\n  z-index: var(--echo-z-raised, 1);\n  width: 2px;\n  height: 0;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-accent-glow);\n  box-shadow: var(--echo-shadow-glow, 0 0 7px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));\n  opacity: 0;\n  pointer-events: none;\n}\n.echo-side-nav[data-placed] .echo-side-nav__rail {\n  transition:\n    transform var(--echo-duration-pop) var(--echo-ease-pop),\n    height var(--echo-duration-pop) var(--echo-ease-pop),\n    opacity var(--echo-duration-swap) ease;\n}\n\n/* Folded: icons only; the label shows as a tip on hover or focus. */\n.echo-side-nav[data-collapsed] .echo-side-nav__text,\n.echo-side-nav[data-collapsed] .echo-side-nav__chevron {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n.echo-side-nav[data-collapsed] .echo-side-nav__link {\n  justify-content: center;\n  padding-inline: 0;\n}\n.echo-side-nav[data-collapsed] .echo-side-nav__badge {\n  position: absolute;\n  top: 2px;\n  inset-inline-end: 2px;\n  min-width: 0;\n  padding: 0 var(--echo-space-1);\n}\n/*\n * Collapsed, the rail names each link beside it: on keyboard focus always, and\n * on hover only where there's a pointer to hover with (a tap would leave the\n * name up).\n */\n.echo-side-nav[data-collapsed] [data-tip]::after {\n  position: absolute;\n  top: 50%;\n  inset-inline-start: calc(100% + var(--echo-space-4));\n  z-index: var(--echo-z-popover, 300);\n  translate: 0 -50%;\n  padding: var(--echo-space-2) var(--echo-space-5);\n  border-radius: var(--echo-radius-sm);\n  font-size: var(--echo-text-xs);\n  white-space: nowrap;\n  max-width: 16rem;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  color: var(--echo-text);\n  background: var(--echo-cap);\n  box-shadow: 0 6px 16px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);\n  pointer-events: none;\n}\n.echo-side-nav[data-collapsed] [data-tip]:focus-within::after {\n  content: attr(data-tip);\n}\n@media (hover: hover) {\n  .echo-side-nav[data-collapsed] [data-tip]:hover::after {\n    content: attr(data-tip);\n  }\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-side-nav,\n  .echo-side-nav[data-placed] .echo-side-nav__rail,\n  .echo-side-nav__panel,\n  .echo-side-nav__chevron {\n    transition: none;\n  }\n}\n@media (forced-colors: active) {\n  .echo-side-nav__link[aria-current=\"page\"] {\n    outline: 2px solid Highlight;\n    outline-offset: -2px;\n  }\n  .echo-side-nav__rail {\n    display: none;\n  }\n}\n"
+    },
+    {
+      "path": "side-nav/index.ts",
+      "sha256": "db273e957dad9adfc6e4ec7f7d53b9235f8430607d77ea675c1f2499e1408ed1",
+      "content": "export { SideNav } from \"./side-nav\";\nexport type { SideNavProps, SideNavGroup, SideNavItem, LinkProps as SideNavLinkProps } from \"./side-nav\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**App navigation: `SideNav`, `TabBar` and `NotificationCenter`.** - **`SideNav`**: an app's sidebar from data: named groups, icons, count badges and nested sections that fold. The current page carries a rail that travels to it; `collapsed` shrinks it to icons, each with its name as a tip. `renderLink` hands the links to your router. - **`TabBar`**: the bottom bar of a phone app, three to five destinations with icons, a count badge and a pip under the current one. `fixed` pins it to the bottom, clear of the home indicator. - **`NotificationCenter`**: a bell with an unread count that opens a list of notifications, unread ones marked, with \"Mark all read\" and an empty state."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

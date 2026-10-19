@@ -1,0 +1,2114 @@
+/*
+ * The homepage's demo cards (DemoCard.tsx), the chat they happen in, and where
+ * to start.
+ *
+ * Calm, by rule: centred, room on both sides, one card at a time, each with
+ * a plain name and one sentence, and the line that matters set big enough to
+ * read at a glance. Composes var(--echo-*) and the site's faces only, so a
+ * style the page wears (wear.ts) reaches all of it.
+ */
+
+/* --- a demo card (the road's stops: Workflow.tsx) ------------------------------ */
+
+.demo {
+  position: relative;
+  width: min(100%, 68rem);
+  margin-inline: auto;
+  border-radius: clamp(1.25rem, 2.4vw, 1.75rem);
+  background: linear-gradient(165deg, var(--echo-cap) 0%, var(--echo-surface) 42%, var(--echo-surface) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 1px) var(--echo-line, var(--echo-seam)),
+    0 40px 80px -48px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+  color: var(--echo-text);
+}
+.demo__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1.2rem, 2.2vw, 1.75rem) clamp(1.4rem, 3.2vw, 2.6rem);
+  border-bottom: 1px solid var(--echo-seam);
+}
+/* A card's name is its title card: the one line of the stop to read (faded in as it settles, below). */
+.demo__name {
+  margin: 0;
+  font-family: var(--site-font-text), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+}
+.demo__body {
+  position: relative;
+  padding: clamp(1rem, 2vw, 1.75rem) clamp(1rem, 2.6vw, 2.2rem);
+}
+/*
+ * The pause key's ring: it fills as the demo plays (--demo-p, DemoCard.tsx),
+ * so you can see how long it has left. Pushed on before the end, the page
+ * holds once and the key pulses: it's playing, pausing it lets the page go,
+ * and so does the next push.
+ */
+.demo__key {
+  position: relative;
+  /* The ring hangs outside the key, on purpose (tests/helpers/layout.ts). */
+  --echo-clip: decorative;
+  display: inline-flex;
+  flex: none;
+  border-radius: 50%;
+}
+.demo__key::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(var(--echo-accent) calc(var(--demo-p, 0) * 360deg), color-mix(in oklab, var(--echo-text) 12%, transparent) 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+}
+.demo[data-phase="done"] .demo__key::before,
+.demo:not([data-live]) .demo__key::before {
+  opacity: 0;
+}
+.demo[data-nudged] .demo__key {
+  animation: demo-nudge 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes demo-nudge {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--echo-accent) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 14px color-mix(in oklab, var(--echo-accent) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo[data-nudged] .demo__key {
+    animation: none;
+  }
+}
+
+/* Drawn smaller on a window too short for the card (DemoCard.tsx sets the scale). */
+.demo__fit {
+  transform-origin: top left;
+}
+
+/* Where Echo is in a card: the card moves it, the road stands Echo on it. Never seen itself. */
+.demo__marker {
+  --guide-size: 56px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Where Echo lands: the target's own box. */
+.jy-press {
+  display: inline-flex;
+}
+
+/* --- the AI, named plainly -------------------------------------------------- */
+
+.jy-engine {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+}
+.jy-engine__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+.jy-engine__via {
+  font-size: 0.82rem;
+  color: var(--echo-text-dim);
+}
+
+/* --- the chat ---------------------------------------------------------------- */
+
+.jy-chat {
+  display: grid;
+  /* One column, as wide as the chat and no wider: what's inside wraps to it, at 320px too. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  padding: 0.8rem 1.1rem 0.9rem;
+  border-radius: var(--echo-radius-xl, 16px);
+  background: color-mix(in oklab, var(--echo-well) 55%, var(--echo-surface));
+  box-shadow: inset 0 0 0 var(--echo-line-width, 1px) var(--echo-line, var(--echo-seam));
+  box-sizing: border-box;
+}
+.jy-chat__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--echo-seam);
+}
+/* It never scrolls (Thread.tsx): its messages keep their places from the start. */
+.jy-chat__thread {
+  padding: 0.7rem 0.1rem;
+  gap: 0.65rem;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+/* Not its turn yet: the place is kept, unseen and unread. Its turn: it fades in where it always was. */
+.demo [data-unseen] {
+  visibility: hidden;
+  opacity: 0;
+}
+.demo .jy-msg,
+.demo .echo-chat__day,
+.demo .mk__style > *,
+.demo .ck-swap > * {
+  transition:
+    opacity 0.45s ease,
+    visibility 0s;
+}
+/*
+ * The board stays while its photos gather into decks (MakeCard.tsx
+ * `distilled`): only the desk under them fades (its surface and its caption),
+ * so the decks stay solid until they've turned edge-on, and then it's gone.
+ */
+.demo .mk__style > .mk__desk[data-unseen] {
+  opacity: 1;
+  transition: visibility 0s 1s;
+}
+.demo .mk__desk[data-unseen] .jy-board::before,
+.demo .mk__desk[data-unseen] .jy-board__caption {
+  opacity: 0;
+  transition: opacity 0.4s ease 0.35s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo .jy-msg,
+  .demo .echo-chat__day,
+  .demo .mk__style > *,
+  .demo .ck-swap > * {
+    transition: none;
+  }
+}
+/*
+ * The conversation the way people know it: the prompt box is one rounded well
+ * with Send inside it; your prompt sits in a filled bubble on the right (the
+ * primary key's own colours, AA by the theme); the reply has no bubble at
+ * all, it's text on the page at reading size, bold where it leans.
+ */
+.jy-chat__composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding: 0.35rem 0.35rem 0.35rem 1rem;
+  border-radius: 1.4rem;
+  background: var(--echo-drawn-hollow, linear-gradient(160deg, color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)), color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))));
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.jy-chat__draft {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.jy-chat__draft[data-empty] {
+  color: var(--echo-text-dim);
+}
+.jy-msg {
+  max-width: 82%;
+}
+.demo .jy-msg[data-from="me"] .echo-chat__bubble {
+  padding: 0.6rem 0.95rem;
+  border-radius: 1.2rem;
+  border-end-end-radius: 0.4rem;
+  background: var(--echo-primary-cap-mid, var(--echo-accent));
+  box-shadow: none;
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+}
+.jy-msg[data-from="them"] {
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+.jy-msg[data-wide] {
+  max-width: 100%;
+}
+.jy-msg__body {
+  display: grid;
+  /* The bubble's width, not its longest line's: content sized it past a phone. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+  white-space: normal;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.demo .jy-msg[data-from="them"] .echo-chat__bubble {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.jy-msg__body > p {
+  margin: 0;
+}
+/* The plugin as the agent shows a mention: a chip inside the prompt. */
+.jy-mention {
+  display: inline-block;
+  margin: 0 0.15em;
+  padding: 0 0.45em;
+  border-radius: 0.4em;
+  /* Outlined, on the bubble's own colour: a tint would lighten the ground under light ink and drop it below AA. */
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 55%, transparent);
+  font-weight: 600;
+}
+/* The skill or tool the reply ran, beside "Used Echo UI". */
+.jy-used__tool {
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--echo-text) 8%, transparent);
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--echo-text);
+}
+/* Files the agent wrote, as chips; the steps it took, each ticked. */
+.jy-files,
+.jy-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jy-steps {
+  flex-direction: column;
+  gap: 0.25rem;
+}
+/* A file it wrote, as a chat shows one: an icon, what it is, and what kind of file. */
+.jy-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem 0.45rem 0.6rem;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--echo-seam);
+  background: color-mix(in oklab, var(--echo-well) 40%, transparent);
+  color: var(--echo-text);
+}
+.jy-file__words {
+  display: grid;
+  line-height: 1.2;
+}
+.jy-file__title {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.jy-file__kind {
+  font-size: 0.72rem;
+  color: var(--echo-text-dim);
+}
+.jy-step {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: start;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--echo-text-dim);
+}
+.jy-file svg,
+.jy-step svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.jy-step svg {
+  margin-top: 0.1rem;
+  color: var(--echo-accent-ink, var(--echo-accent));
+}
+
+/* What the reply used: the plugin, under Echo's flower, small and dim. */
+.jy-used {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--echo-text-dim);
+}
+/* Where the reply leans: bold, in the sentence, at the sentence's size. */
+.jy-key {
+  font-weight: 700;
+  color: var(--echo-text);
+}
+/* Each photo 1.7rem, or less where the bubble is narrower: a fixed row pushed the bubble out of the card on a phone. */
+.jy-mosaic {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1.7rem));
+  gap: 3px;
+  margin-bottom: 0.4rem;
+}
+.jy-mosaic img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.jy-mosaic__more {
+  display: grid;
+  place-items: center;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.66rem;
+  color: var(--echo-text-dim);
+}
+
+/*
+ * Design Eye's questions, as the agent asks them: one card in the thread, a
+ * page per question with its pager, numbered options (Echo's RadioGroup),
+ * Skip and Continue at the foot. Every page is laid on one cell, so turning
+ * one never changes the card's size.
+ */
+.jy-qcard {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.6rem 0.8rem 0.65rem;
+  border-radius: var(--echo-radius-lg, 12px);
+  background: color-mix(in oklab, var(--echo-surface) 70%, transparent);
+  box-shadow: inset 0 0 0 1px var(--echo-seam);
+}
+.jy-qcard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--echo-text-dim);
+}
+.jy-qcard__title {
+  font-weight: 600;
+  color: var(--echo-text);
+}
+.jy-qcard__pager {
+  font-variant-numeric: tabular-nums;
+}
+.jy-qcard__stack {
+  display: grid;
+}
+.jy-qcard__q {
+  grid-area: 1 / 1;
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.jy-qcard__text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.jy-qcard__opt {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-size: 0.84rem;
+}
+.jy-qcard__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--echo-seam);
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: var(--echo-text-dim);
+}
+.jy-qcard__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* --- Make a style with AI: two labelled panes --------------------------------- */
+
+.mk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2.4vw, 2rem);
+}
+/* Make's conversation is the longest on the road: it gets the wider column, so it wraps less and the card fits a screen at full size. */
+.mk--talk {
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
+}
+/* The two panes are as tall as the taller one's content: nothing in either scrolls. */
+.mk__pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  min-width: 0;
+}
+.mk__label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--echo-text-dim);
+}
+/* The board and the style it becomes share one place (MakeCard.tsx). */
+.mk__style {
+  position: relative;
+  display: grid;
+  min-height: 0;
+}
+.mk__style > * {
+  grid-area: 1 / 1;
+  min-height: 0;
+}
+
+.jy-board {
+  position: relative;
+  margin: 0;
+  height: 100%;
+  min-height: 28rem;
+  box-sizing: border-box;
+  border-radius: var(--echo-radius-xl, 16px);
+}
+/* The desk: its own layer under the photos, so it can fade while they stay (the decks, above). */
+.jy-board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 90% at 30% 20%, color-mix(in oklab, var(--echo-text) 6%, transparent), transparent 60%),
+    color-mix(in oklab, var(--echo-well) 70%, var(--echo-surface));
+  box-shadow: inset 0 2px 10px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(30% * var(--echo-shade, 1)), transparent), inset 0 0 0 1px var(--echo-seam);
+}
+/*
+ * The photos lie turned on the desk, and a turned corner can reach a little past the list's box, onto the
+ * desk round it (5% of the board each side): it says so for the layout tests (tests/helpers/layout.ts).
+ */
+.jy-board__photos {
+  position: absolute;
+  inset: 5% 5% 12%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  --echo-clip: decorative;
+}
+.jy-board__photos > * {
+  --echo-clip: none;
+}
+.jy-board__photo {
+  position: absolute;
+  left: var(--l);
+  top: var(--t);
+  width: var(--w);
+  /* Turned on the desk; the sort's glide is a transform animation (MakeCard.tsx). */
+  transform: rotate(var(--r));
+}
+.jy-board__photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 10px 22px -10px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.55 * var(--echo-shade, 1) * 100%), transparent), 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.25 * var(--echo-shade, 1) * 100%), transparent);
+  background: #fff;
+  padding: 3%;
+  box-sizing: border-box;
+}
+/* Sent: sorted by visual logic into the board's two groups, as Design Eye read it. */
+.jy-board[data-sorted] .jy-board__photo {
+  left: var(--sl);
+  top: var(--st);
+  width: 18.5%;
+  transform: none;
+}
+.jy-board[data-sorted] .jy-board__photo img {
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.jy-board__groups {
+  position: absolute;
+  inset: 4% 5% auto;
+  height: 7%;
+  z-index: 1;
+}
+.jy-board__group {
+  position: absolute;
+  top: 0;
+  left: calc(var(--g) * 61%);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--echo-text);
+  animation: jy-land 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.6s both;
+}
+.jy-board__group::before {
+  content: "";
+  display: block;
+  width: 2rem;
+  height: 2px;
+  margin-bottom: 0.35rem;
+  background: var(--echo-accent);
+}
+.jy-board__caption {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--echo-text-dim);
+}
+/*
+ * The styles, as the pane's picture (StyleSheets.tsx): each drawn as a sheet
+ * in its own colours and type (run.ts seeds), never described. These are the
+ * styles' values, not the page's: they stay the same whatever the page wears.
+ * Ink Instrument lies in front; Pigment Window is tucked behind it.
+ *
+ * Everything here is built at rest; the build (outline, pour, print, draw)
+ * only moves these values from unbuilt to built: --level (the paper's pour,
+ * 1 empty to 0 full), --wave-x (its wave, moving as it rises), --print (words,
+ * printed left to right), --rule (the line under the name), and each line's
+ * dash offset.
+ */
+.jy-style {
+  position: relative;
+  height: 100%;
+  min-height: 22rem;
+}
+.jy-sheet {
+  position: absolute;
+  box-sizing: border-box;
+  color: #1c1c1c;
+  font-family: Arial, sans-serif;
+}
+.jy-sheet > :not(.jy-paper, .jy-outline) {
+  position: relative;
+}
+/* Turned, its corner swings out past its box: 1rem in on the right, so the turn stays inside the pane. */
+.jy-sheet--pigment {
+  inset: 0 1rem 7% 22%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.85rem 0.9rem 0.9rem;
+  rotate: 2.5deg;
+  --fill: #f6f5f1;
+}
+.jy-sheet--ink {
+  container: jy-sheet / inline-size;
+  inset: 2.9rem 17% 0 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.8rem, 1.6vw, 1.2rem);
+  padding: clamp(1rem, 2vw, 1.4rem);
+  --fill: #f3f3f3;
+}
+/*
+ * The paper: poured in behind the outline, its shadow following the liquid as it rises. On dark plastic
+ * a long, soft cast; on a light device, paper lying flat (--site-paper-shadow, site-theme.ts), since
+ * there the long cast reads as a grey cloud under it.
+ */
+.jy-paper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  filter: var(
+    --site-paper-shadow,
+    drop-shadow(0 18px 20px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(45% * var(--echo-shade, 1)), transparent))
+  );
+}
+.jy-pour {
+  position: absolute;
+  inset: -8px 0 0;
+  background: var(--fill);
+  /* A wave across its top edge, the rest solid: the Puzzle's pour (Puzzle.tsx). */
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4Q6 0 12 4T24 4V8H0Z'/%3E%3C/svg%3E") var(--wave-x, 0px) 0 / 24px 8px repeat-x,
+    linear-gradient(#000 0 0) 0 8px / 100% calc(100% - 8px) no-repeat;
+  translate: 0 calc(var(--level, 0) * 100%);
+}
+/* An outline drawn at its box's own size, so it draws itself whole at any size. */
+.jy-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.jy-outline rect {
+  x: 0.5px;
+  y: 0.5px;
+  width: calc(100% - 1px);
+  height: calc(100% - 1px);
+  rx: 6px;
+  fill: none;
+  stroke: #1c1c1c;
+  stroke-width: 1;
+  stroke-dasharray: 1;
+}
+.jy-print {
+  clip-path: inset(-0.2em calc((1 - var(--print, 1)) * 100%) -0.35em -0.1em);
+}
+.jy-sheet__name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.jy-sheet__window {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  border-radius: 3px;
+  filter: blur(5px) saturate(1.2);
+}
+.jy-sheet__title {
+  margin: 0;
+  padding-bottom: 0.7rem;
+  font-size: clamp(1.9rem, 3.2vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+.jy-sheet__title::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: #1c1c1c;
+  transform: scaleX(var(--rule, 1));
+  transform-origin: left;
+}
+/* The blueprint (blueprint.ts): fine ink lines on a dotted ground, and what the style makes solid. */
+.jy-plate {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.jy-bp-grid {
+  fill: url(#jy-bp-dots);
+}
+#jy-bp-dots circle {
+  fill: color-mix(in oklab, #1c1c1c 35%, transparent);
+}
+.jy-bp-line {
+  fill: none;
+  stroke: #1c1c1c;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+}
+.jy-bp-line--frame,
+.jy-bp-line--measure {
+  stroke-width: 0.7;
+}
+.jy-bp-fill {
+  fill: #1c1c1c;
+}
+.jy-bp-fill--paper {
+  fill: #f3f3f3;
+}
+.jy-bp-fill--stroke {
+  fill: none;
+  stroke: #1c1c1c;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+/* The colours sampled from the board, as chips: the two sheets, the ink, and one blue. */
+.jy-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.4rem, 1vw, 0.65rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jy-swatch {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.jy-swatch__chip {
+  position: relative;
+  aspect-ratio: 5 / 3;
+  overflow: hidden;
+  border-radius: 3px;
+}
+.jy-swatch__chip .jy-outline rect {
+  rx: 3px;
+}
+.jy-swatch__hex {
+  font-family: "Courier New", monospace;
+  font-size: clamp(0.68rem, 0.85vw, 0.78rem);
+  white-space: nowrap;
+}
+/* A narrow sheet (a phone) sets its chips two by two, so a value never breaks, and draws its lines a little heavier. */
+@container jy-sheet (max-width: 22rem) {
+  .jy-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .jy-swatch__chip {
+    aspect-ratio: 3 / 1;
+  }
+  .jy-bp-line {
+    stroke-width: 2;
+  }
+}
+
+/* --- Pick it, and try it on ---------------------------------------------------- */
+
+.try {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  height: 100%;
+  box-sizing: border-box;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border-radius: var(--echo-radius-xl, 16px);
+  background: color-mix(in oklab, var(--echo-well) 55%, var(--echo-surface));
+  box-shadow: inset 0 0 0 var(--echo-line-width, 1px) var(--echo-line, var(--echo-seam));
+}
+.try__now {
+  margin: 0;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.try__keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* The toggle's two looks, named either side of it: the one being worn is lit. */
+.try__look {
+  font-weight: 700;
+  color: var(--echo-text-dim);
+  transition: color 0.3s ease;
+}
+.try__look[data-on] {
+  color: var(--echo-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .try__look {
+    transition: none;
+  }
+}
+/* Echo's fit tool's order, as a small tool result in the reply: the pick argues against it. */
+.jy-rank {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--echo-text) 6%, transparent);
+  font-size: 0.82rem;
+}
+.jy-rank__label {
+  margin: 0;
+  color: var(--echo-text-dim);
+}
+.jy-rank ol {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+.jy-rank li::marker {
+  color: var(--echo-text-dim);
+}
+.jy-rank__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.jy-rank__name {
+  font-weight: 700;
+}
+.jy-rank__from {
+  color: var(--echo-text-dim);
+}
+/*
+ * The promise Echo points at: "WCAG 2.2 AA", in the text's own weight,
+ * selected when Echo gets there (shown whole without the demo). The selection
+ * is the accent, the one colour that says "look here".
+ */
+.try__note p {
+  margin: 0;
+}
+/* Its own line, with room above it for Echo's height, so Echo never stands on the words. */
+.try__promise {
+  padding-top: 1.75rem;
+  padding-left: 1.1rem;
+}
+.try__mark {
+  position: relative;
+  display: inline-block;
+  --echo-clip: decorative;
+  font-family: var(--site-font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--echo-text);
+  white-space: nowrap;
+}
+/* The selection round the promise, out past its words. */
+.try__select {
+  inset: -0.4em -0.6em;
+}
+.try__note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--echo-text-dim);
+  text-wrap: pretty;
+}
+/* The line that answers the ranking: a paragraph of the reply, bold where it leans. */
+.jy-pull {
+  margin: 0;
+  font-weight: 600;
+  color: var(--echo-text);
+}
+/*
+ * The parts, each in a cell sized to it: Save, Switch and the Slider across the
+ * top, the Segmented's four periods and the Knob under them, so no cell is
+ * wider than what's in it. Each part sits in the middle of its cell and its name at the cell's
+ * foot, so the names in a row share one line.
+ */
+.feel {
+  display: grid;
+  /* The first cell is a touch wider, and never narrower than its Save key: its name, HardwareButton, is the longest. */
+  grid-template-columns: minmax(min-content, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.feel__item {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 6.5rem;
+  /* Narrow at the sides: the Save key needs its cell's width more than the cell needs the air. */
+  padding: 0.8rem 0.4rem;
+  border-radius: var(--echo-radius-xl, 16px);
+  background: color-mix(in oklab, var(--echo-well) 45%, transparent);
+  box-shadow: inset 0 0 0 1px var(--echo-seam);
+}
+.feel__item--pair {
+  grid-column: span 2;
+}
+.feel__item--wide {
+  grid-column: span 3;
+}
+/* The Slider takes its cell's width; everything else sits in the middle of its own. */
+.feel__item--fill {
+  justify-items: stretch;
+}
+.feel__name {
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: var(--echo-text-dim);
+  text-align: center;
+}
+
+/* --- Build with Echo -------------------------------------------------------- */
+
+/* Two panes, as Make's (.mk): the conversation, and the screen it built; the card's line under both. */
+.bd__reply {
+  display: grid;
+  gap: 0.55rem;
+}
+.bd__reply p {
+  margin: 0;
+}
+/* Arriving, once Send is pressed: each part fades in on its turn, a line at a time, where it always was. */
+.bd[data-arriving] .bd__arrive {
+  opacity: 0;
+  animation: bd-arrive 0.35s ease forwards;
+  animation-delay: calc(0.35s + var(--i) * 0.7s);
+}
+@keyframes bd-arrive {
+  to {
+    opacity: 1;
+  }
+}
+/*
+ * What it built (PocketGlance.tsx): Pocket on the run's two screens, on the
+ * desk: the desktop behind, the phone in front at its own size, both running
+ * off the desk's foot. Each frame waits empty; its screen renders top to
+ * bottom when the reply reaches it, the week's band fills, and the frame is
+ * ticked.
+ */
+.bd-screens {
+  container: screens / inline-size;
+  position: relative;
+  height: 100%;
+  min-height: 20rem;
+  box-sizing: border-box;
+  border-radius: var(--echo-radius-xl, 16px);
+  background:
+    radial-gradient(120% 90% at 30% 20%, color-mix(in oklab, var(--echo-text) 6%, transparent), transparent 60%),
+    color-mix(in oklab, var(--echo-well) 70%, var(--echo-surface));
+  box-shadow: inset 0 2px 10px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(30% * var(--echo-shade, 1)), transparent), inset 0 0 0 1px var(--echo-seam);
+  overflow: hidden;
+}
+/* Its tick hangs off the frame's corner on purpose (.bd-pass), inside the tray, which clips it (tests/helpers/layout.ts). */
+.bd-screen {
+  position: absolute;
+  --echo-clip: decorative;
+}
+.bd-screen > * {
+  --echo-clip: none;
+}
+/* The desktop: a light window, its bar Pocket's paper a shade darker. */
+.bd-screen--desktop {
+  top: 1.25rem;
+  bottom: -2.5rem;
+  left: 1.25rem;
+  width: 82%;
+}
+/* The phone: Echo's material round its glass. */
+.bd-screen--phone {
+  top: 3.5rem;
+  right: 1.25rem;
+  bottom: -2.5rem;
+  width: clamp(12rem, 44%, 17.5rem);
+  padding: 0.4rem;
+  box-sizing: border-box;
+  border-radius: 2.1rem;
+  background: linear-gradient(160deg, var(--echo-cap), var(--echo-surface));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.1 * var(--echo-gloss, 1))),
+    inset 0 0 0 1px var(--echo-seam),
+    0 24px 40px -20px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 80%, transparent);
+}
+.bd-pocket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--echo-well);
+  color: var(--echo-text);
+  font-family: var(--echo-font-sans);
+}
+.pk-desktop {
+  grid-template-rows: auto minmax(0, 1fr);
+  border-radius: 10px;
+  box-shadow: 0 18px 30px -18px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+}
+.pk-phone {
+  container: phone / inline-size;
+  border-radius: 1.75rem;
+}
+/* A glass too narrow for the week switch (the smallest phones): it steps aside rather than run off the edge. */
+@container phone (max-width: 14rem) {
+  .pk-phone__body .echo-segmented {
+    display: none;
+  }
+}
+.pk-bar {
+  display: flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0 0.75rem;
+  background: color-mix(in oklab, var(--echo-text) 7%, var(--echo-well));
+  border-bottom: 1px solid color-mix(in oklab, var(--echo-text) 16%, transparent);
+}
+.pk-dots {
+  width: 2.1rem;
+  height: 0.55rem;
+  --dot: radial-gradient(circle, color-mix(in oklab, var(--echo-text) 28%, transparent) 0 3.5px, transparent 4px);
+  background:
+    var(--dot) 0 50% / 0.7rem 0.7rem no-repeat,
+    var(--dot) 0.7rem 50% / 0.7rem 0.7rem no-repeat,
+    var(--dot) 1.4rem 50% / 0.7rem 0.7rem no-repeat;
+}
+.pk-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+  min-height: 0;
+}
+.pk-screen p {
+  margin: 0;
+}
+.pk-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 1.1rem;
+  border-bottom: 1px solid var(--echo-text);
+}
+.pk-phone .pk-head {
+  padding: 1rem 1rem 0.65rem;
+}
+.pk-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.pk-dot {
+  font-weight: 400;
+}
+.pk-mark {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--echo-text);
+}
+.pk-mark svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pk-caption {
+  white-space: nowrap;
+  padding-inline-start: 0.8rem;
+  border-inline-start: 1px solid var(--echo-text);
+  font-size: 0.66rem;
+  color: var(--echo-text-dim);
+}
+/* The page: one statement, surrounded by air, and the week drawn as a measure. */
+.pk-desktop__body {
+  display: grid;
+  align-content: start;
+  gap: 1.5rem;
+  /* The statement's column: about half the desktop, the rest its paper. */
+  width: min(100%, 15.5rem);
+  padding: 1.5rem 1.4rem;
+}
+.pk-phone__body {
+  display: grid;
+  justify-items: start;
+  gap: 1.15rem;
+  padding: 1.1rem 1rem;
+}
+.pk-say {
+  display: grid;
+  gap: 0.45rem;
+}
+/* The condensed capitals of a short legend (Ink Instrument's type roles): the narrow face does the spacing. */
+.pk-legend {
+  font-family: var(--echo-font-machine);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.pk-statement {
+  font-size: clamp(1.45rem, 2.4vw, 1.95rem);
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+.pk-week {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+}
+.pk-amount {
+  font-size: clamp(2rem, 3.4vw, 2.7rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.pk-currency {
+  display: inline-block;
+  padding: 0.2rem 0.1rem 0 0;
+  font-size: 0.5em;
+  vertical-align: top;
+}
+/* The week's measure: an ink outline, a tick every quarter, what's spent filled in the board's blue. */
+.pk-band {
+  position: relative;
+  height: 0.7rem;
+  margin-top: 0.3rem;
+  box-shadow: inset 0 0 0 1px var(--echo-text);
+}
+.pk-band__spent {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--used) * 100%);
+  background: #0495fb;
+  box-shadow: inset 0 0 0 1px var(--echo-text);
+  transform-origin: left center;
+}
+.pk-band__ticks {
+  position: absolute;
+  inset: auto 0 -0.35rem;
+  height: 0.35rem;
+  background: repeating-linear-gradient(90deg, var(--echo-text) 0 1px, transparent 1px 25%);
+  /* The last tick, at the far end. */
+  box-shadow: inset -1px 0 0 var(--echo-text);
+}
+.pk-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem !important;
+  font-family: var(--echo-font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+/* A desk too narrow for both (a phone's page): the phone alone, in the middle, as wide as its words need. */
+@container screens (max-width: 30rem) {
+  .bd-screen--desktop {
+    display: none;
+  }
+  .bd-screen--phone {
+    top: 1.5rem;
+    right: auto;
+    left: 50%;
+    width: min(82%, 17.5rem);
+    translate: -50% 0;
+  }
+}
+/* Its check passed: a tick on the frame's corner. */
+.bd-pass {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.45rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--echo-accent);
+  color: var(--echo-accent-on, white);
+}
+.bd-pass svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Before Send, both frames are empty; each screen renders top to bottom with its reply line, its band fills, its tick pops. */
+.bd[data-waiting] .bd__render,
+.bd[data-arriving] .bd__render {
+  clip-path: inset(0 0 100% 0);
+}
+.bd[data-waiting] .bd-pass,
+.bd[data-arriving] .bd-pass {
+  opacity: 0;
+  scale: 0.4;
+}
+.bd[data-waiting] .pk-band__spent,
+.bd[data-arriving] .pk-band__spent {
+  transform: scaleX(0);
+}
+.bd[data-arriving] .bd__render {
+  animation: bd-render 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: calc(0.35s + var(--i) * 0.7s);
+}
+.bd[data-arriving] .pk-band__spent {
+  animation: bd-fill 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(0.95s + var(--i) * 0.7s);
+}
+.bd[data-arriving] .bd-pass {
+  animation: bd-pass 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(1.15s + var(--i) * 0.7s);
+}
+@keyframes bd-render {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes bd-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes bd-pass {
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bd[data-arriving] .bd__arrive,
+  .bd[data-arriving] .bd__render,
+  .bd[data-arriving] .pk-band__spent,
+  .bd[data-arriving] .bd-pass {
+    opacity: 1;
+    scale: 1;
+    transform: none;
+    clip-path: none;
+    animation: none;
+  }
+}
+@keyframes jy-land {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jy-board__group {
+    animation: none;
+  }
+}
+
+/*
+ * A selection (Selection.tsx): a flat outline in the accent, square, with a
+ * square handle at each corner, the way a design tool marks what's picked (no
+ * glow, no rounding). It snaps on, a touch large, and
+ * settles; off, it fades.
+ */
+.jy-select {
+  position: absolute;
+  inset: -0.5rem;
+  border-radius: 0;
+  pointer-events: none;
+  /* It goes round what it marks, outside its box, on purpose (tests/helpers/layout.ts). */
+  --echo-clip: decorative;
+  box-shadow: 0 0 0 1.5px var(--echo-accent-ink, var(--echo-accent));
+  opacity: 0;
+  scale: 1.08;
+  transition:
+    opacity 0.2s ease,
+    scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.jy-select[data-on] {
+  opacity: 1;
+  scale: 1;
+}
+.jy-select > i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 0;
+  background: var(--echo-surface);
+  box-shadow: inset 0 0 0 1.5px var(--echo-accent-ink, var(--echo-accent));
+}
+.jy-select > i:nth-child(1) {
+  top: -4px;
+  left: -4px;
+}
+.jy-select > i:nth-child(2) {
+  top: -4px;
+  right: -4px;
+}
+.jy-select > i:nth-child(3) {
+  bottom: -4px;
+  left: -4px;
+}
+.jy-select > i:nth-child(4) {
+  bottom: -4px;
+  right: -4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jy-select {
+    transition: none;
+  }
+}
+
+/* --- On-brand and WCAG 2.2 AA, checked: one number per finding, on the button, in the code, in the reply --- */
+
+.ck {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2.4vw, 2rem);
+}
+/*
+ * The two sides end level, as Make's and Pick's panes do: the conversation
+ * sets the height, and what the AI made takes it, its screen growing into the
+ * room (the code keeps its own height under it).
+ */
+.ck__made,
+.ck__check {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+.ck__made {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.ck-screen {
+  container: ck-screen / inline-size;
+  display: grid;
+  /* One column, the screen's width: its words wrap to it rather than widen it. */
+  grid-template-columns: minmax(0, 1fr);
+  border-radius: var(--echo-radius-xl, 16px);
+  box-shadow: inset 0 0 0 1px var(--echo-seam);
+  overflow: hidden;
+  background: var(--echo-well);
+  font-family: var(--echo-font-sans);
+}
+/* Pocket's opening, as the screen shows it: centred in whatever room the screen has. */
+.ck-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 0.9rem;
+  padding: clamp(1.1rem, 2.4vw, 1.75rem);
+}
+.ck-strip__title {
+  margin: 0;
+  font-size: var(--echo-text-3xl);
+  letter-spacing: var(--echo-tracking-tighter);
+  line-height: var(--echo-leading-tight);
+}
+.ck-strip__sub {
+  margin: -0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--echo-text-dim);
+}
+.ck-slip {
+  position: relative;
+  display: inline-flex;
+  /* The findings' numbers hang off the button's corner, on purpose (tests/helpers/layout.ts). */
+  --echo-clip: decorative;
+}
+.ck-slip button {
+  font-size: 1.1rem;
+}
+/* The numbers hang off the slip's right side: anything beside it starts after them. */
+.ck-slip:not(:last-child) {
+  margin-inline-end: 2.4rem;
+}
+.ck-slip__pins {
+  position: absolute;
+  /* Above the selection's top-right corner, as a design tool labels what's picked. */
+  top: -2.05rem;
+  right: -0.65rem;
+  display: flex;
+  gap: 0.2rem;
+}
+
+/*
+ * The screen, marked up (CheckCard.tsx `Screen`): checked, a ring is drawn
+ * round the blue Save and an arrow points at it, "Not your style"; fixed, the
+ * blue Save gives way to Echo's in the same place, and the arrow says it's in
+ * your style, at WCAG 2.2 AA. Drawn fast: the check's moment lasts one press.
+ */
+/*
+ * One left edge: the button on the screen's words' edge, the verdict too where it goes under it; the
+ * selection is markup over the button, so it reaches out past it, as a design tool's does (it reaches into
+ * the screen's margin). The button sat in from the words, and the verdict further in again.
+ */
+.ck-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 4.5rem;
+  /* Room above for the numbers over the selection's corner. */
+  padding: 1.75rem 0 0.6rem;
+}
+.ck-target {
+  position: relative;
+  display: inline-grid;
+  /* The ring goes round the button and its numbers, outside their box, on purpose (tests/helpers/layout.ts). */
+  --echo-clip: decorative;
+}
+.ck-slot {
+  display: grid;
+}
+.ck-slot > * {
+  grid-area: 1 / 1;
+  align-self: center;
+  justify-self: start;
+  transition:
+    opacity 0.35s ease,
+    scale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ck-now {
+  opacity: 0;
+  scale: 0.7;
+}
+.ck-stage[data-fixed] .ck-was {
+  opacity: 0;
+  scale: 0.85;
+}
+.ck-stage[data-fixed] .ck-now {
+  opacity: 1;
+  scale: 1;
+}
+/* The selection round the button (Selection.tsx): the off-style one, then Echo's in its place, out past its box on purpose. */
+.ck-select {
+  inset: -0.45rem;
+}
+/*
+ * The leader from the selection to the verdict: a straight rule in the
+ * accent, a dot where it meets the selection, drawn out from it. It's the
+ * selection's (inside the target), so it starts on the selection's edge
+ * whatever the button's size; the verdict keeps its length clear. The
+ * verdict is Echo's Annunciator, its marks set large enough to read across
+ * the card.
+ */
+.ck-note {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  /* Past the selection's edge (0.45rem past the button) and the leader's length. */
+  margin-left: calc(0.45rem + 2.25rem);
+}
+.ck-lead {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 0.45rem);
+  width: 2.25rem;
+  height: 1.5px;
+  margin-top: -0.75px;
+  background: var(--echo-accent-ink, var(--echo-accent));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+.ck-lead::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  translate: 0 -50%;
+  background: var(--echo-accent-ink, var(--echo-accent));
+}
+.ck-stage[data-checked] .ck-lead {
+  transform: scaleX(1);
+}
+.ck-note .echo-annunciator__glass {
+  gap: 0.35rem 1.1rem;
+  padding: 0.55rem 0.9rem;
+  /* A rim, so the glass reads as set into the screen it sits on. */
+  outline: 1px solid var(--echo-seam);
+}
+.ck-note .echo-annunciator__mark {
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+/* A screen too narrow for the verdict beside the button (a phone): it goes under it, the leader running down to it. */
+@container ck-screen (max-width: 30rem) {
+  .ck-stage {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  /* Under the button, on the same edge, past the selection's foot and the leader's length. */
+  .ck-note {
+    max-width: 100%;
+    margin: calc(0.45rem + 1.4rem) 0 0;
+  }
+  /* Down from the selection's foot, under the button's middle. As wide as its dot, the hairline drawn
+     down its middle, so the dot never hangs out of it. */
+  .ck-lead {
+    top: calc(100% + 0.45rem);
+    left: 50%;
+    width: 7px;
+    height: 1.4rem;
+    margin: 0 0 0 -3.5px;
+    background: linear-gradient(var(--echo-accent-ink, var(--echo-accent)), var(--echo-accent-ink, var(--echo-accent))) center / 1.5px 100% no-repeat;
+    transform: scaleY(0);
+    transform-origin: center top;
+  }
+  .ck-lead::before {
+    left: 50%;
+    top: -4px;
+    translate: -50% 0;
+  }
+  .ck-stage[data-checked] .ck-lead {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-slot > *,
+  .ck-lead {
+    transition: none;
+  }
+}
+
+/* A finding's number: hidden until the check has run, then it pops in where it points. */
+.ck-pin {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--echo-accent);
+  color: var(--echo-accent-on, white);
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0;
+  scale: 0.4;
+  transition:
+    opacity 0.25s ease,
+    scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ck-pin[data-on] {
+  opacity: 1;
+  scale: 1;
+}
+
+.ck-code {
+  margin: 0;
+  border-radius: var(--echo-radius-lg, 12px);
+  background: var(--echo-lcd, var(--echo-well));
+  box-shadow: inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.22 * var(--echo-shade, 1) * 100%), transparent);
+}
+.ck-code__file {
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid var(--echo-seam);
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--echo-text-dim);
+}
+.ck-code__pre {
+  display: grid;
+  margin: 0;
+  padding: 0.7rem 0;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ck-line {
+  display: block;
+  padding: 0 0.9rem 0 1.9rem;
+  position: relative;
+}
+.ck-line[data-hot] {
+  background: color-mix(in oklab, var(--echo-accent) 10%, transparent);
+}
+.ck-line[data-diff]::before {
+  position: absolute;
+  left: 0.75rem;
+  font-weight: 700;
+}
+.ck-line[data-diff="add"] {
+  background: color-mix(in oklab, var(--echo-accent) 14%, transparent);
+}
+.ck-line[data-diff="add"]::before {
+  content: "+";
+}
+/* In the diff, what was added is what to read: the lines it kept are muted. */
+.ck-code[data-diff] .ck-line:not([data-diff]) {
+  color: var(--echo-text-dim);
+}
+.ck-line[data-diff="del"] {
+  color: var(--echo-text-dim);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--echo-text) 45%, transparent);
+}
+.ck-line[data-diff="del"]::before {
+  content: "−";
+  text-decoration: none;
+}
+.ck-mark {
+  position: relative;
+  background: none;
+  color: inherit;
+  text-decoration: none;
+}
+.ck-mark[data-on] {
+  text-decoration: underline wavy var(--echo-accent);
+  text-underline-offset: 4px;
+}
+/* In the code, the number sits right after the spot it marks, raised like a footnote: it never covers a line. */
+.ck-mark .ck-pin {
+  position: relative;
+  top: -0.55em;
+  margin-left: 0.15em;
+  width: 1.05rem;
+  height: 1.05rem;
+  font-size: 0.6rem;
+  vertical-align: baseline;
+  transition:
+    opacity 0.25s ease,
+    scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Before the check, no number and no room kept for one: the line reads exactly as the AI wrote it. */
+.ck-mark .ck-pin:not([data-on]) {
+  width: 0;
+  margin-left: 0;
+  overflow: hidden;
+}
+
+/* One place, a few states laid on it, one seen at a time: the place is the tallest's from the start. */
+.ck-swap {
+  display: grid;
+}
+.ck-swap > * {
+  grid-area: 1 / 1;
+  align-self: start;
+  min-width: 0;
+}
+.ck-findings {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ck-finding {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--echo-radius-lg, 12px);
+  background: color-mix(in oklab, var(--echo-well) 55%, var(--echo-surface));
+  box-shadow: inset 0 0 0 1px var(--echo-seam);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  animation: jy-land 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ck-finding:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.ck-finding__rule {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px currentColor;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+/* What the check wrote in backticks: code, in the line's own size. */
+.ck-finding__body code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 5px;
+  background: color-mix(in oklab, var(--echo-text) 9%, transparent);
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+/* What's wrong is in the text's colour; the way to fix it, muted: one thing to read first. */
+.ck-finding__fix {
+  color: var(--echo-text-dim);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-pin,
+  .ck-finding {
+    transition: none;
+    animation: none;
+  }
+}
+
+/*
+ * The terminal in Get Echo: a code tool's window in Echo's material (the
+ * well, the mono face), its command typed and its output printed a line at a
+ * time once it's in view (GetCard.tsx). Lines wrap; nothing scrolls.
+ */
+.term {
+  display: grid;
+  margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--echo-well);
+  box-shadow:
+    inset 0 0 0 var(--echo-line-width, 1px) var(--echo-line, var(--echo-seam)),
+    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+}
+/* A window's lines stay at its top. */
+.term__body {
+  align-content: start;
+}
+/* The chat's key, at its foot, on the window's seam. */
+.term__foot {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.65rem 0.9rem 0.8rem;
+  border-top: 1px solid var(--echo-seam);
+}
+/* The chat opposite it: the same frame, a thread inside instead of a terminal. */
+.get__thread {
+  padding: 0.75rem 0.9rem 0.85rem;
+  gap: 0.55rem;
+}
+.get__thread .jy-msg__body {
+  font-size: 0.85rem;
+}
+.term__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.8rem;
+  border-bottom: 1px solid var(--echo-seam);
+  font-size: 0.74rem;
+  color: var(--echo-text-dim);
+}
+.term__dots {
+  width: 2.1rem;
+  height: 0.55rem;
+  --dot: radial-gradient(circle, color-mix(in oklab, var(--echo-text) 30%, transparent) 0 3.5px, transparent 4px);
+  background:
+    var(--dot) 0 50% / 0.7rem 0.7rem no-repeat,
+    var(--dot) 0.7rem 50% / 0.7rem 0.7rem no-repeat,
+    var(--dot) 1.4rem 50% / 0.7rem 0.7rem no-repeat;
+}
+.term__body {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem 0.7rem;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--echo-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.term__prompt {
+  color: var(--echo-accent-ink, var(--echo-accent));
+}
+/*
+ * The command line, lit: the line you'd type, and the key that copies it. A
+ * strip of the accent across the terminal, the copy mark at its end.
+ */
+.term__cmd {
+  display: flex;
+  align-items: center;
+  margin: 0 -0.45rem 0.15rem;
+  padding: 0.35rem 0.45rem;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--echo-accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--echo-accent-ink, var(--echo-accent)) 45%, transparent);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--echo-text);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.term__cmd:hover {
+  background: color-mix(in oklab, var(--echo-accent) 26%, transparent);
+}
+.term__cmd:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+/* Under a finger the command line is a 44px target, as every key is (2.5.8's platform size). */
+@media (pointer: coarse) {
+  .term__cmd {
+    min-height: 44px;
+  }
+}
+.term__copy {
+  display: grid;
+  margin-inline-start: auto;
+  padding-inline-start: 0.75rem;
+  color: var(--echo-accent-ink, var(--echo-accent));
+}
+.term__copy svg {
+  width: 1rem;
+  height: 1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .term__cmd {
+    transition: none;
+  }
+}
+.term__out {
+  color: var(--echo-text-dim);
+}
+/*
+ * Waiting (the page runs, the terminal isn't in view yet): the command not yet
+ * typed, the output not yet printed. Typing: the command types itself, then
+ * each line arrives. Without JavaScript or with reduced motion it stays whole.
+ */
+.term[data-state="waiting"] .term__typed,
+.term[data-state="typing"] .term__typed {
+  display: inline-block;
+  vertical-align: bottom;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.term[data-state="waiting"] .term__out,
+.term[data-state="typing"] .term__out {
+  opacity: 0;
+}
+.term[data-state="typing"] .term__typed {
+  animation: term-type calc(var(--n) * 0.045s) steps(var(--n)) 0.15s forwards;
+}
+.term[data-state="typing"] .term__out {
+  animation: term-line 0.25s ease forwards;
+  animation-delay: calc(1.35s + var(--i) * 0.4s);
+}
+@keyframes term-type {
+  to {
+    max-width: calc(var(--n) * 1ch);
+  }
+}
+@keyframes term-line {
+  to {
+    opacity: 1;
+  }
+}
+
+/* --- Get Echo: the road's first stop ------------------------------------------ */
+
+.get__ways {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2.4vw, 2rem);
+}
+/* Each way is its window and nothing else: the windows fill their columns, one height. */
+.get__way {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.get__way > .term {
+  flex: 1;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+/* The chat: its thread, the prompt box Echo sends from, and the plugin's key at its foot. */
+.get__way > .term--chat {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+.get__compose {
+  padding: 0 0.9rem 0.75rem;
+}
+.get .term__bar {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--echo-text);
+}
+.get__bridge {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--echo-text-dim);
+}
+.get__bridge strong {
+  color: var(--echo-text);
+}
+/* A way on from the line: the card's link, as the other cards wear it under their sentence. */
+.get__bridge a {
+  margin-inline-start: 0.35rem;
+  color: var(--site-link, var(--echo-text));
+  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
+  text-underline-offset: 4px;
+}
+.get__bridge a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* --- a narrow window ---------------------------------------------------------- */
+
+@media (max-width: 56.25rem) {
+  .mk,
+  .ck,
+  .get__ways {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .jy-board {
+    min-height: 22rem;
+  }
+  .feel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row dense;
+  }
+  /* Two by two: Save and Switch, the Slider beside the Knob, then the Segmented's four periods across (nothing left alone, nothing squeezed). */
+  .feel__item--pair {
+    grid-column: span 1;
+  }
+  .feel__item--wide {
+    grid-column: span 2;
+  }
+  .feel__item {
+    min-height: 5rem;
+  }
+  .demo__marker {
+    --guide-size: 44px;
+  }
+}
+/* The smallest phones (320px): the parts one under another, each cell as wide as the card. */
+@media (max-width: 22.5rem) {
+  /* The command line at the body's size, with less room either side, so it and its copy key fit on one line. */
+  .term__body {
+    padding-inline: 0.6rem;
+  }
+  .term__cmd {
+    font-size: 0.74rem;
+  }
+  .term__copy {
+    padding-inline-start: 0.4rem;
+  }
+  .feel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .feel__item--pair,
+  .feel__item--wide {
+    grid-column: auto;
+  }
+}
+.jy-file svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--echo-text-dim);
+}
+
+/*
+ * The paper road (paper/PaperRoad.tsx): Make's sheets drift down to Try it on
+ * as paper and merge into it. A sheet whose paper is in the air is hidden in
+ * its place; the merge's overlay lies over Try it on's pane; the built copy
+ * the paper is pictured from is laid out off screen for a moment. Merged, the
+ * panel wears Ink Instrument (its theme is written by PaperRoad), its words
+ * in the style's own ink.
+ */
+.jy-sheet[data-away] {
+  visibility: hidden;
+}
+.mk__pane--try {
+  position: relative;
+}
+#pick .try[data-merged] {
+  color: var(--echo-text);
+}
+.jy-merge {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  visibility: hidden;
+  pointer-events: none;
+}
+.jy-merge > * {
+  position: absolute;
+}
+.jy-merge__paper {
+  border-radius: 6px;
+  object-fit: fill;
+}
+/* The bare paper, in Ink Instrument's sheet colour: what spreads to fill the panel. */
+.jy-merge__ground {
+  background: #f3f3f3;
+  box-shadow: inset 0 0 0 1px #1c1c1c;
+}
+.jy-merge__part svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.jy-capture {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  pointer-events: none;
+}
+
+
+/* === the page's light (light/) ================================================== */
+
+/* One layer for the page: the light Echo carries lies over all of it, and over nothing past it. */
+.home-lit {
+  position: relative;
+  isolation: isolate;
+}
+/* The light Echo carries (LightPool.tsx): moved by a transform, its strength set every frame. */
+.home-pool {
+  --pool-amt: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--echo-accent) calc(var(--pool-amt) * 100%), transparent) 0%,
+    color-mix(in oklch, var(--echo-accent) calc(var(--pool-amt) * 45%), transparent) 42%,
+    transparent 100%
+  );
+}
+.home-pool[data-mode="over"] {
+  z-index: 39;
+  mix-blend-mode: screen;
+}
+
+/* The road's light (RoadLight.tsx): in the page's layer, the window's width, behind everything on it. */
+.hiw__light {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.hiw__light-field {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Over the road's light, the title's quieter half and the sentence's are a pale tint of the seed, not a mid
+   grey: still the second voice, and light enough for the light to glow behind them (the shader holds
+   itself under whatever they need). */
+.hiw > .big-title .big-title__dim,
+.hiw > .big-title .big-title__lede {
+  color: color-mix(in oklch, var(--echo-text) 58%, var(--family-seed-light));
+}
+.hiw > .big-title .big-title__lede strong {
+  color: var(--echo-text);
+}
+
+/*
+ * A card's name fades in as the card settles and starts to play: the line first, then the demo. Only where
+ * the wheel brings the page to rest on the card (snap.ts): under a finger nothing settles, the reader scrolls
+ * up to a card, and its name is the thing to read on the way (a phone showed nameless cards).
+ */
+@media (pointer: fine) {
+  .demo[data-live] .demo__name {
+    transition: opacity 0.7s ease 0.12s;
+  }
+  .demo[data-live][data-phase="waiting"] .demo__name {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+}
+
+/* Forced colours: the page's lights are decoration, and step aside. */
+@media (forced-colors: active) {
+  .home-pool,
+  .hiw__light {
+    display: none;
+  }
+}

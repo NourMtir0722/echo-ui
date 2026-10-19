@@ -1,0 +1,87 @@
+# Cloudflare static-asset headers.
+#
+# This file was first written for the social card, back when Next exported it
+# as an extensionless /opengraph-image that would have gone out as
+# application/octet-stream. The card is a picture now, opengraph-image.jpg,
+# typed by its extension; its rule below only caches it.
+
+# Every response, page or artifact. The site is static and public, so these
+# only narrow what a browser does with it: a JSON file is never sniffed into a
+# page, no other origin frames the site, a link out names the site rather than
+# the page, and https stays https. Nothing else below sets these four, and
+# nothing may: a second rule would be concatenated onto the first.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+
+/opengraph-image.jpg
+  Cache-Control: public, max-age=3600
+
+# The catalog agents and the MCP server read, so it must be readable
+# cross-origin.
+/r/*
+  Access-Control-Allow-Origin: *
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Echo's own registry format, which `npx echo-ui-cli` and the MCP server read.
+# Same CORS and content type as /r/*; the cache policy is the format's promise.
+#
+# A `{name}@{version}.json` is guaranteed never to be rewritten, so it is never
+# revalidated. `{name}.json` and `index.json` move on every release and must
+# not be.
+#
+# HOW THIS SPLIT IS EXPRESSED, because it is not obvious and it was measured.
+# Cloudflare applies EVERY rule that matches and CONCATENATES the values, so two
+# rules setting Cache-Control for one path produce one invalid header rather
+# than the more specific rule winning. Verified against `wrangler dev`
+# (workerd 4.135.0, 2026-09-20):
+#
+#   /e/*@*.json        does not match at all - a second `*` is not a wildcard,
+#                      so the pinned files silently took the pointer rule.
+#   /e/:name.json      matches pinned files too - a placeholder is greedy over
+#                      `@`, so it cannot be used to mean "pointers only".
+#   /e/:name@:version.json  matches pinned files and ONLY pinned files.
+#
+# So exactly one rule sets Cache-Control here, and it is the immutable one. The
+# pointers deliberately carry no rule: an asset with no Cache-Control is served
+# `public, max-age=0, must-revalidate` with an ETag, which is what a moving
+# pointer wants and is stricter than the 60 seconds the format promises. Adding a `/e/*`
+# Cache-Control to say so out loud would ALSO match the pinned files and
+# destroy the immutable promise. Do not add one.
+/e/*
+  Access-Control-Allow-Origin: *
+  Content-Type: application/json; charset=utf-8
+
+/e/:name@:version.json
+  Cache-Control: public, max-age=31536000, immutable
+
+# The same file, as it's actually served. Cloudflare answers a literal `@`
+# with a 307 to its `%40` spelling, and matches these rules against the path
+# as requested: the rule above now only caches that redirect, and without
+# this one the pinned file itself went out `max-age=0` (verified
+# against `wrangler dev` 4.149.0, 2026-10-12). The two never match one path,
+# so they can't be concatenated. The client asks for `%40` directly.
+/e/:name%40:version.json
+  Cache-Control: public, max-age=31536000, immutable
+
+/llms.txt
+  Access-Control-Allow-Origin: *
+  Content-Type: text/plain; charset=utf-8
+
+/llms-full.txt
+  Access-Control-Allow-Origin: *
+  Content-Type: text/plain; charset=utf-8
+
+# Hashed build assets never change under the same name.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The 3D Echo on the homepage. Its name isn't content-hashed, so it's cached
+# for a day rather than for ever. Named explicitly: a .glb with no type is
+# served as application/octet-stream.
+/models/*
+  Content-Type: model/gltf-binary
+  Cache-Control: public, max-age=86400

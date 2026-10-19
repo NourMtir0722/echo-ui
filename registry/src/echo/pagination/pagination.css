@@ -1,0 +1,210 @@
+/**
+ * Pagination. Molded number caps; the current page
+ * is a lit accent cap, pressed into the chassis. Composes var(--echo-*).
+ */
+.echo-pagination {
+  display: flex;
+  align-items: center;
+  /*
+   * `inline-flex` with no wrapping made this the only control in the
+   * library that could push the DOCUMENT open — 419 > 390 on /docs/pagination,
+   * 410 > 390 on /gallery/navigation. Twenty pages of 30px caps is wider than
+   * a phone before you count the prev/next steps, and nothing let it fold.
+   */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--echo-space-3);
+  max-width: 100%;
+}
+
+.echo-pagination__list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--echo-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.echo-pagination__page,
+.echo-pagination__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: var(--echo-control-compact);
+  height: var(--echo-control-compact);
+  padding: 0 var(--echo-space-4);
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-xs);
+  font-weight: var(--echo-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--echo-leading-none, 1);
+  color: var(--echo-text);
+  /* The HardwareButton neutral cap, with a 2px side wall at this size. */
+  background: linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    var(--echo-cap) 40%,
+    var(--echo-cap) 62%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    0 calc(2px + 1px * var(--lift, 0) - 2px * var(--press, 0)) 0 var(--echo-seam),
+    0 calc(5px + 3px * var(--lift, 0) - 3px * var(--press, 0))
+      calc(9px + 5px * var(--lift, 0) - 5px * var(--press, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* The press is useCapPhysics's (pagination.tsx): lift, lean, travel. */
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.echo-pagination__step {
+  min-width: var(--echo-control-compact);
+  padding: 0;
+  color: var(--echo-text-dim);
+}
+
+.echo-pagination__step svg {
+  width: var(--echo-icon-md, 16px);
+  height: var(--echo-icon-md, 16px);
+}
+
+/* Previous and next point the way the page reads: flipped in right-to-left. */
+.echo-pagination__step:dir(rtl) svg {
+  transform: scaleX(-1);
+}
+
+.echo-pagination__page:focus-visible,
+.echo-pagination__step:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+/*
+ * The current page is lit and seated — it is where you are, not somewhere to
+ * go. Lit with the Record button's cap and its cream legend: the library has
+ * ONE lit accent. This used to be a lighter pastel fill with dark digits and a
+ * halo, a second shade that belonged to nothing else.
+ */
+.echo-pagination__page[data-current] {
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    0 1px 0 var(--echo-accent-6),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-pagination__page[data-current]:focus-visible {
+  /* Seated like the current page, ringed like focus. Without this rule the
+     current page's box-shadow, declared later, replaced the ring. */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));
+}
+
+/* Landing on a page lights it: a flash of the key light blooms out from the
+   middle of the cap and fades, the way the lit cap swells into place. */
+.echo-pagination__page[data-current]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  animation: echo-page-light var(--echo-duration-pop) var(--echo-ease-swap);
+  pointer-events: none;
+}
+/* It blooms to the cap's own edge and no further: past it, the cap scrolled
+   sideways inside itself while it played. */
+@keyframes echo-page-light {
+  from {
+    opacity: 1;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.echo-pagination__step[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.echo-pagination__step[disabled]:active {
+  transform: none;
+}
+
+.echo-pagination__gap {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 20px;
+  height: 30px;
+  padding-bottom: var(--echo-space-3);
+  color: var(--echo-text-dim);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-none, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-pagination__page,
+  .echo-pagination__step {
+    transition: none;
+  }
+  .echo-pagination__page[data-current]::after {
+    animation: none;
+  }
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the other
+ * threshold: the 44px both platform guidelines use, which is about a
+ * fingertip rather than about conformance.
+ *
+ * Gated on `@media (pointer: coarse)` so the desktop rendering does not move
+ * — these are "passing AA but under the
+ * platform guideline", not broken. Pagination is first among them because
+ * people tap it repeatedly, which is exactly when a 30px target starts
+ * costing mis-taps.
+ */
+@media (pointer: coarse) {
+  .echo-pagination__page,
+  .echo-pagination__step {
+    min-width: 44px;
+    height: 44px;
+  }
+}

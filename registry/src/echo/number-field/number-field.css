@@ -1,0 +1,244 @@
+/**
+ * NumberField / Stepper. A machined LCD readout in a
+ * recessed well, flanked by two molded step caps. The label above is the
+ * scrub handle — it advertises that with a horizontal-resize cursor.
+ * Composes var(--echo-*).
+ */
+.echo-number-field {
+  /* One size scale (sm/md/lg): steppers and readout are the control height. */
+  --ctl-h: var(--echo-control-default);
+  --ctl-font: var(--echo-text-lg);
+  --ctl-radius: var(--echo-radius-lg);
+  --ctl-gap: var(--echo-space-5);
+  --nf-readout: 84px;
+  display: inline-grid;
+  gap: var(--echo-space-3);
+  /* Shrinks with its container rather than sizing it (two 44px steppers plus
+     the readout is wider than a 320px screen's column). */
+  min-width: 0;
+  max-width: 100%;
+}
+.echo-number-field[data-size="sm"] {
+  --ctl-h: var(--echo-control-compact);
+  --ctl-font: var(--echo-text-md);
+  --ctl-radius: var(--echo-radius-md);
+  --ctl-gap: var(--echo-space-4);
+  --nf-readout: 64px;
+}
+.echo-number-field[data-size="lg"] {
+  --ctl-h: var(--echo-control-large);
+  --ctl-font: var(--echo-text-xl);
+  --ctl-radius: var(--echo-radius-xl);
+  --ctl-gap: var(--echo-space-6);
+  --nf-readout: 108px;
+}
+
+/* The scrub handle. `cursor` is the whole affordance, so keep it. */
+.echo-number-field__scrub {
+  display: inline-flex;
+  width: fit-content;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.echo-number-field__label {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-semibold, 600);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+  cursor: inherit;
+}
+
+/*
+ * One row on the control scale: two steppers and the value window, all one
+ * default control tall, with real air between them. The gap used to be 4px,
+ * and a focus ring drawn OUTSIDE the window ran straight into both steppers.
+ */
+.echo-number-field__group {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--ctl-h);
+  gap: var(--ctl-gap);
+  min-width: 0;
+}
+
+/* Molded step caps — same top-lit plastic as every other control. */
+.echo-number-field__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ctl-h);
+  border: 0;
+  border-radius: var(--ctl-radius);
+  cursor: pointer;
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ctl-font);
+  line-height: var(--echo-leading-none, 1);
+  color: var(--echo-text);
+  /*
+   * The HardwareButton neutral cap, stop for stop — the steppers were a
+   * lighter, flatter plastic of their own, so a NumberField beside a button
+   * looked like two products. A 3px side wall instead of the button's 4, as
+   * the steppers are smaller.
+   */
+  background: linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    var(--echo-cap) 40%,
+    var(--echo-cap) 62%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    0 calc(3px + 1px * var(--lift, 0) - 2px * var(--press, 0)) 0 var(--echo-seam),
+    0 calc(7px + 4px * var(--lift, 0) - 4px * var(--press, 0))
+      calc(12px + 6px * var(--lift, 0) - 6px * var(--press, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* The stepper's travel and rebound are useCapPhysics's (number-field.tsx):
+     the side wall shortens as it goes down, the shadow grows as it rises. */
+  will-change: transform;
+}
+
+.echo-number-field__step:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+.echo-number-field__step[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* roll: the window holds the input and, while digits roll, draws them over
+   it in the input's own face. The input's text hides meanwhile; its caret
+   and its value (for assistive technology) stay. */
+.echo-number-field__window {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.echo-number-field__roll {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--echo-space-5);
+  overflow: hidden;
+  pointer-events: none;
+  white-space: pre;
+  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ctl-font);
+  font-variant-numeric: tabular-nums;
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+  text-shadow: 0 0 8px color-mix(in oklab, var(--echo-lcd-glow) 45%, transparent);
+}
+.echo-number-field__roll[hidden] {
+  display: none;
+}
+.echo-number-field[data-rolling] .echo-number-field__input {
+  color: transparent;
+  text-shadow: none;
+  caret-color: var(--echo-accent-glow);
+}
+
+/* The readout: a dark screen well, tabular digits, emissive accent. It sinks
+   while focused (useWellMotion sets --well-depth and owns the transform). */
+.echo-number-field__input {
+  box-sizing: border-box;
+  /* The steppers keep their 44px targets; the readout gives up width first. */
+  width: var(--nf-readout);
+  min-width: 0;
+  padding: 0 var(--echo-space-5);
+  border: 0;
+  border-radius: var(--ctl-radius);
+  text-align: center;
+  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ctl-font);
+  font-variant-numeric: tabular-nums;
+  /* Emissive LCD digits — the same lit accent as StatTile and LcdChip. */
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+  text-shadow: 0 0 8px color-mix(in oklab, var(--echo-lcd-glow) 45%, transparent);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow:
+    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+/*
+ * Focus lights the window's inner edge, like the Field — never a ring around
+ * the outside. A text input is :focus-visible on every click, so the old outer
+ * ring appeared the moment anyone typed, and at a 4px gap it fused the window
+ * to both steppers.
+ */
+.echo-number-field__input:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  box-shadow:
+    /* The ring first, so the well's top shadow doesn't darken it. */
+    inset 0 0 0 var(--echo-border-thick, 2px) var(--echo-accent-ink, var(--echo-accent-glow)),
+    inset 0 calc(2px + 3px * var(--well-depth, 0)) calc(5px + 6px * var(--well-depth, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+.echo-number-field__input[disabled] {
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-number-field__step {
+    transition: none;
+  }
+}
+
+/*
+ * Coarse-pointer targets.
+ *
+ * These already clear WCAG 2.2 2.5.8's 24px. This is the 44px both
+ * platform guidelines use — a fingertip rather than conformance. Gated on
+ * `@media (pointer: coarse)`, so the desktop rendering does not move.
+ *
+ * Where a control's visual size is the design (a 24px checkbox, a 10px pip),
+ * the target is grown with the same transparent pseudo-element as the 24px minimum,
+ * not by growing the control.
+ */
+@media (pointer: coarse) {
+  .echo-number-field__step {
+    min-width: 44px;
+  }
+
+  .echo-number-field__step,
+  .echo-number-field__input {
+    min-height: 44px;
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the recessed well's gradient and
+ * shadows, which is its whole edge: without a border an input, and above all
+ * an empty one, isn't visible at all. System colors only, so focus still shows.
+ */
+@media (forced-colors: active) {
+  .echo-number-field__input {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-number-field__step {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  /* Forced colors repaints the hidden input text, so the rolling copy would
+     sit on top of it: show the value only. */
+  .echo-number-field__roll {
+    display: none;
+  }
+}

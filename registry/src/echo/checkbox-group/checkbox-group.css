@@ -1,0 +1,43 @@
+/**
+ * CheckboxGroup. A machine-voice name over rows of checkbox and words; with
+ * a parent, the options sit indented under it.
+ */
+.echo-checkbox-group {
+  display: grid;
+  gap: var(--echo-space-5);
+  min-width: 0;
+}
+.echo-checkbox-group__name {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-checkbox-group__options {
+  display: grid;
+  gap: var(--echo-space-5);
+}
+.echo-checkbox-group__options[data-nested] {
+  padding-inline-start: var(--echo-space-10);
+}
+.echo-checkbox-group__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--echo-space-6);
+  cursor: pointer;
+}
+.echo-checkbox-group__text {
+  display: grid;
+  gap: var(--echo-space-1);
+  padding-block-start: 1px;
+}
+.echo-checkbox-group__label {
+  font-size: var(--echo-text-md);
+  color: var(--echo-text);
+}
+.echo-checkbox-group__description {
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}

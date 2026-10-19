@@ -1,0 +1,87 @@
+/**
+ * Skeleton. A recess in the chassis with a slow
+ * sheen crossing it — the device is fetching, not broken. Composes
+ * var(--echo-*).
+ */
+.echo-skeleton {
+  position: relative;
+  /*
+   * The sheen is an absolutely positioned overlay that slides across this box
+   * and is clipped by it — that is the effect. It therefore reports
+   * `scrollWidth > clientWidth` for part of every animation cycle, which is
+   * decorative overflow, not content a user cannot reach.
+   *
+   * Declared for the layout sweep in `tests/helpers/layout.ts`, which would
+   * otherwise flag it — and flag it INTERMITTENTLY, because the amount of
+   * overflow depends on where the animation happens to be when the page is
+   * measured.
+   */
+  --echo-clip: decorative;
+  overflow: hidden;
+  width: var(--echo-skeleton-width, 100%);
+  height: var(--echo-skeleton-height, 12px);
+  border-radius: var(--echo-radius-sm);
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--echo-well) 80%, var(--echo-shade-ink, black)),
+    var(--echo-lcd)
+  );
+  box-shadow:
+    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.65 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+.echo-skeleton[data-variant="block"] {
+  height: var(--echo-skeleton-height, 96px);
+  border-radius: var(--echo-radius-lg);
+}
+
+.echo-skeleton[data-variant="circle"] {
+  width: var(--echo-skeleton-width, var(--echo-skeleton-height, 36px));
+  height: var(--echo-skeleton-height, 36px);
+  border-radius: var(--echo-radius-full);
+}
+
+/* The sheen. Sits above the well, never intercepts the pointer. */
+.echo-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--echo-cap-highlight) 30%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: echo-skeleton-sheen 1.6s ease-in-out infinite;
+}
+
+@keyframes echo-skeleton-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.echo-skeleton-lines {
+  display: grid;
+  gap: var(--echo-space-4);
+  width: var(--echo-skeleton-width, 100%);
+}
+
+/* Real paragraphs do not end flush. */
+.echo-skeleton-lines .echo-skeleton[data-last] {
+  width: 62%;
+}
+
+/* A loading indicator that never stops is the worst case for motion
+   sensitivity — hold it still and let the recess alone read as pending. */
+@media (prefers-reduced-motion: reduce) {
+  .echo-skeleton::after {
+    animation: none;
+    opacity: 0.5;
+    transform: none;
+  }
+}

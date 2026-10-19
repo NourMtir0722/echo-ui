@@ -1,0 +1,168 @@
+/**
+ * Card. Panel's material with a fixed anatomy. Padding and gaps are the
+ * `size` steps; media runs to the edges; an interactive card presses a pixel
+ * into the surface. The root is a Panel (panel.css gives the material).
+ */
+.echo-card {
+  --card-pad: var(--echo-space-9);
+  --card-gap: var(--echo-space-6);
+  /* A column the inner layer fills, so a card stretched by its grid row is
+     pressable (and ringed) all the way down. */
+  display: flex;
+  flex-direction: column;
+  /* The padding is the inner layer's, so the stretched link covers the
+     whole card from inside it without reaching past any box. */
+  padding: 0;
+  min-width: 0;
+  color: var(--echo-text);
+}
+/* A Card alone in a list item (a Grid of cards as a list) fills it, as one
+   placed straight in the grid does: a row of cards is one height. */
+:is(li, [role="listitem"]) > .echo-card:only-child {
+  box-sizing: border-box;
+  block-size: 100%;
+}
+.echo-card[data-size="sm"] {
+  --card-pad: var(--echo-space-7);
+  --card-gap: var(--echo-space-4);
+}
+.echo-card[data-size="lg"] {
+  --card-pad: var(--echo-space-11);
+  --card-gap: var(--echo-space-8);
+}
+.echo-card__inner {
+  flex: 1;
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  min-width: 0;
+  padding: var(--card-pad);
+  border-radius: inherit;
+}
+.echo-card__media {
+  margin: calc(-1 * var(--card-pad)) calc(-1 * var(--card-pad)) 0;
+  overflow: hidden;
+}
+.echo-card__media > :is(img, video, svg, canvas) {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.echo-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+  min-width: 0;
+}
+.echo-card__heading {
+  display: grid;
+  gap: var(--echo-space-2);
+  min-width: 0;
+}
+.echo-card__title {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-lg);
+  font-weight: var(--echo-weight-semibold, 600);
+  line-height: var(--echo-leading-snug, 1.4);
+  color: var(--echo-text);
+}
+.echo-card[data-size="sm"] .echo-card__title {
+  font-size: var(--echo-text-md);
+}
+.echo-card[data-size="lg"] .echo-card__title {
+  font-size: var(--echo-text-xl);
+}
+.echo-card__description {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-sm);
+  line-height: var(--echo-leading-body, 1.55);
+  color: var(--echo-text-dim);
+}
+.echo-card__body {
+  min-width: 0;
+  font-size: var(--echo-text-md);
+  line-height: var(--echo-leading-body, 1.55);
+  color: var(--echo-text-dim);
+}
+/* Pinned to the bottom, so a row of cards lines its actions up whatever their
+   bodies hold, and starting at the content's edge, under the title. One
+   action across the whole footer is a fullWidth key. */
+.echo-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-4);
+  margin-block-start: auto;
+  padding-block-start: var(--card-gap);
+  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+
+/* Interactive: the title is the link, stretched over the whole card. */
+.echo-card__link {
+  all: unset;
+  cursor: pointer;
+  color: inherit;
+}
+.echo-card__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: var(--echo-z-raised, 1);
+  border-radius: inherit;
+}
+/* The header action and the footer's controls stay their own targets. */
+.echo-card__action,
+.echo-card__footer {
+  position: relative;
+  z-index: var(--echo-z-top, 2);
+}
+.echo-card[data-interactive] {
+  cursor: pointer;
+  transition:
+    transform var(--echo-duration-tick) ease,
+    box-shadow var(--echo-duration-swap) ease;
+}
+/* Reached for, it lifts toward the light; pressed, it sinks a pixel. */
+@media (hover: hover) {
+  .echo-card[data-interactive][data-variant="raised"]:hover {
+    box-shadow: var(
+      --echo-shadow-lifted,
+      0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))),
+      0 10px 22px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),
+      0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+      0 calc(4px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+    );
+  }
+}
+.echo-card[data-interactive]:active:not(:has(.echo-card__action:active, .echo-card__footer:active)) {
+  transform: translateY(1px);
+}
+.echo-card[data-interactive]:has(.echo-card__link:focus-visible) {
+  outline: 2px solid transparent;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-card[data-interactive] {
+    transition: none;
+  }
+  .echo-card[data-interactive]:active {
+    transform: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-card {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-card[data-interactive]:has(.echo-card__link:focus-visible) {
+    outline: 2px solid Highlight;
+  }
+}

@@ -1,0 +1,100 @@
+import { AgentBrief, HostedMcpSetup, HostedMcpUrl, McpTools } from "@/components/guides/live";
+
+# MCP server
+
+An agent writing Echo code from memory gets it subtly wrong: the old Base UI package name, a smooth
+ease on an LCD, a hardcoded colour. With the Echo MCP server it can look things up instead — every
+component's props, usage, accessibility notes and anti-patterns — before it writes a line.
+
+## Install
+
+Every client runs the same command, `npx -y echo-ui-mcp`:
+
+```json
+{
+  "mcpServers": {
+    "echo-ui": {
+      "command": "npx",
+      "args": ["-y", "echo-ui-mcp"]
+    }
+  }
+}
+```
+
+- **Claude Code:** `claude mcp add echo-ui -- npx -y echo-ui-mcp`
+- **Codex:** add it to `~/.codex/config.toml` as `[mcp_servers.echo-ui]`, with
+  `command = "npx"` and `args = ["-y", "echo-ui-mcp"]`.
+- **Cursor:** add the block above to `.cursor/mcp.json`.
+- **VS Code:** add it to `.vscode/mcp.json`, under `servers` instead of `mcpServers`.
+- **Other clients:** any client that runs a stdio MCP server takes the same command.
+
+It needs Node.js 20 or later.
+
+## Hosted, for tools without a terminal
+
+ChatGPT, claude.ai, Lovable, v0, Bolt and Claude Design connect only to a server on the web, so Echo
+runs one at <HostedMcpUrl />. It has the same tools, needs nothing installed and no account, and
+reads what this site publishes, so it answers what the CLI installs. It keeps nothing it's sent:
+code handed to `check_code` is checked and forgotten; Cloudflare, which hosts it, keeps request logs
+for up to 7 days ([privacy](/privacy)). `check_code` takes up to 200,000 characters,
+a request past what that needs is refused before it's read, and one address can send 300 requests
+in ten seconds and about 2 MB of large code a minute (each whole 16 KB of a request counts; nearly
+every call is under it).
+
+In a tool with a settings page, add it as a custom connector (a remote MCP server) with that address.
+In Claude and ChatGPT, Echo's [plugin](/docs/plugin) carries this server and Echo's three skills
+together.
+Clients that take a command or a config file:
+
+<HostedMcpSetup />
+
+## The tools
+
+<McpTools />
+
+`get_component` returns exactly what the **Copy for AI agent** button on each component page copies,
+so a pasted page and a tool call tell the agent the same thing — plus what the component ships as:
+the version, the `echo-ui-core` range it needs, and what its accessibility was tested against. That
+half comes from the registry the CLI installs from, read with the CLI's own client, so the server
+cannot state a version `npx echo-ui-cli add` would then contradict.
+
+`check_code` is the check the CLI runs after each edit, for an agent with no terminal: hand it a
+file's code and it answers with the same findings, against the default theme.
+
+The four style tools are the CLI's `style` command for a builder with no terminal, from the same
+code, so a chat and a terminal give the same answers. `list_styles` shows Echo's styles, or one in
+full. `fit_styles` ranks them, with the builder's own passed in by their fingerprints, against where
+the product sits on the seven axes. `check_style` reads a `style.json` the way `style check` does.
+`wear_style` hands back what a style gives a project: a link that makes this whole site wear its
+colours, the command that puts it in a project, and, for a project without a terminal, its theme
+CSS and a `DESIGN.md` with its rules. A builder's own styles are never stored on the server: they
+come in with the call.
+
+`get_accessibility` is worth wiring deliberately. The rules it returns are in the instructions
+below too, but a client is free to ignore instructions, and a rule a model cannot look up is one it
+follows by luck.
+
+When it connects, the server also sends the agent these instructions:
+
+<AgentBrief />
+
+## Your own registry
+
+The server reads two published documents and re-reads them after five minutes. To point it
+somewhere else — a fork of Echo, or a local build — set either in the server's `env`:
+
+| Variable | What it points at |
+| --- | --- |
+| `ECHO_CATALOG` | The catalog: descriptions, props, examples, anti-patterns. A URL or a file path. |
+| `ECHO_REGISTRY` | The `/e/` registry: versions, dependencies, accessibility records. A URL. |
+
+If the registry cannot be reached the server still answers from the catalog, without the version
+and the delivery lines. A copy it has already read keeps answering while its source can't be read,
+and is tried again every minute. If a file fails its hash it stops, and says so.
+
+## Things to ask
+
+- "Build a settings screen with Echo. Look up each component before you use it."
+- "Which Echo components have an LED? Install the one that fits a recording indicator."
+- "Retheme this app with a sky-blue accent. Use only Echo's tokens."
+- "Check this form against the anti-patterns of every Echo component it uses."

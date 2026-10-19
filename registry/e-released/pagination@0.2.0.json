@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "name": "pagination",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Pagination",
+  "description": "A row of molded number caps with the current page lit, inside a labelled nav. The window keeps the first and last page always reachable, never elides a single page behind a gap, and never changes width as you page through — a control that reflows under the cursor is how you misclick. The arithmetic is exported as paginationRange if you need it elsewhere.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "pagination/pagination.css",
+      "sha256": "4fcbaa9d69acea10591886d6d73488f693afddece34d1ad5d7e8d03760fce95a",
+      "content": "/**\n * Pagination. Molded number caps; the current page\n * is a lit accent cap, pressed into the chassis. Composes var(--echo-*).\n */\n.echo-pagination {\n  display: flex;\n  align-items: center;\n  /*\n   * `inline-flex` with no wrapping made this the only control in the\n   * library that could push the DOCUMENT open — 419 > 390 on /docs/pagination,\n   * 410 > 390 on /gallery/navigation. Twenty pages of 30px caps is wider than\n   * a phone before you count the prev/next steps, and nothing let it fold.\n   */\n  flex-wrap: wrap;\n  justify-content: center;\n  gap: var(--echo-space-3);\n  max-width: 100%;\n}\n\n.echo-pagination__list {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  justify-content: center;\n  gap: var(--echo-space-3);\n  margin: 0;\n  padding: 0;\n  list-style: none;\n}\n\n.echo-pagination__page,\n.echo-pagination__step {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  box-sizing: border-box;\n  min-width: var(--echo-control-compact);\n  height: var(--echo-control-compact);\n  padding: 0 var(--echo-space-4);\n  border: 0;\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-xs);\n  font-weight: var(--echo-weight-semibold, 600);\n  font-variant-numeric: tabular-nums;\n  line-height: var(--echo-leading-none, 1);\n  color: var(--echo-text);\n  /* The HardwareButton neutral cap, with a 2px side wall at this size. */\n  background: linear-gradient(\n    180deg,\n    var(--echo-cap-highlight) 0%,\n    var(--echo-cap) 40%,\n    var(--echo-cap) 62%,\n    var(--echo-cap-shadow) 100%\n  );\n  box-shadow:\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),\n    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),\n    0 calc(2px + 1px * var(--lift, 0) - 2px * var(--press, 0)) 0 var(--echo-seam),\n    0 calc(5px + 3px * var(--lift, 0) - 3px * var(--press, 0))\n      calc(9px + 5px * var(--lift, 0) - 5px * var(--press, 0))\n      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);\n  /* The press is useCapPhysics's (pagination.tsx): lift, lean, travel. */\n  position: relative;\n  overflow: hidden;\n  will-change: transform;\n}\n\n.echo-pagination__step {\n  min-width: var(--echo-control-compact);\n  padding: 0;\n  color: var(--echo-text-dim);\n}\n\n.echo-pagination__step svg {\n  width: var(--echo-icon-md, 16px);\n  height: var(--echo-icon-md, 16px);\n}\n\n/* Previous and next point the way the page reads: flipped in right-to-left. */\n.echo-pagination__step:dir(rtl) svg {\n  transform: scaleX(-1);\n}\n\n.echo-pagination__page:focus-visible,\n.echo-pagination__step:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n\n/*\n * The current page is lit and seated — it is where you are, not somewhere to\n * go. Lit with the Record button's cap and its cream legend: the library has\n * ONE lit accent. This used to be a lighter pastel fill with dark digits and a\n * halo, a second shade that belonged to nothing else.\n */\n.echo-pagination__page[data-current] {\n  color: var(--echo-primary-cap-ink, var(--echo-text));\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),\n    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),\n    0 1px 0 var(--echo-accent-6);\n}\n\n.echo-pagination__page[data-current]:focus-visible {\n  /* Seated like the current page, ringed like focus. Without this rule the\n     current page's box-shadow, declared later, replaced the ring (BUG-4). */\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),\n    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow));\n}\n\n/* Landing on a page lights it: a flash of the key light blooms out from the\n   middle of the cap and fades, the way the lit cap swells into place. */\n.echo-pagination__page[data-current]::after {\n  content: \"\";\n  position: absolute;\n  inset: 0;\n  border-radius: inherit;\n  background: radial-gradient(\n    circle,\n    rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))) 0%,\n    transparent 70%\n  );\n  opacity: 0;\n  animation: echo-page-light var(--echo-duration-pop) var(--echo-ease-swap);\n  pointer-events: none;\n}\n/* It blooms to the cap's own edge and no further: past it, the cap scrolled\n   sideways inside itself while it played (BUG-85). */\n@keyframes echo-page-light {\n  from {\n    opacity: 1;\n    transform: scale(0.2);\n  }\n  to {\n    opacity: 0;\n    transform: scale(1);\n  }\n}\n\n.echo-pagination__step[disabled] {\n  opacity: 0.4;\n  cursor: default;\n}\n\n.echo-pagination__step[disabled]:active {\n  transform: none;\n}\n\n.echo-pagination__gap {\n  display: inline-flex;\n  align-items: flex-end;\n  justify-content: center;\n  min-width: 20px;\n  height: 30px;\n  padding-bottom: var(--echo-space-3);\n  color: var(--echo-text-dim);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-xs);\n  line-height: var(--echo-leading-none, 1);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-pagination__page,\n  .echo-pagination__step {\n    transition: none;\n  }\n  .echo-pagination__page[data-current]::after {\n    animation: none;\n  }\n}\n\n/*\n * Coarse-pointer targets.\n *\n * These already clear WCAG 2.2 2.5.8's 24px. This is the other\n * threshold: the 44px both platform guidelines use, which is about a\n * fingertip rather than about conformance.\n *\n * Gated on `@media (pointer: coarse)` so the desktop rendering does not move\n * — these are \"passing AA but under the\n * platform guideline\", not broken. Pagination is first among them because\n * people tap it repeatedly, which is exactly when a 30px target starts\n * costing mis-taps.\n */\n@media (pointer: coarse) {\n  .echo-pagination__page,\n  .echo-pagination__step {\n    min-width: 44px;\n    height: 44px;\n  }\n}\n"
+    },
+    {
+      "path": "pagination/range.ts",
+      "sha256": "9498203ea52ba315ca3dba72675fcaffdf1197a5683f63336b1a1def21874281",
+      "content": "/**\n * The page window. Pure arithmetic, kept out of the\n * component so the interesting part — where the gaps fall — is unit-testable\n * without a DOM.\n *\n * The rules: the first and last page are always reachable, the current page\n * always sits inside a run of `siblings` on each side, and the width of the\n * output never changes as you page through. That last one is why the boundary\n * cases expand the run instead of just dropping a gap — a control that\n * reflows under the cursor is how you misclick.\n */\n\n/** A gap stands in for pages that are not currently reachable in one click. */\nexport const GAP = \"gap\" as const;\n\nexport type PageSlot = number | typeof GAP;\n\nexport interface PaginationRangeOptions {\n  /** 1-based current page. */\n  page: number;\n  /** Total number of pages. */\n  count: number;\n  /** Pages shown either side of the current one. Default 1. */\n  siblings?: number;\n}\n\nexport function paginationRange({\n  page,\n  count,\n  siblings = 1,\n}: PaginationRangeOptions): PageSlot[] {\n  if (!Number.isFinite(count) || count <= 0) return [];\n\n  const clampedPage = Math.min(Math.max(Math.trunc(page), 1), count);\n  const sib = Math.max(0, Math.trunc(siblings));\n\n  // first + last + current + 2 gaps + the two sibling runs. Below this there\n  // is nothing to elide, so show every page.\n  const slotsWhenElided = sib * 2 + 5;\n  if (count <= slotsWhenElided) {\n    return Array.from({ length: count }, (_, i) => i + 1);\n  }\n\n  const left = Math.max(clampedPage - sib, 1);\n  const right = Math.min(clampedPage + sib, count);\n\n  // A gap that hides exactly one page is a lie that costs a click, so elide\n  // only where at least two pages are actually hidden. left > 3 leaves pages\n  // 2..3 behind the gap at minimum; the mirror holds on the right.\n  const showLeftGap = left > 3;\n  const showRightGap = right < count - 2;\n\n  if (!showLeftGap && showRightGap) {\n    // Pinned near the start: grow the head run to keep the width constant.\n    const headLength = slotsWhenElided - 2;\n    return [...upTo(headLength), GAP, count];\n  }\n\n  if (showLeftGap && !showRightGap) {\n    const tailLength = slotsWhenElided - 2;\n    return [1, GAP, ...from(count - tailLength + 1, count)];\n  }\n\n  if (showLeftGap && showRightGap) {\n    return [1, GAP, ...from(left, right), GAP, count];\n  }\n\n  return Array.from({ length: count }, (_, i) => i + 1);\n}\n\nconst upTo = (n: number): number[] => Array.from({ length: n }, (_, i) => i + 1);\n\nconst from = (start: number, end: number): number[] =>\n  Array.from({ length: end - start + 1 }, (_, i) => start + i);\n"
+    },
+    {
+      "path": "pagination/pagination.tsx",
+      "sha256": "84a93105db532fd07fece94014bd0f6426e07b45b2958c464ad4850ab30fd072",
+      "content": "\"use client\";\n\n/**\n * Pagination. A row of molded number caps with the\n * current page lit, wrapped in a labelled nav.\n *\n * The window arithmetic lives in range.ts so it can be tested without a DOM;\n * this file is the skin and the semantics.\n *\n * Every number is a molded cap with the library's press (useCapPhysics): it\n * rises and leans on hover, travels onto its seam, springs back. The page you\n * land on lights up — the lit cap blooms into it.\n */\nimport type { ButtonHTMLAttributes, HTMLAttributes } from \"react\";\nimport { useCapPhysics } from \"echo-ui-core/tactile\";\nimport { paginationRange, GAP } from \"./range\";\nimport \"./pagination.css\";\n\nexport interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, \"onChange\"> {\n  /** 1-based current page. */\n  page: number;\n  /** Total number of pages. */\n  count: number;\n  onPageChange: (page: number) => void;\n  /** Pages shown either side of the current one. Default 1. */\n  siblings?: number;\n  /** Name for the nav landmark. Default \"Pagination\". */\n  label?: string;\n  /** Accessible name for the previous control. Default \"Previous page\". */\n  previousLabel?: string;\n  /** Accessible name for the next control. Default \"Next page\". */\n  nextLabel?: string;\n}\n\nexport function Pagination({\n  page,\n  count,\n  onPageChange,\n  siblings = 1,\n  label = \"Pagination\",\n  previousLabel = \"Previous page\",\n  nextLabel = \"Next page\",\n  className,\n  ...rest\n}: PaginationProps) {\n  const slots = paginationRange({ page, count, siblings });\n  if (slots.length === 0) return null;\n\n  return (\n    <nav\n      className={[\"echo-pagination\", className].filter(Boolean).join(\" \")}\n      aria-label={label}\n      {...rest}\n    >\n      <Cap\n        className=\"echo-pagination__step\"\n        onClick={() => onPageChange(page - 1)}\n        disabled={page <= 1}\n        aria-label={previousLabel}\n      >\n        <Chevron direction=\"left\" />\n      </Cap>\n\n      <ol className=\"echo-pagination__list\">\n        {slots.map((slot, i) =>\n          slot === GAP ? (\n            // Not a control: it names nothing and does nothing. Announcing\n            // \"ellipsis\" between two page numbers is noise.\n            <li key={`gap-${i}`} className=\"echo-pagination__gap\" aria-hidden=\"true\">\n              …\n            </li>\n          ) : (\n            <li key={slot}>\n              <Cap\n                className=\"echo-pagination__page\"\n                onClick={() => onPageChange(slot)}\n                aria-label={`Page ${slot}`}\n                aria-current={slot === page ? \"page\" : undefined}\n                data-current={slot === page ? \"\" : undefined}\n              >\n                {slot}\n              </Cap>\n            </li>\n          ),\n        )}\n      </ol>\n\n      <Cap\n        className=\"echo-pagination__step\"\n        onClick={() => onPageChange(page + 1)}\n        disabled={page >= count}\n        aria-label={nextLabel}\n      >\n        <Chevron direction=\"right\" />\n      </Cap>\n    </nav>\n  );\n}\n\n/* A cap you can press: the library's molded-cap physics on a plain button. */\nfunction Cap({ children, onPointerDown, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {\n  const cap = useCapPhysics<HTMLButtonElement>({ travel: 2, tilt: 7 });\n  return (\n    <button\n      ref={cap.ref}\n      type=\"button\"\n      {...cap.handlers}\n      {...props}\n      onPointerDown={(e) => {\n        onPointerDown?.(e);\n        cap.handlers.onPointerDown?.(e);\n      }}\n    >\n      {children}\n    </button>\n  );\n}\n\nfunction Chevron({ direction }: { direction: \"left\" | \"right\" }) {\n  return (\n    <svg viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\">\n      <path\n        d={direction === \"left\" ? \"M15 6l-6 6 6 6\" : \"M9 6l6 6-6 6\"}\n        stroke=\"currentColor\"\n        strokeWidth=\"2.4\"\n        strokeLinecap=\"round\"\n        strokeLinejoin=\"round\"\n      />\n    </svg>\n  );\n}\n"
+    },
+    {
+      "path": "pagination/index.ts",
+      "sha256": "60b77ba87b9076e09deb878b5d39ac95943e419c6ce8462a39173bf9ef059f29",
+      "content": "export { Pagination } from \"./pagination\";\nexport type { PaginationProps } from \"./pagination\";\nexport { paginationRange, GAP } from \"./range\";\nexport type { PageSlot, PaginationRangeOptions } from \"./range\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Pagination's current page no longer spills past its cap as it lights.** Landing on a page flashes the key light out from its middle; the flash grew to 1.4 times the cap, so for a quarter of a second the page was wider than its box. It now blooms to the cap's edge and fades there."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

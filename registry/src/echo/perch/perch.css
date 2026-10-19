@@ -1,0 +1,59 @@
+/**
+ * Perch. The creature stands on the top edge of what's in it: the lower part
+ * of its body over the edge, so it sits rather than floats. Peeking, the
+ * ledge clips it at the edge and it rises from behind. Composes var(--echo-*).
+ */
+.echo-perch {
+  --perch-size: 56px;
+  --perch-over: calc(var(--perch-size) * 0.32);
+  position: relative;
+  display: grid;
+  min-inline-size: 0;
+  /* The room it needs above the edge, kept for it. */
+  padding-block-start: calc(var(--perch-size) - var(--perch-over));
+}
+.echo-perch__base {
+  position: relative;
+  min-inline-size: 0;
+}
+.echo-perch__ledge {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: var(--echo-space-10);
+  z-index: var(--echo-z-raised, 1);
+  display: flex;
+  justify-content: flex-end;
+  block-size: var(--perch-size);
+  pointer-events: none;
+}
+.echo-perch[data-at="start"] .echo-perch__ledge {
+  justify-content: flex-start;
+}
+.echo-perch__creature {
+  display: inline-flex;
+  transition: translate var(--echo-duration-pop) var(--echo-ease-pop);
+}
+
+/* Peek: clipped at the edge, down out of sight until you're near. */
+.echo-perch[data-behavior="peek"] .echo-perch__ledge {
+  block-size: calc(var(--perch-size) - var(--perch-over));
+  overflow: hidden;
+  --echo-clip: decorative;
+}
+.echo-perch[data-behavior="peek"] .echo-perch__creature {
+  translate: 0 70%;
+}
+.echo-perch[data-behavior="peek"]:focus-within .echo-perch__creature {
+  translate: 0 12%;
+}
+@media (hover: hover) {
+  .echo-perch[data-behavior="peek"]:hover .echo-perch__creature {
+    translate: 0 12%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-perch__creature {
+    transition: none;
+  }
+}

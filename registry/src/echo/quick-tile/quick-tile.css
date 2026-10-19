@@ -1,0 +1,151 @@
+/**
+ * QuickTile. A big molded key in its well: HardwareButton's cap and its
+ * primary cap when on, with a socket that glows. The cap physics write --lift
+ * and --press, and the seam and shadow follow them as a key's do. Composes
+ * var(--echo-*) — no hex literals; the only fixed values are the key light.
+ */
+.echo-quick-tile {
+  --qt-size: calc(var(--echo-control-large, 60px) * 1.6);
+  position: relative;
+  display: inline-grid;
+  inline-size: var(--qt-size);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+.echo-quick-tile[data-shape="wide"] {
+  inline-size: calc(var(--qt-size) * 2 + var(--echo-space-5));
+}
+
+.echo-quick-tile__well {
+  /* The well's corner follows the tile's, a well's width out. */
+  --qt-well-radius: calc(var(--echo-radius-2xl) + var(--echo-space-2));
+  padding: var(--echo-space-2);
+  border-radius: var(--qt-well-radius);
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+
+.echo-quick-tile__cap {
+  --qt-seam: calc(4px + 1px * var(--lift, 0) - 3px * var(--press, 0));
+  --qt-drop-y: calc(9px + 5px * var(--lift, 0) - 6px * var(--press, 0));
+  --qt-drop-blur: calc(14px + 10px * var(--lift, 0) - 9px * var(--press, 0));
+  /* Rounder when the molding is soft. */
+  --qt-radius: calc(var(--echo-radius-2xl) * (1 + 0.45 * var(--echo-pillow, 0)));
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  align-content: space-between;
+  gap: var(--echo-space-4);
+  inline-size: 100%;
+  min-block-size: calc(var(--qt-size) - 2 * var(--echo-space-2));
+  padding: var(--echo-space-6);
+  border: 0;
+  border-radius: var(--qt-radius);
+  color: var(--echo-text);
+  text-align: start;
+  cursor: pointer;
+  user-select: none;
+  will-change: transform;
+  background:
+    /* Soft molding (a Scope's): a pillow of light across the top. Transparent until --echo-pillow is set. */
+    radial-gradient(115% 85% at 32% 0%, color-mix(in oklab, var(--echo-paper-stock, var(--echo-text)) calc(var(--echo-pillow, 0) * 34%), transparent) 0%, transparent 72%),
+    linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 40%, var(--echo-cap) 62%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    /* Soft molding: the fuller shade under a puffed cap. Nothing until --echo-pillow is set. */
+    inset 0 calc(-10px * var(--echo-pillow, 0)) calc(16px * var(--echo-pillow, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.42 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 var(--qt-seam) 0 var(--echo-line-width, 0px) var(--echo-seam),
+    0 var(--qt-drop-y) var(--qt-drop-blur) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-quick-tile[data-shape="wide"] .echo-quick-tile__cap {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+}
+/* On: the one molded surface that's lit. */
+.echo-quick-tile[data-on] .echo-quick-tile__cap {
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  background:
+    /* Soft molding (a Scope's): a pillow of light across the top. Transparent until --echo-pillow is set. */
+    radial-gradient(115% 85% at 32% 0%, color-mix(in oklab, var(--echo-paper-stock, var(--echo-text)) calc(var(--echo-pillow, 0) * 34%), transparent) 0%, transparent 72%),
+    linear-gradient(180deg, var(--echo-primary-cap-top) 0%, var(--echo-primary-cap-mid) 45%, var(--echo-primary-cap-base) 100%);
+  box-shadow:
+    /* Soft molding: the fuller shade under a puffed cap. Nothing until --echo-pillow is set. */
+    inset 0 calc(-10px * var(--echo-pillow, 0)) calc(16px * var(--echo-pillow, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.42 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),
+    inset 0 -2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent),
+    0 var(--qt-seam) 0 var(--echo-accent-6),
+    0 var(--qt-drop-y) var(--qt-drop-blur) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-quick-tile__cap:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 5px;
+}
+.echo-quick-tile[data-disabled] .echo-quick-tile__cap {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.echo-quick-tile__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--echo-space-4);
+}
+.echo-quick-tile__icon {
+  display: inline-flex;
+  inline-size: var(--echo-icon-xl, 28px);
+  block-size: var(--echo-icon-xl, 28px);
+}
+.echo-quick-tile__icon > svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+.echo-quick-tile__text {
+  display: grid;
+  gap: var(--echo-space-1);
+  min-inline-size: 0;
+}
+.echo-quick-tile__label {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-2xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  line-height: var(--echo-leading-tight, 1.25);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.echo-quick-tile__status {
+  font-family: var(--echo-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-xs);
+  line-height: var(--echo-leading-snug, 1.4);
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+/* On the lit plastic the status needs the text's full strength: faded, it read at 4.4:1. */
+.echo-quick-tile[data-on] .echo-quick-tile__status {
+  opacity: 1;
+}
+
+.echo-quick-tile__more {
+  position: absolute;
+  inset-block-end: var(--echo-space-5);
+  inset-inline-end: var(--echo-space-5);
+}
+
+@media (forced-colors: active) {
+  .echo-quick-tile__cap {
+    border: var(--echo-border-thick, 2px) solid ButtonText;
+  }
+  .echo-quick-tile[data-on] .echo-quick-tile__cap {
+    border-color: Highlight;
+    outline: var(--echo-border-thick, 2px) solid Highlight;
+  }
+}

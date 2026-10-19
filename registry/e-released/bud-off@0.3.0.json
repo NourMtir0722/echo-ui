@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "name": "bud-off",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "useBudOff",
+  "description": "A drop of the primary plastic buds out of one element, flies to another and is swallowed by it, which swells as it lands — so the eye follows cause to effect. Its front leads and its tail lags, so it draws out on its own. Returns a function, budOff(from, to, options): from is the element the drop buds out of, to the one it lands in, and the options are below. budOff returns a function that calls the drop off before it lands: it's gone and onArrive never runs, for when what it was flying to is reset first.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "bud-off/bud-off.css",
+      "sha256": "f557c3e0076d9ef3d4a952bef852320d88b3109c759edc4b7c7a6dafc56435a4",
+      "content": "/*\n * The drop: the primary cap's plastic, lit from above, with the cap's drop\n * shadow. Drawn over the page (it may cross anything) and never in the way.\n */\n.echo-bud-off {\n  /* Placed (inline) from physical coordinates, like everything it flies between. */\n  position: fixed;\n  z-index: var(--echo-z-popover, 300);\n  pointer-events: none;\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),\n    0 6px 12px color-mix(in oklch, var(--echo-accent-4) 40%, transparent);\n}\n@media (forced-colors: active) {\n  .echo-bud-off {\n    display: none;\n  }\n}\n"
+    },
+    {
+      "path": "bud-off/bud-off.ts",
+      "sha256": "1d671ffddced2b64bcd27c7a674a3c9ab41746c8979ec26108f572d2681866a2",
+      "content": "\"use client\";\n\n/**\n * useBudOff. A drop of the primary plastic buds out of one element, flies to\n * another and is swallowed by it, which swells as it lands — so the eye\n * follows cause to effect: add to bag → the count, lap → the lap count.\n *\n *   const budOff = useBudOff();\n *   budOff(buttonEl, badgeEl, { onArrive: () => setShown((n) => n + 1) });\n *\n * It returns a function that calls the drop off: it's gone, and `onArrive`\n * never runs — for when what it was flying to is reset first.\n *\n * The drop is drawn over the page for its half-second and then removed; it is\n * decoration (aria-hidden), so whatever it means has to be said by what it\n * lands in. Its front leads and its tail lags, so it draws out on its own\n * rather than being a dot on a path. Under reduced motion there is no drop:\n * `onArrive` runs at once.\n */\nimport { useCallback, useEffect, useRef } from \"react\";\nimport { createSpring, type Spring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport type { SoundRecipe } from \"echo-ui-core/sound\";\nimport \"./bud-off.css\";\n\nexport interface BudOffOptions {\n  /** When the drop lands: update what it landed in here. */\n  onArrive?: () => void;\n  /** The drop's radius, px. Default 10. */\n  size?: number;\n}\n\n/** Sends a drop; the function it returns calls the drop off before it lands. */\nexport type BudOff = (from: Element, to: Element, options?: BudOffOptions) => () => void;\n\n/** A drop landing: quiet, and only inside a SoundProvider. */\nconst GULP: SoundRecipe = { wave: \"sine\", freq: 520, decay: 0.07, gain: 0.07, bend: -220 };\n\nconst reducedMotion = () =>\n  typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n\nconst centre = (r: DOMRect) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });\n\nexport function useBudOff(): BudOff {\n  const sound = useSoundOptional();\n  const play = useRef(sound?.play);\n  play.current = sound?.play;\n  const live = useRef(new Set<() => void>());\n\n  useEffect(() => {\n    const flights = live.current;\n    return () => flights.forEach((stop) => stop());\n  }, []);\n\n  return useCallback<BudOff>((from, to, options = {}) => {\n    const { onArrive, size = 10 } = options;\n    if (reducedMotion() || typeof document === \"undefined\") {\n      onArrive?.();\n      return () => undefined;\n    }\n    // It leaves from the point of `from` nearest `to`, kept inside it.\n    const a = from.getBoundingClientRect();\n    const target = () => centre(to.getBoundingClientRect());\n    const t0 = target();\n    const start = {\n      x: Math.min(Math.max(t0.x, a.left + size * 1.6), a.right - size * 1.6),\n      y: Math.min(Math.max(t0.y, a.top + size), a.bottom - size),\n    };\n\n    const drop = document.createElement(\"span\");\n    drop.className = \"echo-bud-off\";\n    drop.setAttribute(\"aria-hidden\", \"true\");\n    drop.style.left = \"0\";\n    drop.style.top = \"0\";\n    document.body.append(drop);\n\n    const springs: Spring[] = [];\n    const draw = () => {\n      // Head and tail run along the line to wherever `to` is now.\n      const t = target();\n      const dx = t.x - start.x;\n      const dy = t.y - start.y;\n      const hx = start.x + dx * head.value;\n      const hy = start.y + dy * head.value;\n      const tx = start.x + dx * tail.value;\n      const ty = start.y + dy * tail.value;\n      const r = Math.max(0, radius.value);\n      const len = Math.hypot(hx - tx, hy - ty);\n      const angle = Math.atan2(hy - ty, hx - tx);\n      drop.style.width = `${(len + 2 * r).toFixed(2)}px`;\n      drop.style.height = `${(2 * r).toFixed(2)}px`;\n      drop.style.borderRadius = `${r.toFixed(2)}px`;\n      drop.style.transform = `translate(${(tx - r).toFixed(2)}px, ${(ty - r).toFixed(2)}px) rotate(${angle.toFixed(4)}rad)`;\n      drop.style.transformOrigin = `${r.toFixed(2)}px ${r.toFixed(2)}px`;\n    };\n    const spring = (v: number) => {\n      const s = createSpring(v, { duration: 0.3, bounce: 0 }, draw);\n      springs.push(s);\n      return s;\n    };\n    const head = spring(0);\n    const tail = spring(0);\n    const radius = spring(0);\n    draw();\n\n    const timers: ReturnType<typeof setTimeout>[] = [];\n    const later = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));\n    const stop = () => {\n      timers.forEach(clearTimeout);\n      springs.forEach((s) => s.stop());\n      drop.remove();\n      live.current.delete(stop);\n    };\n    live.current.add(stop);\n\n    const travel = 0.42;\n    // It buds: grows out of `from` before it leaves.\n    radius.to(size, { config: { duration: 0.16, bounce: 0 } });\n    later(100, () => {\n      head.to(1, { config: { duration: travel * 0.8, bounce: 0.2 } });\n      tail.to(1, { config: { duration: travel * 1.15, bounce: 0.1 } });\n    });\n    later(100 + travel * 750, () => {\n      // Swallowed: the tail catches up and the drop is gone before it can\n      // sit on what it landed in.\n      tail.to(1, { config: { duration: 0.1, bounce: 0 } });\n      radius.to(0, { config: { duration: 0.12, bounce: 0 } });\n      swell(to);\n      play.current?.(GULP);\n      onArrive?.();\n    });\n    later(100 + travel * 750 + 180, stop);\n    return stop;\n  }, []);\n}\n\n/** The element a drop lands in swells, then settles: the `scale` property, so its own transform is untouched. */\nfunction swell(el: Element) {\n  if (!(el instanceof HTMLElement || el instanceof SVGElement)) return;\n  const s = createSpring(1, { duration: 0.45, bounce: 0.45 }, (v) => {\n    el.style.scale = v.toFixed(4);\n  });\n  s.to(1, { config: { duration: 0.45, bounce: 0.45 }, velocity: 3.2 });\n  setTimeout(() => {\n    s.stop();\n    el.style.scale = \"\";\n  }, 900);\n}\n"
+    },
+    {
+      "path": "bud-off/index.ts",
+      "sha256": "17eb1a05952e28753760b5e85cc274e7ada30100ad9a6896dc97476f59eeaa88",
+      "content": "export { useBudOff } from \"./bud-off\";\nexport type { BudOff, BudOffOptions } from \"./bud-off\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Six more that change shape as you use them, all on `Morph`.** `SaveButton` narrows into its own progress while your save runs, widens into a lit \"Saved\" and flows back. `Timer` opens into durations; the others run into the one you pick, which drains as the time runs and rings. `Stopwatch` buds a Lap button from Start, and every lap is a drop that lands in the lap count. `VoiceNote` records from the microphone: your voice swells the Stop button, and the take becomes a note that fills as it plays. `AddToBag` sends a drop from the button into the count beside it. `useBudOff` is that drop on its own, from any element into any other. `Morph` now keeps a button's identity across states when it has the same `data-morph` name, and draws filled caps as levels."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**`Stopwatch`: a lap still in flight when you Reset no longer comes back** (BUG-74). Its drop landed after the reset and put the old count back, so the next first lap briefly read \"2 laps\". To do it, `budOff(…)` from `useBudOff` now returns a function that calls the drop off before it lands; ignoring it changes nothing."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

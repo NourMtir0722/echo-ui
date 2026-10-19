@@ -1,0 +1,46 @@
+{
+  "name": "echo-ui",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Echo UI \u2014 tactile, neo-skeuomorphic React components, accessible by default.",
+  "license": "MIT",
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "safari >= 16.2",
+    "firefox >= 113"
+  ],
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @echo-ui/www dev",
+    "build": "pnpm -r build",
+    "build:registry": "pnpm --filter @echo-ui/registry build",
+    "dev:www": "pnpm --filter @echo-ui/www dev",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "pnpm -r test",
+    "test:e2e": "playwright test",
+    "smoke": "pnpm --filter @echo-ui/registry smoke",
+    "check": "pnpm typecheck && pnpm lint && pnpm build:registry && pnpm test",
+    "deploy:site": "pnpm --filter @echo-ui/www deploy:site",
+    "preview": "pnpm --filter @echo-ui/www preview",
+    "docs:ack": "pnpm --filter @echo-ui/registry docs:ack",
+    "bench": "pnpm --filter @echo-ui/bench bench",
+    "supporters": "pnpm --silent --filter @echo-ui/supporters-api supporters"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "16.4.2",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2"
+  }
+}

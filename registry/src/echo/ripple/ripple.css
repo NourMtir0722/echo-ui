@@ -1,0 +1,35 @@
+/**
+ * Ripple. A recessed surface of dots, with whatever sits on it centred on top.
+ */
+.echo-ripple {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-block-size: 12rem;
+  overflow: hidden;
+  border-radius: var(--echo-radius-2xl);
+  background: var(--echo-well);
+  box-shadow:
+    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.echo-ripple__dots {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+}
+.echo-ripple__content {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+}
+
+@media (forced-colors: active) {
+  .echo-ripple__dots {
+    display: none;
+  }
+}

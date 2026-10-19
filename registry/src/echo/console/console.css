@@ -1,0 +1,177 @@
+/*
+ * The device console. Density is the subject, so the spacing
+ * scale here is tighter than anywhere else in the library — and every value is
+ * still an --echo-* role, because a dashboard that stops relighting is a
+ * dashboard that has stopped being made of this material.
+ */
+.echo-console__body {
+  display: grid;
+  gap: clamp(16px, 2.2vw, 24px);
+  padding: clamp(18px, 2.6vw, 30px);
+}
+
+.echo-console__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--echo-space-9);
+  flex-wrap: wrap;
+}
+
+.echo-console__title {
+  margin: 0 0 var(--echo-space-2);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  font-weight: var(--echo-weight-heavy, 800);
+  letter-spacing: var(--echo-tracking-tighter, -0.02em);
+  color: var(--echo-text);
+}
+
+.echo-console__lede {
+  margin: 0;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+
+.echo-console__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  color: var(--echo-text);
+}
+
+.echo-console__more {
+  width: 40px;
+  height: calc(32px * var(--echo-density, 1));
+  padding: 0;
+  justify-content: center;
+  border-radius: var(--echo-radius-md);
+}
+
+/* --- the sidebar's channel list ----------------------------------------- */
+
+.echo-console__sidelabel {
+  display: block;
+  padding: 0 var(--echo-space-5) var(--echo-space-4);
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-console__channel {
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-5);
+  width: 100%;
+  padding: var(--echo-space-4) var(--echo-space-5);
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  background: none;
+  color: var(--echo-text-dim);
+  font-family: inherit;
+  font-size: var(--echo-text-sm);
+  text-align: start;
+}
+
+@media (hover: hover) {
+  .echo-console__channel:hover {
+    color: var(--echo-text);
+    background: color-mix(in oklab, var(--echo-cap) 30%, transparent);
+  }
+}
+
+/* The current channel carries a rail, not accent text: accent on the chassis
+   is 3.70:1, under AA. */
+.echo-console__channel[aria-current] {
+  position: relative;
+  color: var(--echo-text);
+  background: color-mix(in oklab, var(--echo-cap) 38%, transparent);
+}
+
+.echo-console__channel[aria-current]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 2px;
+  border-radius: var(--echo-radius-xs);
+  background: var(--echo-accent-glow);
+  box-shadow: var(--echo-shadow-glow, 0 0 calc(7px * (1 - var(--echo-drawn, 0))) color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));
+}
+
+.echo-console__channel:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: -2px;
+}
+
+/* --- readouts ------------------------------------------------------------ */
+
+/*
+ * Explicit counts, not auto-fit. There are exactly six readouts, and auto-fit
+ * happily produced five-and-one — a full row plus one orphan tile beside a gap,
+ * which reads as a missing tile rather than as a layout. Factors of six only.
+ */
+.echo-console__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--echo-space-5);
+}
+
+@media (min-width: 640px) {
+  .echo-console__tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .echo-console__tiles {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.echo-console__panelhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-7);
+  flex-wrap: wrap;
+  margin-bottom: var(--echo-space-7);
+}
+
+.echo-console__panetitle {
+  margin: 0;
+  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-label, 0.2em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.echo-console__panelcontrols {
+  display: flex;
+  /* Shrinks with the head; the controls inside it wrap or scroll. */
+  min-width: 0;
+  align-items: center;
+  gap: var(--echo-space-6);
+  flex-wrap: wrap;
+}
+
+/* The matrix takes the panel's full width; it is the panel's subject. */
+.echo-console__chart {
+  display: grid;
+}
+
+.echo-console__takes {
+  display: grid;
+  gap: var(--echo-space-5);
+}

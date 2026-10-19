@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "name": "alert-dialog",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "AlertDialog",
+  "description": "A destructive confirm. Modal covers the structure; this is the semantics — role=alertdialog, a required description, and no dismissal by clicking away, so the question has to be answered. Its own sound: caution (the one rough waveform) on open, error on a destructive confirm. Severity reads as the deep end of the accent ramp, never an imported red.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "alert-dialog/alert-dialog.css",
+      "sha256": "64a23db12945cb2841ea86d6c91ddab8ac509471c59f9397419b5f7cf2e5506d",
+      "content": "/*\n * AlertDialog.\n *\n * Severity is NOT red/amber/green. Destructive reads as the DEEP END OF\n * THE ACCENT RAMP — the same language Banner's `danger` tone already speaks —\n * so a reseeded device stays coherent instead of sprouting a hue the seed\n * never defined. On the default seed that lands as a deep purple; on a sky\n * seed it is a deep blue. It is still unmistakably the heavy answer,\n * because weight and depth carry the message, not hue.\n *\n * Composes var(--echo-*) only.\n */\n\n.echo-alert__backdrop {\n  position: fixed;\n  /* Modal's scale. The site chrome's sticky rail is at 40. */\n  z-index: var(--echo-z-overlay, 200);\n  inset: 0;\n  background: color-mix(in oklab, var(--echo-seam) 88%, black);\n  opacity: 0.66;\n  transition: opacity var(--echo-duration-swap) ease;\n}\n\n.echo-alert__backdrop[data-starting-style],\n.echo-alert__backdrop[data-ending-style] {\n  opacity: 0;\n}\n\n.echo-alert__popup {\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  z-index: var(--echo-z-modal, 210);\n  box-sizing: border-box;\n  width: min(27rem, calc(100vw - 2.5rem));\n  padding: var(--echo-space-10);\n  border-radius: var(--echo-radius-2xl);\n  transform: translate(-50%, -50%);\n  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 44%);\n  color: var(--echo-text);\n  outline: none;\n  box-shadow: var(\n    --echo-shadow-modal,\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 46%, transparent),\n    inset 0 0 0 1px var(--echo-seam),\n    0 40px 80px -24px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),\n    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),\n    0 calc(6px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n  transition:\n    opacity var(--echo-duration-glide) ease,\n    transform var(--echo-duration-glide) cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.echo-alert__popup[data-starting-style],\n.echo-alert__popup[data-ending-style] {\n  opacity: 0;\n  transform: translate(-50%, -50%) scale(0.96);\n}\n/* With motion running (usePopupMotion), GSAP draws the arrival and exit:\n   the CSS fade stands down so the two never fight. */\n.echo-alert__popup[data-motion],\n.echo-alert__popup[data-motion][data-starting-style],\n.echo-alert__popup[data-motion][data-ending-style] {\n  opacity: 1;\n  transform: translate(-50%, -50%);\n  transition: none;\n}\n\n/*\n * A destructive dialog carries a lit rail at its top edge — one lit thing,\n * at the top of the panel, in the ramp's emissive stop.\n */\n.echo-alert__popup[data-destructive]::before {\n  content: \"\";\n  position: absolute;\n  top: 0;\n  inset-inline-start: 26px;\n  inset-inline-end: 26px;\n  height: 2px;\n  border-radius: 0 0 var(--echo-radius-xs) var(--echo-radius-xs);\n  background: var(--echo-accent-3);\n  box-shadow: 0 0 10px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent);\n}\n\n.echo-alert__title {\n  margin: 0 0 var(--echo-space-3);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-lg);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-tight, -0.01em);\n  color: var(--echo-text);\n}\n\n.echo-alert__desc {\n  margin: 0;\n  font-size: var(--echo-text-sm);\n  line-height: var(--echo-leading-body, 1.55);\n  color: var(--echo-text-dim);\n}\n\n.echo-alert__body {\n  margin-top: var(--echo-space-7);\n  font-size: var(--echo-text-sm);\n  line-height: var(--echo-leading-body, 1.55);\n  color: var(--echo-text-dim);\n}\n\n.echo-alert__actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: var(--echo-space-5);\n  margin-top: var(--echo-space-10);\n}\n\n/* --- the two answers ----------------------------------------------------- */\n\n.echo-alert__cancel,\n.echo-alert__confirm,\n.echo-alert__trigger {\n  height: calc(38px * var(--echo-density, 1));\n  padding: 0 var(--echo-space-8);\n  border: 0;\n  border-radius: var(--echo-radius-lg);\n  cursor: pointer;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  font-weight: var(--echo-weight-semibold, 600);\n}\n\n/* Cancel is the plain cap — the safe answer is the ordinary one. */\n.echo-alert__cancel,\n.echo-alert__trigger {\n  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 62%);\n  color: var(--echo-text);\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 60%, transparent),\n    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-cap-shadow);\n}\n\n.echo-alert__confirm {\n  background: var(--echo-cap);\n  color: var(--echo-text);\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 60%, transparent),\n    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-cap-shadow);\n}\n\n/*\n * The destructive answer: deep ramp stops for the cap, the palest stop for the\n * legend. The theme holds that pairing to AA on every accent, and the theme\n * tests check it (\"alert-dialog/destructive confirm\"), so it survives a reseed.\n */\n.echo-alert__confirm[data-destructive] {\n  background: linear-gradient(180deg, var(--echo-accent-5) 0%, var(--echo-accent-6) 100%);\n  color: var(--echo-accent-1);\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.2 * var(--echo-gloss, 1))),\n    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-accent-7),\n    0 6px 16px color-mix(in oklch, var(--echo-accent-glow) 30%, transparent);\n}\n\n/* The press is usePressable's: the cap travels onto its seam, which shortens\n   under it (--press). No :active jump here — it would fight the stroke. */\n\n.echo-alert__cancel:focus-visible,\n.echo-alert__confirm:focus-visible,\n.echo-alert__trigger:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-alert__popup {\n    transition-duration: var(--echo-duration-glitch);\n  }\n  .echo-alert__popup[data-starting-style],\n  .echo-alert__popup[data-ending-style] {\n    transform: translate(-50%, -50%);\n  }\n}\n"
+    },
+    {
+      "path": "alert-dialog/alert-dialog.tsx",
+      "sha256": "2ba5c4d7ef13380119d9adcca1cdc6f78b5c07029535577aafb351149b889b37",
+      "content": "\"use client\";\n\n/**\n * AlertDialog.\n *\n * Modal already covers the STRUCTURE. What is different here is everything a\n * user cannot see in a screenshot:\n *\n *  - `role=\"alertdialog\"` and a required description, so a screen reader is\n *    told this is a decision, not a panel.\n *  - No dismissal by backdrop click or Escape leading to the destructive path:\n *    Base UI's AlertDialog refuses outside-press by construction. You have to\n *    answer it. That is the entire reason it is not a Modal with red buttons.\n *  - Its own sound. `caution` on open — a sawtooth, the only rough waveform in\n *    the token set — because a destructive confirm should not arrive with the\n *    same friendly chime as a settings panel. Confirming plays `error` when the\n *    action is destructive, and nothing at all when it is not.\n *\n *   <AlertDialog\n *     trigger={<HardwareButton>Erase</HardwareButton>}\n *     title=\"Erase all takes?\"\n *     description=\"This cannot be undone.\"\n *     confirmLabel=\"Erase\"\n *     onConfirm={erase}\n *   />\n *\n * Deliberately NOT a compound API, unlike Menu and Sheet. A confirm has one\n * shape — question, consequence, two answers — and every part a consumer could\n * rearrange is a way to build one that is missing its consequence or has two\n * confirm buttons. The props are the guardrail.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport * as React from \"react\";\nimport { isValidElement, type ReactElement, type ReactNode } from \"react\";\nimport { AlertDialog as BaseAlertDialog } from \"@base-ui/react/alert-dialog\";\nimport type { EchoDismissEvent, EchoPortalContainer } from \"echo-ui-core/types\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { liquidBloom, usePopupMotion } from \"echo-ui-core/presence\";\nimport { usePressable } from \"echo-ui-core/tactile\";\nimport \"./alert-dialog.css\";\n\nexport interface AlertDialogProps {\n  /** Element or text that opens the dialog. */\n  trigger?: ReactNode;\n  /** The decision, as a question. */\n  title: ReactNode;\n  /**\n   * What happens if they say yes. Required: a confirm without its consequence\n   * is a dialog that has already decided for the user.\n   */\n  description: ReactNode;\n  /** Extra detail between the description and the answers. */\n  children?: ReactNode;\n  /** Label for the confirming answer. Name the ACTION (\"Erase\"), never \"OK\". */\n  confirmLabel?: string;\n  cancelLabel?: string;\n  /**\n   * Whether confirming destroys something. Default true — this component only\n   * exists for the destructive case, and defaulting to false would make the\n   * dangerous spelling the quiet one.\n   */\n  destructive?: boolean;\n  onConfirm?: () => void;\n  onCancel?: () => void;\n  open?: boolean;\n  defaultOpen?: boolean;\n  onOpenChange?: (open: boolean, eventDetails: EchoDismissEvent) => void;\n  /**\n   * Where the dialog mounts. Defaults to <body>. Pass an element inside a\n   * scoped theme (`createEchoTheme(seed, { selector })`) and the dialog wears\n   * that theme too — mounted on <body>, it can only read the :root one.\n   */\n  container?: EchoPortalContainer;\n}\n\n/**\n * The element to render as the trigger, or null to wrap `trigger` in a plain\n * button. In development, an element passed from a server component can arrive\n * as a lazy reference, which `isValidElement` rejects, so it got wrapped in a\n * second button (BUG-14). `use` unwraps it, as Radix's Slot does. React 18 has\n * neither `use` nor server components, so it never meets one. The key is built\n * at runtime so bundlers don't warn about a missing export on React 18.\n */\nfunction useTriggerElement(trigger: ReactNode): ReactElement | null {\n  if (isValidElement(trigger)) return trigger;\n  const use = (React as unknown as Record<string, unknown>)[\" use \".trim()];\n  if (\n    typeof use === \"function\" &&\n    typeof trigger === \"object\" &&\n    trigger !== null &&\n    (trigger as { $$typeof?: symbol }).$$typeof === Symbol.for(\"react.lazy\")\n  ) {\n    const payload = (trigger as { _payload?: unknown })._payload;\n    if (payload && typeof (payload as PromiseLike<unknown>).then === \"function\") {\n      const resolved: unknown = use(payload);\n      if (isValidElement(resolved)) return resolved;\n    }\n  }\n  return null;\n}\n\nexport function AlertDialog({\n  trigger,\n  title,\n  description,\n  children,\n  confirmLabel = \"Confirm\",\n  cancelLabel = \"Cancel\",\n  destructive = true,\n  onConfirm,\n  onCancel,\n  open,\n  defaultOpen,\n  onOpenChange,\n  container,\n}: AlertDialogProps) {\n  const triggerElement = useTriggerElement(trigger);\n  const sound = useSoundOptional();\n  // Liquid bloom, the same arrival as Modal: out of a pill in the middle.\n  const bloom = usePopupMotion(liquidBloom);\n  // The answers and the plain trigger are molded caps: they press like the\n  // library's keys, down onto their 2px seam.\n  const triggerPress = usePressable<HTMLButtonElement>({}, { travel: 1.5, tilt: 3 });\n  const cancelPress = usePressable<HTMLButtonElement>({}, { travel: 1.5, tilt: 3 });\n  const confirmPress = usePressable<HTMLButtonElement>({}, { travel: 1.5, tilt: 3 });\n\n  return (\n    <BaseAlertDialog.Root\n      open={open}\n      defaultOpen={defaultOpen}\n      onOpenChange={(next, eventDetails) => {\n        // The rough waveform, once, on arrival. Not on every re-render.\n        if (next) sound?.play(\"caution\");\n        onOpenChange?.(next, eventDetails);\n      }}\n    >\n      {trigger != null &&\n        (triggerElement ? (\n          <BaseAlertDialog.Trigger render={triggerElement} />\n        ) : (\n          <BaseAlertDialog.Trigger className=\"echo-alert__trigger\" {...triggerPress}>\n            {trigger}\n          </BaseAlertDialog.Trigger>\n        ))}\n\n      <BaseAlertDialog.Portal container={container}>\n        <BaseAlertDialog.Backdrop className=\"echo-alert__backdrop\" />\n        <BaseAlertDialog.Popup ref={bloom} className=\"echo-alert__popup\" data-destructive={destructive || undefined}>\n          <BaseAlertDialog.Title className=\"echo-alert__title\">{title}</BaseAlertDialog.Title>\n          <BaseAlertDialog.Description className=\"echo-alert__desc\">\n            {description}\n          </BaseAlertDialog.Description>\n          {children != null ? <div className=\"echo-alert__body\">{children}</div> : null}\n\n          <div className=\"echo-alert__actions\">\n            {/*\n              Cancel comes FIRST in the DOM, so it is what Tab reaches first and\n              what a keyboard user confirms by reflex. The destructive answer\n              should never be one blind Enter away.\n            */}\n            <BaseAlertDialog.Close className=\"echo-alert__cancel\" onClick={() => onCancel?.()} {...cancelPress}>\n              {cancelLabel}\n            </BaseAlertDialog.Close>\n            <BaseAlertDialog.Close\n              className=\"echo-alert__confirm\"\n              data-destructive={destructive || undefined}\n              {...confirmPress}\n              onClick={() => {\n                if (destructive) sound?.play(\"error\");\n                onConfirm?.();\n              }}\n            >\n              {confirmLabel}\n            </BaseAlertDialog.Close>\n          </div>\n        </BaseAlertDialog.Popup>\n      </BaseAlertDialog.Portal>\n    </BaseAlertDialog.Root>\n  );\n}\n"
+    },
+    {
+      "path": "alert-dialog/index.ts",
+      "sha256": "e8b951f9b52297938397a680204dc18bcc63a7a3ba835b344a8e4d618b631eac",
+      "content": "export { AlertDialog } from \"./alert-dialog\";\nexport type { AlertDialogProps } from \"./alert-dialog\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "caution",
+    "error"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: Echo's public API names Echo's own types, not Base UI's.** Eleven items put a `@base-ui/react` type straight into a signature you write against — `BaseSwitch.Root.ChangeEventDetails` on a change handler, `ComponentProps<typeof BaseSelect.Portal>[\"container\"]` on a portal target. That made Echo's API a downstream of Base UI's internals: an upstream rename would have been a breaking Echo release triggered by somebody else's refactor."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A trigger element from a server component was wrapped in a second button** on a Next.js dev server, for `Modal`, `AlertDialog`, `Popover` and `Tooltip`. It now becomes the trigger itself."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**45 components** across controls, overlays, structure, surfaces, primitives, navigation and texture — including `Command` (a dot-matrix command palette), `AppShell`, `Sheet` (on Base UI's Drawer, with swipe-to-dismiss), `AlertDialog`, `Menu` + `ContextMenu`, `Textarea`, and `Chart`."
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@echo-ui/registry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Echo UI registry: the source of truth, registry.json and every item's sources.",
+  "license": "MIT",
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('../apps/www/public/r',{recursive:true,force:true})\" && tsx scripts/build-e-registry.ts && tsx scripts/build-agent-artifacts.ts && pnpm --filter echo-ui-mcp build:plugin --site ../apps/www/public",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.shipped.json",
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\" \"scripts/*.test.mjs\"",
+    "smoke": "tsx scripts/smoke.ts",
+    "docs:ack": "tsx scripts/docs/ack.ts"
+  },
+  "devDependencies": {
+    "@babel/parser": "^7",
+    "@base-ui/react": "^1.8.0",
+    "@types/react": "^19.3.0",
+    "@types/react-18": "npm:@types/react@^18.3.18",
+    "@types/react-dom": "^19.3.0",
+    "echo-ui-core": "workspace:*",
+    "esbuild": "^0.28.2",
+    "gsap": "^3.13.0",
+    "postcss": "^8.5.31",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "zod": "^4.6.7"
+  }
+}

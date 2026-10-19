@@ -1,0 +1,21 @@
+{
+  "name": "@echo-ui/supporters-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The small server behind Echo's island: it checks a payment with Stripe, keeps what a supporter sends, and serves the island's list.",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "dev": "wrangler dev",
+    "supporters": "tsx src/supporters.ts",
+    "deploy:worker": "tsx src/deploy.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.151.0"
+  }
+}

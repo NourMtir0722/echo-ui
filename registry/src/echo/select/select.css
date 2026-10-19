@@ -1,0 +1,221 @@
+/**
+ * Select. Base UI Select behavior, Echo device skin: a
+ * molded cap trigger and a floating panel with an accent dot on the selected
+ * option. GSAP owns the popup transform/opacity (useGsapPresence). Composes
+ * var(--echo-*).
+ */
+.echo-select__trigger {
+  /* One size scale (sm/md/lg): the cap's height is the control height. */
+  --ctl-h: var(--echo-control-default);
+  --ctl-font: var(--echo-text-md);
+  --ctl-px: var(--echo-space-8);
+  --ctl-radius: var(--echo-radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+  /*
+   * A floor, not a width: `min-width: 180px` pushed its container open at
+   * 320px (the same problem Toast had). `min()` keeps the comfortable width
+   * where there is room and gives it up where there isn't.
+   */
+  min-width: min(180px, 100%);
+  height: var(--ctl-h);
+  padding: 0 var(--ctl-px);
+  border: 0;
+  border-radius: var(--ctl-radius);
+  cursor: pointer;
+  color: var(--echo-text);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--ctl-font);
+  /* The HardwareButton neutral cap, stop for stop. */
+  background: linear-gradient(
+    180deg,
+    var(--echo-cap-highlight) 0%,
+    var(--echo-cap) 40%,
+    var(--echo-cap) 62%,
+    var(--echo-cap-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),
+    0 calc(4px + 1px * var(--lift, 0) - 3px * var(--press, 0)) 0 var(--echo-seam),
+    0 calc(9px + 5px * var(--lift, 0) - 6px * var(--press, 0)) calc(14px + 10px * var(--lift, 0) - 9px * var(--press, 0))
+      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* useCapPhysics owns the transform: lift, lean, travel onto the seam. */
+}
+.echo-select__trigger[data-size="sm"] {
+  --ctl-h: var(--echo-control-compact);
+  --ctl-font: var(--echo-text-sm);
+  --ctl-px: var(--echo-space-6);
+  --ctl-radius: var(--echo-radius-lg);
+  min-width: min(140px, 100%);
+}
+.echo-select__trigger[data-size="lg"] {
+  --ctl-h: var(--echo-control-large);
+  --ctl-font: var(--echo-text-lg);
+  --ctl-px: var(--echo-space-9);
+  --ctl-radius: var(--echo-radius-2xl);
+}
+.echo-select__trigger:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+
+.echo-select__icon {
+  display: inline-flex;
+  color: var(--echo-text-dim);
+  transition: transform var(--echo-duration-swap) ease;
+}
+.echo-select__trigger[data-popup-open] .echo-select__icon {
+  transform: rotate(180deg);
+}
+
+/* Above any dialog it opens from. */
+.echo-select__positioner {
+  z-index: var(--echo-z-popover, 300);
+}
+
+.echo-select__popup {
+  /* The flowing highlight is positioned against the panel. */
+  position: relative;
+  box-sizing: border-box;
+  min-width: var(--anchor-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--echo-space-3);
+  border-radius: var(--echo-radius-xl);
+  color: var(--echo-text);
+  /*
+   * The same plastic as the trigger it drops from — cap at the top, settling
+   * to the cap's shadow — with the trigger's lit top edge. It used to be the
+   * flat page surface, so an open Select read as a molded button with a grey
+   * sheet of paper under it.
+   */
+  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.28 * var(--echo-gloss, 1))),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-seam) 70%, transparent),
+    0 24px 48px -18px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+  outline: none;
+  /* Base UI's origin is the edge that meets the trigger, so the sheet grows
+     from the cap it drops out of, on whichever side it opened. */
+  transform-origin: var(--transform-origin, top center);
+  /* It unrolls out of its trigger: solid quickly, its length overshooting and
+     settling. Leaving, it rolls back up, quick and plain. */
+  transition:
+    opacity var(--echo-duration-swap) ease,
+    transform var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-select__popup[data-ending-style] {
+  transition-duration: var(--echo-duration-swap);
+  transition-timing-function: ease-in;
+}
+.echo-select__popup[data-starting-style],
+.echo-select__popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.96, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-select__popup {
+    transition-duration: var(--echo-duration-glitch);
+    transform: none;
+  }
+}
+
+.echo-select__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+  padding: var(--echo-space-4) var(--echo-space-6);
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+  /* The highlight marks the current option, for the pointer and the arrow
+     keys alike; the browser's own ring on top was a second mark. */
+  outline: none;
+}
+.echo-select__item[data-highlighted] {
+  background: color-mix(in oklab, var(--echo-cap-highlight) 55%, transparent);
+  color: var(--echo-text);
+}
+.echo-select__item[data-selected] {
+  color: var(--echo-text);
+}
+
+/*
+ * ONE mark for the chosen item: a check in the text colour. Base UI's
+ * ItemIndicator renders a ✔️ emoji when given no children, and this rule used
+ * to paint the same element as a glowing accent dot — so the chosen row
+ * showed both at once.
+ */
+.echo-select__indicator {
+  display: inline-flex;
+  flex: none;
+  color: var(--echo-text);
+}
+
+.echo-select__indicator svg {
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+}
+
+/*
+ * Forced colors (Windows High Contrast) drops the recessed well's gradient and
+ * shadows, which is its whole edge: without a border an input, and above all
+ * an empty one, isn't visible at all. System colors only, so focus still shows.
+ */
+@media (forced-colors: active) {
+  .echo-select__trigger {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+}
+
+/*
+ * The flowing highlight (useLiquidHighlight): one cap that travels to the
+ * hovered item on a spring. Once it shows, the popup has data-glow and the
+ * items drop their own tint.
+ */
+.echo-select__glow {
+  position: absolute;
+  z-index: var(--echo-z-base, 0);
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform, top, height;
+}
+.echo-select__glow-shape {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--echo-radius-md);
+  background: color-mix(in oklab, var(--echo-cap-highlight) 55%, transparent);
+}
+.echo-select__popup[data-glow] .echo-select__item[data-highlighted] {
+  background: transparent;
+}
+.echo-select__item {
+  position: relative;
+  z-index: var(--echo-z-raised, 1);
+}
+@media (forced-colors: active) {
+  .echo-select__glow {
+    display: none;
+  }
+  /* The highlight is hidden here, so the current option carries the mark. */
+  .echo-select__item[data-highlighted] {
+    outline: var(--echo-border-thick, 2px) solid Highlight;
+    outline-offset: -2px;
+  }
+}

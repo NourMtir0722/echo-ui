@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "name": "textures",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Textures",
+  "description": "The grain law as composable overlays: Dither (ordered Bayer), Noise (film grain), Halftone, Scanlines, plus GrainField (the brand surface) and Textured (the default stack). Nothing in Echo is ever a flat fill — and a dither or grain pass is the cure for the banding that large soft gradients show on the dark chassis. All tiles are generated as inline SVG data-URIs, so there are no asset files to copy. Every overlay is aria-hidden and pointer-events: none.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "textures/textures.css",
+      "sha256": "6fbaf6219b5996540f1832594ba4292441daaeeeb66f386ea7cd45337de9197c",
+      "content": "/**\n * Textures. Decorative overlays that fill their\n * nearest positioned ancestor. Geometry and ink live here; only the tunables\n * (image, size, opacity, blend) arrive as custom properties from the\n * component.\n *\n * Ink is the black/white occlusion model, not palette — the same exception\n * material.css takes. Palette comes from var(--echo-*) only, in the grain\n * field below.\n */\n.echo-texture {\n  position: absolute;\n  inset: 0;\n  pointer-events: none;\n  background-image: var(--echo-texture-image);\n  background-size: var(--echo-texture-size) var(--echo-texture-size);\n  opacity: var(--echo-texture-opacity);\n  mix-blend-mode: var(--echo-texture-blend);\n}\n\n.echo-texture[data-fixed] {\n  position: fixed;\n}\n\n/* Ordered dither must never be smoothed — the cells are the point. */\n.echo-texture--dither {\n  image-rendering: pixelated;\n}\n\n/* Halftone and scanlines are pure CSS gradients; they ignore the image var. */\n.echo-texture--halftone {\n  background-image: radial-gradient(\n    circle at center,\n    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent) 46%,\n    color-mix(in oklab, var(--echo-cast-ink, black) calc(0 * var(--echo-shade, 1) * 100%), transparent) 47%\n  );\n}\n\n.echo-texture--scanlines {\n  background-image: repeating-linear-gradient(\n    0deg,\n    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.18 * var(--echo-shade, 1) * 100%), transparent) 0px,\n    color-mix(in oklab, var(--echo-cast-ink, black) calc(0.18 * var(--echo-shade, 1) * 100%), transparent) 1px,\n    transparent 1px,\n    transparent var(--echo-texture-size)\n  );\n  background-size: auto;\n}\n\n/* ------------------------------------------------------------------ field */\n\n.echo-grain-field {\n  position: relative;\n  overflow: hidden;\n}\n\n.echo-grain-field__bloom {\n  position: absolute;\n  inset: 0;\n}\n\n/*\n * The brand field. Echo has ONE seed accent by design, so the bloom is built\n * from stops of the derived accent ramp rather than fixed hues: a sky seed\n * gives a sky field, with nothing of any other seed left in it.\n */\n.echo-grain-field[data-tone=\"accent\"] .echo-grain-field__bloom {\n  background:\n    radial-gradient(70% 90% at 22% 28%, var(--echo-accent-3) 0%, transparent 58%),\n    radial-gradient(60% 80% at 82% 18%, var(--echo-accent-2) 0%, transparent 55%),\n    radial-gradient(80% 90% at 65% 95%, var(--echo-accent-5) 0%, transparent 60%),\n    var(--echo-accent-6);\n}\n\n.echo-grain-field[data-tone=\"chassis\"] .echo-grain-field__bloom {\n  background:\n    radial-gradient(70% 90% at 25% 75%, var(--echo-cap) 0%, transparent 60%),\n    radial-gradient(60% 80% at 80% 30%, var(--echo-bloom, var(--echo-accent-6)) 0%, transparent 55%),\n    radial-gradient(60% 70% at 50% 10%, var(--echo-cap-highlight) 0%, transparent 55%),\n    var(--echo-surface);\n}\n\n/* The accent field is deep on either device, so what's written on it is the paper colour: on a dark device, the text it inherits. */\n.echo-grain-field[data-tone=\"accent\"] .echo-grain-field__content {\n  color: var(--echo-paper-stock, currentColor);\n}\n\n/* Edge darkening — keeps overlaid text legible over a busy field. */\n.echo-grain-field__vignette {\n  position: absolute;\n  inset: 0;\n  pointer-events: none;\n  background: radial-gradient(120% 120% at 50% 45%, transparent 55%, color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent));\n}\n\n.echo-grain-field__content {\n  position: relative;\n}\n\n.echo-textured {\n  position: relative;\n}\n"
+    },
+    {
+      "path": "textures/tiles.ts",
+      "sha256": "7626c1c8031c6117a333de1ed27f2452c7243b8705d2694732d53c91954739b8",
+      "content": "/**\n * Texture tiles, for the grain law: \"nothing in Echo is ever a flat fill\".\n *\n * Every tile is a self-contained SVG data-URI generated here at module load —\n * no network, no binary assets, nothing to copy alongside the component when\n * `echo-ui add` installs it. Pure functions over numbers: no browser globals at\n * module scope, so this is SSR-safe.\n */\n\n/**\n * Recursive Bayer threshold matrix, side `n` (a power of two). Returns each of\n * the values 0..n²-1 exactly once, arranged so that thresholding against it\n * produces ordered dither rather than clumping.\n */\nexport function bayer(n: number): number[][] {\n  if (n === 1) return [[0]];\n  if (n < 1 || (n & (n - 1)) !== 0) {\n    throw new RangeError(`bayer(n): n must be a power of two, got ${n}`);\n  }\n  const half = bayer(n / 2);\n  const s = n / 2;\n  const m: number[][] = Array.from({ length: n }, () => new Array<number>(n).fill(0));\n  for (let y = 0; y < s; y++) {\n    for (let x = 0; x < s; x++) {\n      const v = half[y]![x]! * 4;\n      m[y]![x] = v + 0;\n      m[y]![x + s] = v + 2;\n      m[y + s]![x] = v + 3;\n      m[y + s]![x + s] = v + 1;\n    }\n  }\n  return m;\n}\n\nconst svgUri = (body: string, w: number, h: number) =>\n  `data:image/svg+xml,${encodeURIComponent(\n    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`,\n  )}`;\n\n/**\n * An ordered-dither tile: one cell per matrix entry, each filled at\n * `opacity = threshold / n²`. `tone` picks the ink — dark ink deepens a\n * surface, light ink lifts it.\n */\nexport function ditherUri(n = 8, tone: \"dark\" | \"light\" = \"dark\"): string {\n  const m = bayer(n);\n  const px = 2; // device px per cell\n  const ink = tone === \"dark\" ? \"0,0,0\" : \"255,255,255\";\n  let rects = \"\";\n  for (let y = 0; y < n; y++) {\n    for (let x = 0; x < n; x++) {\n      const a = (m[y]![x]! / (n * n)).toFixed(3);\n      rects += `<rect x='${x * px}' y='${y * px}' width='${px}' height='${px}' fill='rgba(${ink},${a})'/>`;\n    }\n  }\n  const size = n * px;\n  return svgUri(rects, size, size);\n}\n\n/** Fractal-noise (film-grain) tile. Higher frequency = finer grain. */\nexport function noiseUri(baseFrequency: number, octaves: number): string {\n  return svgUri(\n    `<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${baseFrequency}' numOctaves='${octaves}' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/>`,\n    160,\n    160,\n  );\n}\n\nexport const ditherTile = {\n  dark: ditherUri(8, \"dark\"),\n  light: ditherUri(8, \"light\"),\n} as const;\n\nexport const noiseTile = {\n  /** Surface grain — the whisper that keeps a panel from reading as flat fill. */\n  fine: noiseUri(0.9, 2),\n  /** Marketing grain — the airbrushed spray on a brand field. */\n  coarse: noiseUri(0.55, 3),\n} as const;\n"
+    },
+    {
+      "path": "textures/textures.tsx",
+      "sha256": "a466e8a52408f3486b17dbc7a59ef011d0cfc9b3679d00ccca49e42534cad422",
+      "content": "/**\n * Textures — the grain law as a set of composable overlays: ordered DITHER, film-grain NOISE, HALFTONE dots, SCANLINES, and\n * the GRAIN FIELD they all descend from.\n *\n * Nothing in Echo is ever a flat fill. These are also the practical cure for\n * gradient banding on the dark chassis — a dither or grain pass over a large\n * soft gradient kills the posterised rings that dark surfaces show.\n *\n * Every overlay is decorative: aria-hidden, pointer-events: none, absolutely\n * filling its nearest positioned ancestor. Tunables ride as CSS custom\n * properties (the sanctioned exception to the no-inline-styles rule, same as\n * the Loader dot and the Tabs indicator); no literal values in `style`.\n */\nimport type { CSSProperties, ReactNode } from \"react\";\nimport { ditherTile, noiseTile } from \"./tiles\";\nimport \"./textures.css\";\n\ntype Blend = CSSProperties[\"mixBlendMode\"];\n\ninterface OverlayProps {\n  /** Layer opacity. Each texture ships the weight it is usually right at. */\n  opacity?: number;\n  /** Compositing mode against the surface below. */\n  blend?: Blend;\n  /** Pin to the viewport instead of the positioned ancestor. Default false. */\n  fixed?: boolean;\n  className?: string;\n}\n\nfunction overlayVars(\n  image: string | undefined,\n  size: string,\n  opacity: number,\n  blend: Blend,\n): CSSProperties {\n  // Halftone and scanlines draw themselves from CSS gradients, so they pass no\n  // image var at all rather than an empty one.\n  return {\n    ...(image ? { \"--echo-texture-image\": image } : null),\n    \"--echo-texture-size\": size,\n    \"--echo-texture-opacity\": opacity,\n    \"--echo-texture-blend\": blend,\n  } as CSSProperties;\n}\n\nfunction Overlay({\n  kind,\n  vars,\n  fixed,\n  className,\n}: {\n  kind: string;\n  vars: CSSProperties;\n  fixed?: boolean;\n  className?: string;\n}) {\n  return (\n    <div\n      className={[\"echo-texture\", `echo-texture--${kind}`, className].filter(Boolean).join(\" \")}\n      data-fixed={fixed ? \"\" : undefined}\n      aria-hidden=\"true\"\n      style={vars}\n    />\n  );\n}\n\nexport interface DitherProps extends OverlayProps {\n  /** Ink colour: dark deepens the surface, light lifts it. Default \"dark\". */\n  tone?: \"dark\" | \"light\";\n  /** Tile scale multiplier. 1 = a 16px tile. */\n  scale?: number;\n}\n\n/** Ordered-dither overlay — the retro/print texture. Best over gradients and glows. */\nexport function Dither({\n  opacity = 0.22,\n  blend = \"overlay\",\n  tone = \"dark\",\n  scale = 1,\n  fixed,\n  className,\n}: DitherProps = {}) {\n  const size = `${16 * scale}px`;\n  const uri = tone === \"dark\" ? ditherTile.dark : ditherTile.light;\n  return (\n    <Overlay\n      kind=\"dither\"\n      vars={overlayVars(`url(\"${uri}\")`, size, opacity, blend)}\n      fixed={fixed}\n      className={className}\n    />\n  );\n}\n\nexport interface NoiseProps extends OverlayProps {\n  /** \"fine\" for product surfaces, \"coarse\" for marketing fields. */\n  grain?: \"fine\" | \"coarse\";\n  /** Tile size in px. Larger = softer, more airbrushed. */\n  size?: number;\n}\n\n/** Fractal-noise grain — the airbrushed, organic texture. */\nexport function Noise({\n  opacity = 0.05,\n  blend = \"soft-light\",\n  grain = \"fine\",\n  size = 200,\n  fixed,\n  className,\n}: NoiseProps = {}) {\n  const uri = grain === \"fine\" ? noiseTile.fine : noiseTile.coarse;\n  return (\n    <Overlay\n      kind=\"noise\"\n      vars={overlayVars(`url(\"${uri}\")`, `${size}px`, opacity, blend)}\n      fixed={fixed}\n      className={className}\n    />\n  );\n}\n\nexport interface HalftoneProps extends OverlayProps {\n  /** Dot pitch in px. */\n  cell?: number;\n}\n\n/** Print/CRT halftone — the same DNA as the device dot-matrix, as a texture. */\nexport function Halftone({\n  opacity = 0.4,\n  blend = \"multiply\",\n  cell = 4,\n  fixed,\n  className,\n}: HalftoneProps = {}) {\n  return (\n    <Overlay\n      kind=\"halftone\"\n      vars={overlayVars(undefined, `${cell}px`, opacity, blend)}\n      fixed={fixed}\n      className={className}\n    />\n  );\n}\n\nexport interface ScanlinesProps extends OverlayProps {\n  /** Line pitch in px. */\n  gap?: number;\n}\n\n/** Scanlines — the CRT register, for anything pretending to be a screen. */\nexport function Scanlines({\n  opacity = 0.35,\n  blend = \"multiply\",\n  gap = 3,\n  fixed,\n  className,\n}: ScanlinesProps = {}) {\n  return (\n    <Overlay\n      kind=\"scanlines\"\n      vars={overlayVars(undefined, `${gap}px`, opacity, blend)}\n      fixed={fixed}\n      className={className}\n    />\n  );\n}\n\nexport interface GrainFieldProps {\n  /**\n   * Which ramp blooms. \"accent\" is the brand field (the seed accent, whatever\n   * it is); \"chassis\" is the quiet neutral field for product backgrounds.\n   */\n  tone?: \"accent\" | \"chassis\";\n  className?: string;\n  style?: CSSProperties;\n  children?: ReactNode;\n}\n\n/**\n * GrainField — the brand surface: a soft airbrushed bloom in the accent ramp,\n * two scales of spray grain, and an edge darkening pass that keeps overlaid\n * text legible. This is the marketing/brand texture; product surfaces keep\n * their own matte speckle and take only a whisper of `Noise`.\n */\nexport function GrainField({ tone = \"accent\", className, style, children }: GrainFieldProps) {\n  return (\n    <div\n      className={[\"echo-grain-field\", className].filter(Boolean).join(\" \")}\n      data-tone={tone}\n      style={style}\n    >\n      <div className=\"echo-grain-field__bloom\" aria-hidden=\"true\" />\n      <Noise grain=\"coarse\" size={180} opacity={0.5} blend=\"soft-light\" />\n      <Noise grain=\"coarse\" size={300} opacity={0.28} blend=\"overlay\" />\n      <div className=\"echo-grain-field__vignette\" aria-hidden=\"true\" />\n      <div className=\"echo-grain-field__content\">{children}</div>\n    </div>\n  );\n}\n\nexport interface TexturedProps {\n  dither?: boolean;\n  noise?: boolean;\n  className?: string;\n  style?: CSSProperties;\n  children?: ReactNode;\n}\n\n/** Wrap any content and stack the default treatment (grain + dither) over it. */\nexport function Textured({\n  dither = true,\n  noise = true,\n  className,\n  style,\n  children,\n}: TexturedProps) {\n  return (\n    <div className={[\"echo-textured\", className].filter(Boolean).join(\" \")} style={style}>\n      {children}\n      {noise ? <Noise opacity={0.06} /> : null}\n      {dither ? <Dither opacity={0.16} /> : null}\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "textures/index.ts",
+      "sha256": "bbdc28266c9d0438108e332b6ec55c2bd4cac73d1918a1ed93c26a8f46323e1d",
+      "content": "export { Dither, Noise, Halftone, Scanlines, GrainField, Textured } from \"./textures\";\nexport type {\n  DitherProps,\n  NoiseProps,\n  HalftoneProps,\n  ScanlinesProps,\n  GrainFieldProps,\n  TexturedProps,\n} from \"./textures\";\nexport { bayer, ditherUri, noiseUri, ditherTile, noiseTile } from \"./tiles\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

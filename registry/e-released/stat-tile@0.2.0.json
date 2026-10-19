@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "name": "stat-tile",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "StatTile",
+  "description": "A recessed LCD readout: a glowing value over a machine label, seated in a dark well. Static; consumes var(--echo-*).",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "roll"
+  ],
+  "files": [
+    {
+      "path": "stat-tile/stat-tile.css",
+      "sha256": "709ad872105e3fc63c026afae0cd800a86d9d63c34a8b1b3ccc4780d95b01ca7",
+      "content": "/**\n * StatTile. A recessed LCD readout: glowing value over\n * a machine label, seated in a dark well. Composes var(--echo-*).\n */\n.echo-stat-tile {\n  display: inline-grid;\n  gap: var(--echo-space-2);\n  /*\n   * `min-width: 96px` plus 36px of padding is a 132px floor, and the\n   * console puts six of these in one row. At 1440 that row has 682px to give\n   * — 105px a tile — so each tile overflowed its own track and the grid\n   * reported 709 > 682 at the width the screen was designed for.\n   *\n   * The floor goes and the padding becomes fluid. In a grid the tile is\n   * stretched by its track anyway, so the floor was only ever doing work\n   * standalone, where the 26px value already sets a sensible width.\n   */\n  min-width: 0;\n  max-width: 100%;\n  /* The cap counts the padding too (BUG-128). */\n  box-sizing: border-box;\n  padding: 14px clamp(10px, 1.4vw, 18px);\n  border-radius: var(--echo-radius-lg);\n  background: linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%);\n  box-shadow:\n    inset 0 2px 6px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));\n}\n\n.echo-stat-tile__value {\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  /* A readout that cannot shrink is a readout that clips its own container. */\n  min-width: 0;\n  overflow-wrap: anywhere;\n  font-size: var(--echo-text-2xl);\n  font-weight: var(--echo-weight-bold, 700);\n  line-height: var(--echo-leading-none, 1);\n  /* Unlit by default in the cascade, lit by [data-glow] — so a tile that is\n     not the subject reads as cream on the screen, like LcdChip's glow={false}. */\n  color: var(--echo-text);\n}\n\n.echo-stat-tile[data-glow] .echo-stat-tile__value {\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n  text-shadow: 0 0 10px color-mix(in oklab, var(--echo-lcd-glow) 50%, transparent);\n}\n\n.echo-stat-tile__unit {\n  margin-inline-start: var(--echo-space-1);\n  font-size: var(--echo-text-md);\n  color: var(--echo-text-dim);\n  text-shadow: none;\n}\n\n.echo-stat-tile__label {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  /* The label is the widest part of a narrow tile; let it fold. */\n  min-width: 0;\n  overflow-wrap: anywhere;\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-semibold, 600);\n  letter-spacing: var(--echo-tracking-wider, 0.12em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n/* roll: the digits in between are drawn (aria-hidden); the value is said\n   once, by this. Tabular, so a rolling digit never changes the width. */\n.echo-stat-tile__value[data-roll] {\n  white-space: pre;\n  font-variant-numeric: tabular-nums;\n}\n.echo-stat-tile__said {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n\n/*\n * Power on (useBootOnView). \"off\" is set only on a tile that starts out of\n * view, so nothing on screen at load ever blinks; \"on\" plays the boot once.\n * The steps are the screen's: an LCD does not fade.\n */\n.echo-stat-tile[data-boot=\"off\"] .echo-stat-tile__value {\n  opacity: 0;\n}\n.echo-stat-tile[data-boot=\"on\"] .echo-stat-tile__value {\n  animation: echo-stat-boot var(--echo-duration-flood) steps(1, end) var(--echo-duration-pop) both;\n}\n@keyframes echo-stat-boot {\n  0% { opacity: 0; }\n  18% { opacity: 0.8; }\n  30% { opacity: 0.1; }\n  46% { opacity: 1; }\n  58% { opacity: 0.35; }\n  74%, 100% { opacity: 1; }\n}\n/* A new value ticks over: a short flicker in steps, not a fade. */\n.echo-stat-tile__value[data-tick] {\n  animation: echo-stat-tick var(--echo-duration-sweep) steps(1, end) both;\n}\n@keyframes echo-stat-tick {\n  0% { opacity: 0.25; }\n  30% { opacity: 1; }\n  55% { opacity: 0.55; }\n  75%, 100% { opacity: 1; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-stat-tile[data-boot] .echo-stat-tile__value,\n  .echo-stat-tile__value[data-tick] {\n    opacity: 1;\n    animation: none;\n  }\n}\n"
+    },
+    {
+      "path": "stat-tile/stat-tile.tsx",
+      "sha256": "22ea5154def1f7fe3a39867f7c0823d97e56225a0dc92974f161662c83ee723e",
+      "content": "\"use client\";\n\n/**\n * StatTile — a recessed LCD readout.\n *\n * It powers on the first time it scrolls into view: the screen flickers up in\n * steps, the way a segment display comes alive. One already on screen when\n * the page loads is simply on.\n *\n * With `roll`, a new reading rolls to its digits (useRoll) instead of\n * flickering over: each digit steps through the ones in between.\n */\nimport { useRef, type HTMLAttributes, type ReactNode } from \"react\";\nimport { useBootOnView } from \"echo-ui-core/tactile\";\nimport { useRoll } from \"../roll\";\nimport \"./stat-tile.css\";\n\nexport interface StatTileProps extends Omit<HTMLAttributes<HTMLDivElement>, \"children\"> {\n  value: ReactNode;\n  unit?: ReactNode;\n  label: string;\n  /**\n   * Emissive accent value. Default true.\n   *\n   * A wall of tiles is why this exists: on the console template six lit readouts\n   * side by side made the accent mean \"a number\" instead of \"this one\", and\n   * Echo reserves it for the single thing that is on. Quiet the routine tiles\n   * and light the one being watched. LcdChip has carried the same prop since\n   * it shipped; StatTile not having it was the gap.\n   */\n  glow?: boolean;\n  /**\n   * A new reading rolls to its digits, each stepping through the ones in\n   * between, instead of flickering over. For a string or number value.\n   */\n  roll?: boolean;\n}\n\nexport function StatTile({ value, unit, label, glow = true, roll = false, className, ...rest }: StatTileProps) {\n  const boot = useBootOnView<HTMLDivElement>();\n  const rolling = roll && (typeof value === \"string\" || typeof value === \"number\");\n  const shown = useRoll(rolling ? String(value) : \"\", { enabled: rolling });\n  // A new value ticks over, the way a segment display updates: the value\n  // remounts (keyed by it) and flickers in steps. Not on the first render, so\n  // a page never blinks as it loads.\n  const first = useRef(value);\n  const changed = value !== first.current;\n  return (\n    <div\n      ref={boot}\n      className={[\"echo-stat-tile\", className].filter(Boolean).join(\" \")}\n      data-glow={glow ? \"\" : undefined}\n      role=\"group\"\n      aria-label={label}\n      {...rest}\n    >\n      <div\n        key={rolling ? \"roll\" : String(value)}\n        className=\"echo-stat-tile__value\"\n        data-tick={(!rolling && changed) || undefined}\n        data-roll={rolling ? \"\" : undefined}\n      >\n        {rolling ? (\n          // The digits in between are drawn, not read: the value is said once.\n          <>\n            <span aria-hidden=\"true\">{shown}</span>\n            <span className=\"echo-stat-tile__said\">{value}</span>\n          </>\n        ) : (\n          value\n        )}\n        {unit != null ? <span className=\"echo-stat-tile__unit\">{unit}</span> : null}\n      </div>\n      <div className=\"echo-stat-tile__label\">{label}</div>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "stat-tile/index.ts",
+      "sha256": "e4602e919470ceac67101c4a4884ed036f9fa54a106235f2a38c246b236fd444",
+      "content": "export { StatTile } from \"./stat-tile\";\nexport type { StatTileProps } from \"./stat-tile\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Digits that roll: `roll` on `LcdChip`, `StatTile` and `NumberField`, and the `useRoll` hook under them.** Pass `roll` and a new value steps each digit through the ones in between, all together, fast when it's far and slowest on the last step: 18 → 21 shows 29, 20, 21. A falling number rolls back, 99 → 100 turns the nines over and puts a 1 in front, and anything that isn't a digit (a comma, a colon) swaps at once. The digits in between are drawn but hidden from assistive technology, so the value is still read once, as it is; under reduced motion it doesn't roll. On `NumberField` it replaces the slide a step used to give the whole number, and typing never rolls. It's off by default, so nothing changes until you pass it. `SplitFlap` now turns on the same drum (`echo-roll`, which each of these installs with it); it looks and sounds the same."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A component held to its container's width stays inside it, padding and all** (BUG-128). `HardwareButton`, `Badge`, `Tag`, `LcdChip`, `StatTile` and `ShortcutMap`'s board are capped at their container so a long label truncates or wraps, but the cap left out their own padding: a `HardwareButton` with `href` could reach 36px past a narrow column. The cap now counts the padding. A `<button>` cap looked right already; a link cap now matches it."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

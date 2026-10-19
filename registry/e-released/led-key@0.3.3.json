@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "name": "led-key",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "LedKey",
+  "description": "A molded pill key with an indicator LED that breathes while lit. The latching sibling of HardwareButton: use it when the key's own state is part of the answer (armed, monitoring, recording), not for a command that fires and forgets.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "gsap": "^3.13.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "size"
+  ],
+  "files": [
+    {
+      "path": "led-key/led-key.css",
+      "sha256": "924901ccddb0f6693e2752963896669a8baf64cd2d0ba9b8f284e9284df0c921",
+      "content": "/**\n * LedKey. The original ECHO snooze key re-skinned as\n * a general latching key: a pill cap sunk in its own well, with an LED that\n * breathes while lit. Composes var(--echo-*) — no hex literals; the only fixed\n * values are the single-key-light occlusion model.\n */\n.echo-led-key {\n  /* One size scale: the key's outer height (well included) is the control height. */\n  --led-well: var(--echo-space-2, 4px);\n  --ctl-h: var(--echo-control-default);\n  --led-px: var(--echo-space-9);\n  --led-font: var(--echo-text-xs);\n  display: inline-flex;\n  padding: var(--led-well);\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-well);\n  box-shadow:\n    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    0 1px 0 var(--echo-cap-highlight),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n.echo-led-key[data-size=\"sm\"] {\n  --led-well: var(--echo-space-1, 2px);\n  --ctl-h: var(--echo-control-compact);\n  --led-px: var(--echo-space-6);\n  --led-font: var(--echo-text-2xs);\n}\n.echo-led-key[data-size=\"lg\"] {\n  --ctl-h: var(--echo-control-large);\n  --led-px: var(--echo-space-10);\n  --led-font: var(--echo-text-sm);\n}\n\n.echo-led-key__cap {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-4);\n  box-sizing: border-box;\n  height: calc(var(--ctl-h) - 2 * var(--led-well));\n  padding: 0 var(--led-px);\n  border: 0;\n  border-radius: var(--echo-radius-full);\n  cursor: pointer;\n  user-select: none;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  color: var(--echo-text);\n  background: linear-gradient(\n    180deg,\n    var(--echo-cap-highlight) 0%,\n    var(--echo-cap) 55%,\n    var(--echo-cap-shadow) 100%\n  );\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.25 * var(--echo-gloss, 1))),\n    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.35 * var(--echo-shade, 1) * 100%), transparent),\n    0 calc(3px + 3px * var(--lift, 0) - 2px * var(--press, 0))\n      calc(5px + 6px * var(--lift, 0) - 2px * var(--press, 0))\n      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  /* useCapPhysics owns the transform: lift, lean, travel, rebound. */\n  will-change: transform;\n  position: relative;\n}\n/* The hit area is the key's full height, well included, as on HardwareButton. */\n.echo-led-key__cap::after {\n  content: \"\";\n  position: absolute;\n  inset-block: calc(-1 * var(--led-well));\n  inset-inline: 0;\n}\n\n.echo-led-key__cap:focus-visible {\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: 3px;\n}\n\n.echo-led-key__cap:disabled {\n  cursor: not-allowed;\n  opacity: 0.5;\n}\n\n.echo-led-key__label {\n  font-size: var(--led-font);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  line-height: var(--echo-leading-none, 1);\n}\n\n/* Dead plastic until lit — the same two-state LED as StatusDot. */\n.echo-led-key__led {\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  flex: none;\n  background: color-mix(in oklab, var(--echo-cap) 70%, var(--echo-text-dim));\n}\n\n.echo-led-key[data-lit] .echo-led-key__led {\n  background: var(--echo-accent-glow);\n  box-shadow: 0 0 6px var(--echo-accent-glow);\n  animation: echo-led-key-breathe 1.4s infinite ease-in-out;\n}\n\n@keyframes echo-led-key-breathe {\n  0%,\n  100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.4;\n  }\n}\n\n/* Reduced motion holds the LED lit rather than dark — the state still reads. */\n@media (prefers-reduced-motion: reduce) {\n  .echo-led-key[data-lit] .echo-led-key__led {\n    animation: none;\n  }\n}\n\n/* Visually hidden, still announced — \"Snooze, armed\". */\n.echo-led-key__sr {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n  border: 0;\n}\n\n/*\n * Coarse-pointer targets.\n *\n * These already clear WCAG 2.2 2.5.8's 24px. This is the other\n * threshold: the 44px both platform guidelines use, which is about a\n * fingertip rather than about conformance.\n *\n * Gated on `@media (pointer: coarse)` so the desktop rendering does not move\n * — these are \"passing AA but under the\n * platform guideline\", not broken. Pagination is first among them because\n * people tap it repeatedly, which is exactly when a 30px target starts\n * costing mis-taps.\n */\n@media (pointer: coarse) {\n  /* md and lg are 44px and up, well included; sm grows to it on a touch screen. */\n  .echo-led-key[data-size=\"sm\"] {\n    --ctl-h: 44px;\n  }\n}\n\n/*\n * Forced colors (Windows High Contrast) drops gradients and shadows, which is\n * everything that draws this control's state. System colors draw it instead;\n * nothing here sets forced-color-adjust: none, so focus outlines still show.\n */\n@media (forced-colors: active) {\n  .echo-led-key__cap {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-led-key__led {\n    background: Canvas;\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-led-key[data-lit] .echo-led-key__led {\n    background: Highlight;\n    border-color: Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "led-key/led-key.tsx",
+      "sha256": "66e7a89bdefea2f8051d1df5c5a94efab05306617821763c4fb2d6a86329891d",
+      "content": "\"use client\";\n\n/**\n * LedKey — a molded pill key with an indicator LED.\n * Generalized from the first Echo device's `SnoozeKey`,\n * which hardcoded \"Snooze +N\": the value here is the RENDERING — a pill cap in\n * a well whose LED reports that the thing the key controls is running — so the\n * label is free-form and the domain noun lives in the consumer.\n *\n * Where HardwareButton is the general command cap, LedKey is the latching one:\n * use it when the key's own state is part of the answer (armed, monitoring,\n * snoozed), not for a button that just fires and forgets.\n */\nimport {\n  forwardRef,\n  useCallback,\n  type DOMAttributes,\n  type MutableRefObject,\n  type ReactNode,\n} from \"react\";\nimport type { EchoPressInterop } from \"echo-ui-core/types\";\nimport { useCapPhysics } from \"echo-ui-core/tactile\";\nimport { useControlSize, type ControlSize } from \"../size\";\nimport \"./led-key.css\";\n\n/** Closed, like every Echo control — see `HardwareButton`. */\nexport interface LedKeyProps extends EchoPressInterop {\n  /** The key's legend — machine-cased in the skin. */\n  children: ReactNode;\n  /** Light the LED and breathe it. Default false (dead plastic). */\n  lit?: boolean;\n  /**\n   * What the lit LED MEANS, announced as visually hidden text (e.g. \"Armed\").\n   * A colour is not a message: pass this whenever the LED is the only thing\n   * that says the key is on.\n   */\n  litLabel?: string;\n  /**\n   * Outer height on the control scale: `sm` 32px, `md` 44px (default), `lg`\n   * 60px, the same as a HardwareButton or Field of that size. Defaults to the\n   * nearest SizeProvider's size.\n   */\n  size?: ControlSize;\n}\n\nexport const LedKey = forwardRef<HTMLButtonElement, LedKeyProps>(function LedKey(\n  { children, lit = false, litLabel, size: ownSize, ...rest },\n  forwardedRef,\n) {\n  const size = useControlSize(ownSize);\n  // A key switch (useCapPhysics): it rises and leans on hover, clicks onto\n  // its seam, loads while held and clicks again as it snaps home.\n  const { ref: capRef, handlers: capHandlers } = useCapPhysics<HTMLButtonElement>({ travel: 2, tilt: 5, sound: true });\n\n  const setRef = useCallback(\n    (node: HTMLButtonElement | null) => {\n      capRef(node);\n      if (typeof forwardedRef === \"function\") forwardedRef(node);\n      else if (forwardedRef)\n        (forwardedRef as MutableRefObject<HTMLButtonElement | null>).current = node;\n    },\n    [forwardedRef, capRef],\n  );\n\n  // Compose incoming handlers with the cap's rather than letting either side\n  // win — the same merge HardwareButton does, so a Base UI Tooltip or Popover\n  // can use a LedKey as its trigger without losing its own listeners.\n  const restProps = rest as Record<string, unknown>;\n  const mergedHandlers: Record<string, (event: never) => void> = {};\n  for (const key of Object.keys(capHandlers) as (keyof DOMAttributes<HTMLButtonElement>)[]) {\n    const motion = capHandlers[key] as ((event: never) => void) | undefined;\n    const incoming = restProps[key] as ((event: never) => void) | undefined;\n    mergedHandlers[key] = (event) => {\n      incoming?.(event);\n      motion?.(event);\n    };\n  }\n\n  return (\n    <span className=\"echo-led-key\" data-size={size} data-lit={lit ? \"\" : undefined}>\n      <button ref={setRef} type=\"button\" className=\"echo-led-key__cap\" {...rest} {...mergedHandlers}>\n        <span className=\"echo-led-key__led\" aria-hidden=\"true\" />\n        <span className=\"echo-led-key__label\">{children}</span>\n        {lit && litLabel ? <span className=\"echo-led-key__sr\">{litLabel}</span> : null}\n      </button>\n    </span>\n  );\n});\n"
+    },
+    {
+      "path": "led-key/index.ts",
+      "sha256": "1cdb5f04cdb06d5a030dd9a55cecee1cf0f2c078cf771107c5efa1c897d50515",
+      "content": "export { LedKey } from \"./led-key\";\nexport type { LedKeyProps } from \"./led-key\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "lift",
+    "light"
+  ],
+  "sound": [
+    "press",
+    "release"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: HardwareButton's sizes are the control heights, so a button lines up with a field.** A button's outer height, well included, is now `sm` 32px, `md` 44px, `lg` 60px, the same as a `Field`, `Select`, `NumberField` or `OtpField` of that size. Before, the default button was 60px beside a 44px field, and no size of button lined up with any input, so a search bar, a filter row or an inline \"invite\" form never looked right."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking",
+        "a11y"
+      ],
+      "summary": "**Breaking: every control takes a `ref`, an `onBlur` and an `onFocus` — and the two that were wide open are now closed.** Four of 49 components could receive a ref, and `onBlur` appeared in zero public prop types, so `react-hook-form`'s uncontrolled `register()` — which needs exactly `ref`, `onBlur` and `name` — could not work with any Echo control."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

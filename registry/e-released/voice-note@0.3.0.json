@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "name": "voice-note",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "VoiceNote",
+  "description": "Record a voice note in one button. The microphone opens into Stop and the take, whose bars follow your voice while Stop swells with it. Stop, and Stop is swallowed by the take, which becomes a note you can play: it fills with the primary plastic as it plays. × deletes it and everything folds back into the microphone.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "morph"
+  ],
+  "files": [
+    {
+      "path": "voice-note/voice-note.css",
+      "sha256": "dca3487f4695910ca52855308a04da4965e9d939e67a806c0c7ee56c062ccdd9",
+      "content": "/* The Stop button swells with your voice: its own box, so the cap's transform is untouched. */\n.echo-voice-note__swell {\n  display: inline-flex;\n}\n\n.echo-voice-note__take {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-5);\n}\n\n/* The level: bars that rise with the voice, in the label's own colour. */\n.echo-voice-note__bars {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-1);\n  block-size: 18px;\n}\n.echo-voice-note__bars > i {\n  --level: 0.14;\n  inline-size: 3px;\n  block-size: 100%;\n  border-radius: var(--echo-radius-full);\n  background: currentColor;\n  transform: scaleY(var(--level));\n  transform-origin: 50% 50%;\n}\n\n.echo-voice-note__time {\n  font-variant-numeric: tabular-nums;\n}\n\n/* The take while recording is a readout, not an action: disabled but at full strength. */\n.echo-voice-note .echo-hw__cap:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n@media (forced-colors: active) {\n  .echo-voice-note__bars > i {\n    background: CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "voice-note/voice-note.tsx",
+      "sha256": "739c85b6f47d993fda2590e6193839d85e9a5f767cd0afd4ef14b726091e7c52",
+      "content": "\"use client\";\n\n/**\n * VoiceNote. The microphone button opens into Stop and the take beside it,\n * whose level bars follow your voice while the Stop button swells with it.\n * Stop, and Stop is swallowed by the take, which becomes a note you can play:\n * it fills with the primary plastic as it plays. × (or Escape) deletes it and\n * everything folds back into the microphone.\n *\n * Real HardwareButtons in a Morph: the take and the note are the same cap\n * (`data-morph`), so it's the take that becomes the note. It records with\n * the browser's MediaRecorder; if the microphone isn't allowed it says so\n * and stays closed.\n */\nimport { useEffect, useRef, useState } from \"react\";\nimport { createSpring, type MorphFeelName } from \"echo-ui-core/tactile\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Morph } from \"../morph\";\nimport \"./voice-note.css\";\n\nexport interface VoiceNoteProps {\n  /** Called when a take is kept, with the recording (or null if the browser gave none) and its length, ms. */\n  onRecorded?: (audio: Blob | null, ms: number) => void;\n  /** Called when the note is deleted. */\n  onDelete?: () => void;\n  /** Longest take, ms. Default 60s. */\n  maxDuration?: number;\n  feel?: MorphFeelName;\n  size?: \"sm\" | \"md\" | \"lg\";\n  align?: \"center\" | \"start\" | \"end\";\n  className?: string;\n}\n\nconst Svg = ({ d }: { d: string }) => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.7\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    <path d={d} />\n  </svg>\n);\nconst Mic = () => <Svg d=\"M8 2a2 2 0 00-2 2v4a2 2 0 004 0V4a2 2 0 00-2-2zM3.5 7.5a4.5 4.5 0 009 0M8 12v2\" />;\nconst Close = () => <Svg d=\"M4 4l8 8M12 4l-8 8\" />;\nconst Stop = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <rect x=\"3.5\" y=\"3.5\" width=\"9\" height=\"9\" rx=\"2\" fill=\"currentColor\" />\n  </svg>\n);\nconst Play = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <path d=\"M5 3.2v9.6l8-4.8z\" fill=\"currentColor\" />\n  </svg>\n);\nconst Pause = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <path d=\"M4.5 3h2.6v10H4.5zM8.9 3h2.6v10H8.9z\" fill=\"currentColor\" />\n  </svg>\n);\n\nconst clock = (ms: number) => {\n  const s = Math.max(0, Math.round(ms / 1000));\n  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, \"0\")}`;\n};\n\nconst BARS = 18;\n\n/** The microphone: its level while recording, and the take when stopped. */\nclass Mic_ {\n  private ctx?: AudioContext;\n  private an?: AnalyserNode;\n  private buf?: Float32Array<ArrayBuffer>;\n  private stream?: MediaStream;\n  private rec?: MediaRecorder;\n  private chunks: Blob[] = [];\n\n  async start(): Promise<boolean> {\n    try {\n      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });\n      this.stream = stream;\n      this.ctx = new AudioContext();\n      this.an = this.ctx.createAnalyser();\n      this.an.fftSize = 1024;\n      this.ctx.createMediaStreamSource(stream).connect(this.an);\n      this.buf = new Float32Array(this.an.fftSize);\n      if (typeof MediaRecorder !== \"undefined\") {\n        this.rec = new MediaRecorder(stream);\n        this.chunks = [];\n        this.rec.ondataavailable = (e) => this.chunks.push(e.data);\n        this.rec.start();\n      }\n      return true;\n    } catch {\n      this.release();\n      return false;\n    }\n  }\n\n  level(): number {\n    if (!this.an || !this.buf) return 0;\n    this.an.getFloatTimeDomainData(this.buf);\n    let sum = 0;\n    for (const v of this.buf) sum += v * v;\n    return Math.min(1, Math.sqrt(sum / this.buf.length) * 7);\n  }\n\n  async stop(): Promise<Blob | null> {\n    let blob: Blob | null = null;\n    const rec = this.rec;\n    if (rec && rec.state !== \"inactive\") {\n      await new Promise<void>((done) => {\n        rec.onstop = () => done();\n        rec.stop();\n      });\n      blob = new Blob(this.chunks, { type: rec.mimeType });\n    }\n    this.release();\n    return blob;\n  }\n\n  release() {\n    this.stream?.getTracks().forEach((t) => t.stop());\n    void this.ctx?.close().catch(() => undefined);\n    this.stream = undefined;\n    this.ctx = undefined;\n    this.an = undefined;\n    this.rec = undefined;\n  }\n}\n\ntype Phase = \"idle\" | \"rec\" | \"note\";\n\nexport function VoiceNote({\n  onRecorded,\n  onDelete,\n  maxDuration = 60_000,\n  feel,\n  size,\n  align,\n  className,\n}: VoiceNoteProps) {\n  const [phase, setPhase] = useState<Phase>(\"idle\");\n  const [playing, setPlaying] = useState(false);\n  const [length, setLength] = useState(0);\n  const [status, setStatus] = useState(\"\");\n  const mic = useRef<Mic_ | null>(null);\n  const loop = useRef(0);\n  const started = useRef(0);\n  const levels = useRef<number[]>([]);\n  const wave = useRef<number[]>([]);\n  const bars = useRef<HTMLSpanElement>(null);\n  const time = useRef<HTMLSpanElement>(null);\n  const swell = useRef<HTMLSpanElement>(null);\n  const take = useRef<HTMLButtonElement>(null);\n  const audio = useRef<HTMLAudioElement | null>(null);\n  const url = useRef<string | null>(null);\n\n  const drawBars = (data: number[]) => {\n    const el = bars.current;\n    if (!el) return;\n    for (let i = 0; i < BARS; i++) {\n      const v = data[data.length - BARS + i] ?? 0;\n      (el.children[i] as HTMLElement | undefined)?.style.setProperty(\"--level\", (0.14 + 0.86 * v).toFixed(3));\n    }\n  };\n\n  const release = () => {\n    cancelAnimationFrame(loop.current);\n    mic.current?.release();\n    mic.current = null;\n    audio.current?.pause();\n    if (url.current) URL.revokeObjectURL(url.current);\n    url.current = null;\n    audio.current = null;\n  };\n  useEffect(() => release, []);\n\n  const record = async () => {\n    // One microphone at a time: a second press while the browser is still\n    // asking for it is the same press (BUG-69).\n    if (mic.current) return;\n    const m = new Mic_();\n    mic.current = m;\n    const granted = await m.start();\n    // Let go while it was asking (unmounted, or released): close what it got.\n    if (mic.current !== m) {\n      m.release();\n      return;\n    }\n    if (!granted) {\n      mic.current = null;\n      setStatus(\"Microphone unavailable\");\n      return;\n    }\n    started.current = performance.now();\n    levels.current = [];\n    setPhase(\"rec\");\n    setStatus(\"Recording\");\n    // The voice swells the Stop button it is going into, evenly, like a drop filling.\n    const s = createSpring(1, { duration: 0.12, bounce: 0 }, (v) => {\n      if (swell.current) swell.current.style.scale = v.toFixed(3);\n    });\n    const reduced = typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n    let last = 0;\n    const tick = (now: number) => {\n      const lvl = m.level();\n      if (!reduced) s.to(1 + lvl * 0.14, { config: { duration: 0.12, bounce: 0 } });\n      if (now - last > 70) {\n        levels.current.push(lvl);\n        if (levels.current.length > 400) levels.current.shift();\n        last = now;\n        drawBars(levels.current);\n      }\n      const ms = now - started.current;\n      if (time.current) time.current.textContent = clock(ms);\n      if (ms >= maxDuration) {\n        s.stop();\n        void stop();\n      } else loop.current = requestAnimationFrame(tick);\n    };\n    loop.current = requestAnimationFrame(tick);\n  };\n\n  const stop = async () => {\n    cancelAnimationFrame(loop.current);\n    if (swell.current) swell.current.style.scale = \"\";\n    const ms = performance.now() - started.current;\n    const m = mic.current;\n    mic.current = null;\n    const blob = (await m?.stop()) ?? null;\n    // The note's waveform: the whole take, squeezed into the bars.\n    const all = levels.current;\n    wave.current = Array.from({ length: BARS }, (_, i) => {\n      const a = Math.floor((i * all.length) / BARS);\n      const b = Math.max(a + 1, Math.floor(((i + 1) * all.length) / BARS));\n      const slice = all.slice(a, b);\n      return slice.length ? Math.max(...slice) : 0;\n    });\n    if (blob && blob.size > 0) url.current = URL.createObjectURL(blob);\n    setLength(ms);\n    setPhase(\"note\");\n    setStatus(`Voice note, ${clock(ms)}`);\n    onRecorded?.(blob, ms);\n  };\n\n  // The note's bars are drawn once it's on screen.\n  useEffect(() => {\n    if (phase === \"note\") drawBars(wave.current);\n  }, [phase]);\n\n  const play = () => {\n    const cap = take.current;\n    if (playing) {\n      audio.current?.pause();\n      cancelAnimationFrame(loop.current);\n      setPlaying(false);\n      return;\n    }\n    if (url.current) {\n      audio.current ??= new Audio(url.current);\n      if (audio.current.ended) audio.current.currentTime = 0;\n      void audio.current.play().catch(() => undefined);\n    }\n    const from = performance.now() - (audio.current?.currentTime ?? 0) * 1000;\n    setPlaying(true);\n    const tick = (now: number) => {\n      const a = audio.current;\n      const played = a && url.current ? a.currentTime * 1000 : now - from;\n      const f = Math.min(1, played / Math.max(1, length));\n      cap?.style.setProperty(\"--hw-fill\", f.toFixed(4));\n      if (time.current) time.current.textContent = clock(length * (1 - f));\n      if (f < 1 && !(a && a.ended)) loop.current = requestAnimationFrame(tick);\n      else {\n        setPlaying(false);\n        cap?.style.setProperty(\"--hw-fill\", \"0\");\n        if (time.current) time.current.textContent = clock(length);\n      }\n    };\n    loop.current = requestAnimationFrame(tick);\n  };\n\n  const remove = () => {\n    release();\n    setPlaying(false);\n    setPhase(\"idle\");\n    setStatus(\"Voice note deleted\");\n    onDelete?.();\n  };\n\n  const barSpans = (\n    <span ref={bars} className=\"echo-voice-note__bars\" aria-hidden>\n      {Array.from({ length: BARS }, (_, i) => (\n        <i key={i} />\n      ))}\n    </span>\n  );\n\n  return (\n    <Morph\n      feel={feel}\n      align={align}\n      className={[\"echo-voice-note\", className].filter(Boolean).join(\" \")}\n      status={status}\n      onEscape={phase === \"note\" ? remove : undefined}\n    >\n      {phase === \"idle\" ? (\n        <HardwareButton data-morph=\"mic\" size={size} icon={<Mic />} iconOnly aria-label=\"Record a voice note\" onClick={() => void record()} />\n      ) : phase === \"rec\" ? (\n        <>\n          <span ref={swell} className=\"echo-voice-note__swell\">\n            <HardwareButton\n              data-morph=\"mic\"\n              variant=\"primary\"\n              size={size}\n              icon={<Stop />}\n              iconOnly\n              aria-label=\"Stop recording\"\n              onClick={() => void stop()}\n            />\n          </span>\n          <HardwareButton data-morph=\"take\" size={size} disabled aria-label=\"Recording\">\n            <span className=\"echo-voice-note__take\">\n              {barSpans}\n              <span ref={time} className=\"echo-voice-note__time\">\n                0:00\n              </span>\n            </span>\n          </HardwareButton>\n        </>\n      ) : (\n        <>\n          <HardwareButton\n            ref={take}\n            data-morph=\"take\"\n            size={size}\n            icon={playing ? <Pause /> : <Play />}\n            fill={0}\n            aria-label={`${playing ? \"Pause\" : \"Play\"} voice note, ${clock(length)}`}\n            onClick={play}\n          >\n            <span className=\"echo-voice-note__take\">\n              {barSpans}\n              <span ref={time} className=\"echo-voice-note__time\">\n                {clock(length)}\n              </span>\n            </span>\n          </HardwareButton>\n          <HardwareButton data-morph=\"close\" size={size} icon={<Close />} iconOnly aria-label=\"Delete voice note\" onClick={remove} />\n        </>\n      )}\n    </Morph>\n  );\n}\n"
+    },
+    {
+      "path": "voice-note/index.ts",
+      "sha256": "0cf523c894705fb088405eb9cec533e33a35dc83ac6ceabf10d89b4bfb8b3f47",
+      "content": "export { VoiceNote } from \"./voice-note\";\nexport type { VoiceNoteProps } from \"./voice-note\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Six more that change shape as you use them, all on `Morph`.** `SaveButton` narrows into its own progress while your save runs, widens into a lit \"Saved\" and flows back. `Timer` opens into durations; the others run into the one you pick, which drains as the time runs and rings. `Stopwatch` buds a Lap button from Start, and every lap is a drop that lands in the lap count. `VoiceNote` records from the microphone: your voice swells the Stop button, and the take becomes a note that fills as it plays. `AddToBag` sends a drop from the button into the count beside it. `useBudOff` is that drop on its own, from any element into any other. `Morph` now keeps a button's identity across states when it has the same `data-morph` name, and draws filled caps as levels."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**`VoiceNote` never leaves the microphone open** (BUG-69). Two presses on the microphone before the browser granted it opened two streams and closed only one, so the recording light stayed on; leaving the page while it was still asking did the same. The second press is now ignored, and a stream granted after the component let go is closed straight away."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

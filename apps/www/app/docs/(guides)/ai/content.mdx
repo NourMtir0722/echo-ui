@@ -1,0 +1,144 @@
+import { AgentBrief, EchoBlock, HOMEPAGE, HostedMcpUrl, InitLine, PreRelease } from "@/components/guides/live";
+
+# For AI agents
+
+<PreRelease />
+
+Echo is built to be used through a coding agent. In a project, you don't brief it or connect
+anything: `init` makes the project tell the agent it's an Echo project, and gives it a way to ask
+and a check that catches it when it drifts.
+
+<InitLine />
+
+## Which way in
+
+| Where you work | What to use |
+| --- | --- |
+| A project, with an agent that runs commands (Claude Code, Codex, Cursor, v0, Bolt) | `init`: the Echo block, the skills, the check hook and the Stop gate. The rest of this page. |
+| A chat in Claude or ChatGPT | The [plugin](/docs/plugin): the hosted server and Echo's three skills, in one install. |
+| A tool that connects only to an MCP server on the web (Lovable, Claude Design, ChatGPT on the web) | The [hosted server](/docs/mcp#hosted-for-tools-without-a-terminal): the tools, without the skills. |
+| A tool that only takes text | [`llms.txt`](/llms.txt), a component's **Copy for AI agent**, or a [`DESIGN.md`](/generator) from the generator. |
+
+## What the agent reads
+
+`init` writes a short Echo block into `CLAUDE.md` or `AGENTS.md`, whichever your project has.
+Claude Code, Codex and Cursor read those at the start of every session, on their own. It's the whole
+of it, between Echo's markers:
+
+<EchoBlock />
+
+More goes in with it: `DESIGN.md`, this project's look in Echo's terms; a hook that runs Echo's
+check on every file the agent writes or edits; and three skills. The Echo skill has the steps for
+building a screen from Echo's reference screens, and for changing one setting of the look with
+`style set`. Design Eye reads a moodboard into a style, and Style Fit picks the style a product
+wears ([Styles](/docs/styles)). [What Echo puts in your project](/docs/in-your-project) lists all
+of it, and how each one comes back out, and [The workflow](/docs/workflow) shows them in use.
+
+## How it asks
+
+Before it uses a component, the agent asks the CLI, several questions in one call. The answers
+come from a copy of the catalog kept in the project, so they're instant and work offline.
+
+```sh
+npx echo-ui-cli which "a settings toggle" "confirm a delete" "an image carousel"
+npx echo-ui-cli docs switch alert-dialog
+```
+
+`which` names the item for each job, and says plainly when Echo has nothing for it yet: a carousel
+today, which is coming soon. `docs` gives each item's props, a working use with imports that resolve in your
+project, what it needs for accessibility, and what not to do.
+
+## How it's caught
+
+```sh
+npx echo-ui-cli check
+```
+
+The hook runs it after every edit, and the agent gets what it finds straight back: a colour
+written by hand, a raw `<button>` where Echo has HardwareButton, a prop a component doesn't take,
+a control without a name, a `div` with a click and no keyboard. Each line says the Echo way to do
+it. `check` exits with 1 when it finds something, so it can run in CI too; nothing requires it.
+The hook runs in Claude Code. In Codex and Cursor, the Echo block tells the agent to run `check`
+itself after changing UI.
+
+Some things show only once the page runs: a colour as the browser paints it, a control named at
+runtime, text against whatever ends up behind it. `<EchoCheck />`, put once in the root layout,
+prints an `Echo check ·` line to the browser console for each, in development, and the skill tells
+the agent to read them. Next.js 16's dev server prints them in its terminal too. With no browser,
+`check --url` runs the same check headless:
+
+```sh
+npx echo-ui-cli check --url http://localhost:3000/invoices
+```
+
+And a screen can pass every rule and still look wrong: keys at three heights, a feature cut off with
+"…", two cards in three columns, a glow on a button. The design tests measure those on the rendered
+page, and axe runs its WCAG A and AA rules on the same page, for what the agent wrote outside Echo's
+parts. In Claude Code the agent can't call the screen done until they pass: when it tries to stop,
+a [Stop gate](/docs/checks#the-stop-gate) runs them on the pages it changed and hands back what they
+find, each with the one change that fixes it.
+
+```text
+Echo's tests found 2 things to fix on /invoices before this is done:
+
+/invoices  alignment  div.echo-hw "Send": "Send" sits 312px from where the rest of its column starts, and isn't centred in it either. Start it where the content starts, under the title (an Echo Card's footer does), or centre it if everything above it is centred. Change only where the action sits, not the action, the text or the colours.
+/invoices  icons  svg: the icons in this navigation are different sizes: "Clients"'s is 20px and the rest 16px. Make it 16px like the others (`--echo-icon-*` has the steps). Change only that icon's size.
+```
+
+Elsewhere, [`npx echo-ui-cli test`](/docs/cli#test) runs them, and the Echo block tells Codex and
+Cursor to run it last.
+
+[Watch the running page](/docs/installation#watch-the-running-page) has what it finds.
+
+## Tools without a terminal
+
+Where `init` can't run, the same records are published in forms you can hand an agent yourself.
+They are generated from the same source as these pages, so an agent and a person reading about a
+component get the same description, props and anti-patterns.
+
+| Use | When |
+| --- | --- |
+| **Copy for AI agent** | You are working on one component. The button on its page copies its full record as markdown; paste it into the chat. |
+| [`/llms.txt`](/llms.txt) | The agent needs the overview: what Echo is, the setup, and one line per item. Small enough to paste. |
+| [`/llms-full.txt`](/llms-full.txt) | The agent should know everything. The overview plus every item's full record. |
+| [`/e/index.json`](/e/index.json) | You are building a tool and need versions. Every item, its version and its dependencies. |
+| [`/r/catalog.json`](/r/catalog.json) | You are building a tool and need the docs. Structured data for every item and every token. |
+| [MCP server](/docs/mcp) | The agent should look things up itself: components, the check, and styles. Run it on your machine, or connect your tool to the hosted one. |
+
+All of them are published at <code>{HOMEPAGE}</code>, so an agent that can fetch URLs can be given
+the address instead of the content.
+
+### In each tool
+
+What each one can take, checked against its own documentation in September and October 2026:
+
+| Tool | What works |
+| --- | --- |
+| **ChatGPT, claude.ai** | No terminal. Install Echo's [plugin](/docs/plugin), or add Echo's hosted MCP server as a custom connector (a remote MCP server) for the tools alone: the agent finds components and checks its code, and makes, picks and wears a style with you in the chat. The build then moves to your code tool, where `npx echo-ui-cli init --style <name>` sets the project up in that style. |
+| **v0** | It has a terminal. Run `npx echo-ui-cli init` there, or ask v0 to, then `add` what you need. v0 doesn't say it reads `AGENTS.md`, so paste Echo's block from it into one of v0's Instructions. |
+| **Bolt** | It has a terminal too: `init`, then `add`. Upload the skill `init` writes, `.claude/skills/echo-ui/SKILL.md`, as a Bolt skill. |
+| **Lovable** | No terminal. Download [`DESIGN.md`](/generator) for your seed and paste it into Project knowledge, and put the theme's CSS in the project. Or run `init` and `add` on your own machine, in the repository Lovable syncs with GitHub, and push: Lovable reads the Echo block in `AGENTS.md` from then on. |
+| **Claude Design** | It doesn't run code. In Claude Code, in a project with Echo installed, `/design-sync` brings Echo's tokens and components in; or upload `DESIGN.md`. It hands the work back to Claude Code, where the CLI and its check run. |
+
+The generator's `DESIGN.md` opens by telling an agent that does have a terminal to run `init`
+instead, with your seed, so the file never replaces the components. Each of these connects only to
+MCP servers hosted on the web, so give them Echo's hosted one, <HostedMcpUrl />: the same tools as
+`npx echo-ui-mcp`, with nothing to install and no account. The [MCP server](/docs/mcp) page has the
+tools and the setup.
+
+### Briefing an agent by hand
+
+Start with this. It is the text the MCP server sends before any tool call:
+
+<AgentBrief />
+
+Then, for the task at hand:
+
+- **Name the components.** "Use Echo's Modal and Field" gets better results than "make a dialog".
+- **Ask it to read before writing** — the component record, or `get_component` — especially the
+  anti-patterns.
+- **Keep it on the tokens.** Every colour is a `var(--echo-*)` role and every duration is a motion
+  token; a hex code or a `300ms` in its output is a sign it stopped reading.
+- **Check the install.** Components come from `npx echo-ui-cli add …`, never `npm install`, and the
+  project has to be [set up](/docs/installation#set-the-project-up) first. The one npm package is
+  `echo-ui-core`, the grammar every component imports.

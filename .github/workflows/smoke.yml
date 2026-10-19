@@ -1,0 +1,53 @@
+# The production smoke check, against what is SERVED and PUBLISHED.
+#
+# Everything in `ci.yml` validates the working tree. This asks what a user
+# actually meets: `/e/index.json`, the `echo-ui-core` range npm has to satisfy,
+# the published packages' `bin`, and every site route a README links.
+#
+# A red run is the finding, not noise to be silenced.
+#
+# Not wired to `push`, because `main` landing is not a deploy. The release
+# workflow runs the same check straight after it deploys; this schedule catches
+# drift between releases, and a site deployed by hand (`pnpm deploy:site`).
+name: Production smoke
+
+on:
+  schedule:
+    # 07:00 UTC daily. A contract that breaks at 3am should be a finding by
+    # breakfast, not whenever someone next opens the site.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The expected release is the one this build would deploy, not a number
+      # re-derived from the changelog — so the registry has to exist first.
+      - name: Build the registry
+        run: pnpm build:registry
+
+      - name: Smoke check
+        run: pnpm smoke

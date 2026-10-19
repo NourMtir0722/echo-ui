@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "name": "action-fan",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "ActionFan",
+  "description": "One action opens into its choices, which bud from it one after another; the × folds them back. Choosing one does it and folds the fan. For two to four choices that belong to one verb — share, export, add.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "morph"
+  ],
+  "files": [
+    {
+      "path": "action-fan/action-fan.tsx",
+      "sha256": "08cf7b8cbc889dd3705cb5b0dbe96b8a8afcbd46d8967e42c1074575e497b395",
+      "content": "\"use client\";\n\n/**\n * ActionFan. One HardwareButton opens into its choices — HardwareButtons in\n * a Morph — and an icon-only × that folds them back in. Choosing one does it\n * and folds the fan.\n *\n * The first choice takes focus as the fan opens; Escape folds it.\n */\nimport { useState, type ReactNode } from \"react\";\nimport type { MorphFeelName } from \"echo-ui-core/tactile\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Morph } from \"../morph\";\n\nexport interface ActionFanAction {\n  label: string;\n  icon?: ReactNode;\n  onSelect: () => void;\n}\n\nexport interface ActionFanProps {\n  /** The whole's label, e.g. \"Share\". */\n  children: ReactNode;\n  icon?: ReactNode;\n  actions: ActionFanAction[];\n  /** Accessible name of the × that folds the fan. */\n  closeLabel?: string;\n  open?: boolean;\n  onOpenChange?: (open: boolean) => void;\n  feel?: MorphFeelName;\n  size?: \"sm\" | \"md\" | \"lg\";\n  /** Which edge stays put while the choices spread. */\n  align?: \"center\" | \"start\" | \"end\";\n  className?: string;\n}\n\nconst Close = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" aria-hidden>\n    <path d=\"M4 4l8 8M12 4l-8 8\" />\n  </svg>\n);\n\nexport function ActionFan({\n  children,\n  icon,\n  actions,\n  closeLabel = \"Close\",\n  open: openProp,\n  onOpenChange,\n  feel,\n  size,\n  align,\n  className,\n}: ActionFanProps) {\n  const [inner, setInner] = useState(false);\n  const open = openProp ?? inner;\n  const setOpen = (next: boolean) => {\n    if (openProp === undefined) setInner(next);\n    onOpenChange?.(next);\n  };\n\n  return (\n    <Morph\n      feel={feel}\n      align={align}\n      className={className}\n      label={open && typeof children === \"string\" ? children : undefined}\n      onEscape={open ? () => setOpen(false) : undefined}\n    >\n      {open ? (\n        <>\n          {actions.map((a) => (\n            <HardwareButton\n              key={a.label}\n              size={size}\n              icon={a.icon}\n              onClick={() => {\n                a.onSelect();\n                setOpen(false);\n              }}\n            >\n              {a.label}\n            </HardwareButton>\n          ))}\n          <HardwareButton size={size} icon={<Close />} iconOnly aria-label={closeLabel} onClick={() => setOpen(false)} />\n        </>\n      ) : (\n        <HardwareButton size={size} icon={icon} onClick={() => setOpen(true)}>\n          {children}\n        </HardwareButton>\n      )}\n    </Morph>\n  );\n}\n"
+    },
+    {
+      "path": "action-fan/index.ts",
+      "sha256": "5a9736412b464df036550dba3be986c6fd39c30a6eea69bb6627a12927d92371",
+      "content": "export { ActionFan } from \"./action-fan\";\nexport type { ActionFanAction, ActionFanProps } from \"./action-fan\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The Motion gallery's first four: your own buttons, flowing into the buttons you need next.** `Morph` is the base. Wrap your HardwareButtons in it and render whatever state you like with plain React: when the buttons inside change, the old ones flow into the new ones as one liquid body. One becoming several pinches at the waist and comes apart; several becoming one folds; the same number move and resize in place, so a label that changes width flows to its new size. At rest there is nothing but your buttons; the body is drawn only during the change, in the cap's own material, with the labels riding on it, and it fades off the real buttons when it lands. Built on it: `DoneButton` (\"Mark as done\" becomes a lit Done and an Undo), `ConfirmButton` (Delete becomes Cancel and a primary Delete, then \"Deleted\", which flows back) and `ActionFan` (Share becomes its choices and a × that folds them in). Focus moves to the first new button when the one it was on goes away, Escape calls `onEscape`, the new state is announced, and reduced motion swaps the buttons in place. They need `echo-ui-core` 0.2.0, which adds the morph engine (`MorphSurface`, `morphFeels`, `outline`, `apart`) to `echo-ui-core/tactile`. They're live at `/motion`."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

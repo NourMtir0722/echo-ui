@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "name": "steps",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Steps",
+  "description": "How far through a sequence you are, as LED stations wired together: done stations stay lit but dim, the current one blooms, upcoming ones are dead plastic. An ordered list inside a labelled group, with aria-current on the current station and the done state stated in text — a colour is not a message.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "steps/steps.css",
+      "sha256": "01ecddcb71c86bb2198cc7abc466e59e2bb9bc914071a03533af4208ab2d675f",
+      "content": "/**\n * Steps. Stations on a groove, in the controls'\n * own language (2026-09-18): upcoming is an empty hole (the radio unchosen),\n * current is the hole with a lit pip (the radio chosen), done is a lit cap\n * with a tick (the checkbox checked). Three states, three SHAPES, so the\n * state never rests on colour. Composes var(--echo-*).\n */\n/*\n * As a grid or flex item it would floor at its content width; the list inside\n * declares its own scrolling, so the root is free to shrink with its container.\n */\n.echo-steps {\n  min-width: 0;\n}\n\n.echo-steps__list {\n  display: flex;\n  align-items: flex-start;\n  /*\n   * A stepper is one row, like the segmented control (see segmented.css): when\n   * it runs out of room it scrolls rather than wrapping into a shape that no\n   * longer reads as one sequence. Every step stays reachable, and the arrow\n   * keys scroll the focused one into view.\n   */\n  min-width: 0;\n  overflow-x: auto;\n  overscroll-behavior-x: contain;\n  scrollbar-width: none;\n  margin: 0;\n  padding: 0;\n  list-style: none;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n}\n\n.echo-steps__list::-webkit-scrollbar {\n  display: none;\n}\n\n.echo-steps__step {\n  position: relative;\n  display: flex;\n  flex: 1;\n  flex-direction: column;\n  align-items: center;\n  gap: var(--echo-space-4);\n  min-width: 0;\n  padding: 0 var(--echo-space-4);\n  text-align: center;\n}\n\n/*\n * The wire between stations — a recessed groove that STOPS short of each\n * marker. It used to run centre to centre, under both markers, and showed\n * through their insets as a line cutting the pips.\n *\n * Markers are 22px; the wire leaves a 6px gap either side: it starts at the\n * previous marker's edge (−50% + 11px + 6px) and ends at this one's\n * (50% + 11px + 6px), both measured from this step's centre.\n */\n.echo-steps__step:not(:first-child)::before {\n  content: \"\";\n  position: absolute;\n  top: 10px;\n  inset-inline-start: calc(-50% + 17px);\n  inset-inline-end: calc(50% + 17px);\n  height: 2px;\n  border-radius: var(--echo-radius-full);\n  background: color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black));\n  box-shadow: 0 1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1)));\n}\n\n/* A finished stretch is lit — the same accent as everything lit. The light\n   runs along the wire when a step is reached, from the step behind it. */\n.echo-steps__step[data-state=\"complete\"]::before,\n.echo-steps__step[data-state=\"current\"]::before {\n  background:\n    linear-gradient(var(--echo-primary-cap-mid), var(--echo-primary-cap-mid)) no-repeat left / 100% 100%,\n    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black));\n  box-shadow: none;\n  animation: echo-steps-wire var(--echo-duration-sweep) var(--echo-ease-sweep) both;\n}\n.echo-steps__step[data-state=\"complete\"]:dir(rtl)::before,\n.echo-steps__step[data-state=\"current\"]:dir(rtl)::before {\n  background-position: right;\n}\n@keyframes echo-steps-wire {\n  from {\n    background-size: 0% 100%, auto;\n  }\n}\n\n/* Upcoming: an empty recessed hole with a bezel, like the radio. */\n.echo-steps__marker {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  box-sizing: border-box;\n  width: 22px;\n  height: 22px;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-drawn-hollow, linear-gradient(\n    160deg,\n    color-mix(in oklab, var(--echo-well) 72%, var(--echo-shade-ink, black)),\n    color-mix(in oklab, var(--echo-lcd) 88%, var(--echo-shade-ink, black))\n  ));\n  box-shadow:\n    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),\n    0 0 0 1px color-mix(in oklab, var(--echo-cap) 85%, transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n.echo-steps__pip {\n  width: 10px;\n  height: 10px;\n  border-radius: var(--echo-radius-full);\n  background: transparent;\n}\n\n/* Current: the hole with a lit pip — the RadioGroup's chosen state. */\n.echo-steps__step[data-state=\"current\"] .echo-steps__pip {\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));\n  /* It blooms into its hole once the wire's light arrives. */\n  animation: echo-steps-bloom var(--echo-duration-pop) var(--echo-ease-pop) var(--echo-duration-sweep) both;\n}\n@keyframes echo-steps-bloom {\n  from {\n    transform: scale(0);\n  }\n}\n\n/* Complete: a lit cap with a cream tick — the Checkbox's checked state. */\n.echo-steps__step[data-state=\"complete\"] .echo-steps__marker {\n  color: var(--echo-primary-cap-ink, var(--echo-text));\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),\n    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n/* Finishing a step pops its cap, and the tick draws in one stroke. */\n.echo-steps__step[data-state=\"complete\"] .echo-steps__marker {\n  animation: echo-steps-pop var(--echo-duration-pop) var(--echo-ease-pop);\n}\n@keyframes echo-steps-pop {\n  from {\n    transform: scale(0.8);\n  }\n}\n\n.echo-steps__check {\n  width: 13px;\n  height: 13px;\n  stroke-dasharray: 1;\n  animation: echo-steps-tick var(--echo-duration-sweep) ease-out var(--echo-duration-tick) both;\n}\n@keyframes echo-steps-tick {\n  from {\n    stroke-dashoffset: 1;\n  }\n}\n\n.echo-steps__label {\n  font-size: var(--echo-text-xs);\n  line-height: var(--echo-leading-snug, 1.4);\n  color: var(--echo-text-dim);\n}\n\n.echo-steps__step[data-state=\"current\"] .echo-steps__label {\n  color: var(--echo-text);\n  font-weight: var(--echo-weight-semibold, 600);\n}\n\n/* Visually hidden, still announced — \"Connect completed\". */\n.echo-steps__sr {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  margin: -1px;\n  padding: 0;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n  border: 0;\n}\n\n/* The same selectors as the rules that animate — a plainer one loses to them. */\n@media (prefers-reduced-motion: reduce) {\n  .echo-steps__step[data-state=\"complete\"]::before,\n  .echo-steps__step[data-state=\"current\"]::before,\n  .echo-steps__step[data-state=\"current\"] .echo-steps__pip,\n  .echo-steps__step[data-state=\"complete\"] .echo-steps__marker,\n  .echo-steps__check {\n    animation: none;\n  }\n}\n\n/*\n * Forced colors (Windows High Contrast) drops gradients and backgrounds —\n * which were all that told the current step from an upcoming one (BUG-49).\n * System colors draw the state instead: a rim on every hole, the current pip\n * and the finished stretches of wire in Highlight, the rest of the wire in\n * GrayText.\n */\n@media (forced-colors: active) {\n  .echo-steps__marker {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-steps__step:not(:first-child)::before {\n    background: GrayText;\n  }\n  .echo-steps__step[data-state=\"complete\"]::before,\n  .echo-steps__step[data-state=\"current\"]::before {\n    background: Highlight;\n  }\n  .echo-steps__step[data-state=\"current\"] .echo-steps__pip {\n    background: Highlight;\n  }\n  .echo-steps__step[data-state=\"complete\"] .echo-steps__marker {\n    border-color: Highlight;\n    color: Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "steps/steps.tsx",
+      "sha256": "c7ae44f600337994efab2ca03d6d324beea6d4f39425965c3eb7086bef10a654",
+      "content": "/**\n * Steps. How far through a sequence you are, as a\n * row of LED stations wired together.\n *\n * a11y: an ordered list inside a labelled group. The current station carries\n * aria-current=\"step\"; the done/upcoming distinction is stated in text for\n * screen readers rather than left to the lit/unlit pip, because a colour is\n * not a message.\n *\n * Static; consumes only var(--echo-*) via steps.css.\n */\nimport type { HTMLAttributes } from \"react\";\nimport \"./steps.css\";\n\nexport type StepState = \"complete\" | \"current\" | \"upcoming\";\n\nexport interface StepsProps extends HTMLAttributes<HTMLDivElement> {\n  steps: string[];\n  /** 0-based index of the current step. */\n  current: number;\n  /** Name for the group, e.g. \"Setup\". Required — a bare list of stations\n   *  says nothing about what sequence it is. */\n  label: string;\n  /** Word appended for screen readers on finished steps. Default \"completed\". */\n  completeLabel?: string;\n}\n\nexport function Steps({\n  steps,\n  current,\n  label,\n  completeLabel = \"completed\",\n  className,\n  ...rest\n}: StepsProps) {\n  if (steps.length === 0) return null;\n\n  return (\n    <div\n      className={[\"echo-steps\", className].filter(Boolean).join(\" \")}\n      role=\"group\"\n      aria-label={label}\n      {...rest}\n    >\n      <ol className=\"echo-steps__list\">\n        {steps.map((step, i) => {\n          const state: StepState = i < current ? \"complete\" : i === current ? \"current\" : \"upcoming\";\n          return (\n            <li\n              key={`${step}-${i}`}\n              className=\"echo-steps__step\"\n              data-state={state}\n              aria-current={state === \"current\" ? \"step\" : undefined}\n            >\n              <span className=\"echo-steps__marker\" aria-hidden=\"true\">\n                {state === \"complete\" ? (\n                  <svg className=\"echo-steps__check\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2.4\" strokeLinecap=\"round\" strokeLinejoin=\"round\">\n                    <path d=\"M3.5 8.5l3 3 6-7\" pathLength={1} />\n                  </svg>\n                ) : (\n                  <span className=\"echo-steps__pip\" />\n                )}\n              </span>\n              <span className=\"echo-steps__label\">\n                {step}\n                {state === \"complete\" ? (\n                  <span className=\"echo-steps__sr\"> {completeLabel}</span>\n                ) : null}\n              </span>\n            </li>\n          );\n        })}\n      </ol>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "steps/index.ts",
+      "sha256": "45e10693f02f0ade9d1d3995a7ec26c5fef9852023a136612f4e5f00a15645b7",
+      "content": "export { Steps } from \"./steps\";\nexport type { StepsProps, StepState } from \"./steps\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+/**
+ * SplitFlap. Flaps of the neutral cap's plastic in a recessed well, split by
+ * a dark seam; the type is the machine face. Each flap is two halves and two
+ * leaves that turn on the seam.
+ */
+.echo-split-flap {
+  --flap-w: 44px;
+  --flap-h: 64px;
+  --flap-font: 44px;
+  position: relative;
+  display: inline-flex;
+  gap: var(--echo-space-2);
+  padding: var(--echo-space-3);
+  border-radius: calc(var(--echo-radius-md) + 4px);
+  perspective: 400px;
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+.echo-split-flap__face {
+  display: inline-flex;
+  gap: var(--echo-space-2);
+}
+.echo-split-flap[data-size="sm"] {
+  --flap-w: 30px;
+  --flap-h: 44px;
+  --flap-font: 30px;
+}
+.echo-split-flap[data-size="lg"] {
+  --flap-w: 58px;
+  --flap-h: 84px;
+  --flap-font: 60px;
+}
+
+.echo-split-flap__flap {
+  position: relative;
+  inline-size: var(--flap-w);
+  block-size: var(--flap-h);
+  border-radius: var(--echo-radius-md);
+  font-family: var(--echo-font-machine);
+  font-size: var(--flap-font);
+  font-weight: var(--echo-weight-bold, 700);
+  color: var(--echo-text);
+  box-shadow: 0 4px 8px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);
+}
+
+.echo-split-flap__half {
+  position: absolute;
+  inset-inline: 0;
+  block-size: 50%;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+.echo-split-flap__half b {
+  position: absolute;
+  inset-inline: 0;
+  block-size: var(--flap-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.echo-split-flap__half[data-half="top"] {
+  inset-block-start: 0;
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+  transform-origin: 50% 100%;
+  background: linear-gradient(180deg, var(--echo-cap-highlight), var(--echo-cap));
+}
+.echo-split-flap__half[data-half="bottom"] {
+  inset-block-end: 0;
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
+  transform-origin: 50% 0%;
+  background: linear-gradient(180deg, var(--echo-cap), var(--echo-cap-shadow));
+  border-block-start: var(--echo-border-hairline, 1px) solid var(--echo-seam);
+}
+.echo-split-flap__half[data-half="bottom"] b {
+  inset-block-start: calc(var(--flap-h) / -2);
+}
+.echo-split-flap__leaf {
+  z-index: var(--echo-z-raised, 1);
+}
+
+.echo-split-flap__live {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  .echo-split-flap__half {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+}

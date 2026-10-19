@@ -1,0 +1,32 @@
+/**
+ * Divider. A panel seam — a hairline with a faint
+ * light lip, matching the chassis seams. Composes var(--echo-*).
+ */
+.echo-divider {
+  border: 0;
+  margin: 0;
+  background: transparent;
+  flex: none;
+}
+
+.echo-divider[data-orientation="horizontal"] {
+  width: 100%;
+  height: 2px;
+  /* Drawn, one straight ink line. */
+  background: var(--echo-drawn-rule, linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--echo-seam) 15%,
+    var(--echo-seam) 85%,
+    transparent 100%
+  ));
+  box-shadow: var(--echo-shadow-hairline, 0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1))));
+}
+
+.echo-divider[data-orientation="vertical"] {
+  width: 2px;
+  align-self: stretch;
+  min-height: 1em;
+  background: var(--echo-drawn-ink, linear-gradient(180deg, transparent 0%, var(--echo-seam) 50%, transparent 100%));
+  box-shadow: 1px 0 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));
+}

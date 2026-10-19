@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "name": "count-badge",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "CountBadge",
+  "description": "A number worth noticing — the lit sibling of Badge. Badge names a state; CountBadge counts a thing. It disappears at zero unless told otherwise, caps its face at max while still announcing the true count, and stays round at one digit.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "count-badge/count-badge.css",
+      "sha256": "8bbfc899f8f5e284e38af124cf817c71cd21a1dab865e3714c1f138371a4314a",
+      "content": "/**\n * CountBadge. A lit pill sized to stay round at one\n * digit and stretch at three. Composes var(--echo-*).\n */\n.echo-count-badge {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  box-sizing: border-box;\n  min-width: 20px;\n  height: 20px;\n  padding: 0 var(--echo-space-3);\n  border-radius: var(--echo-radius-full);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-2xs);\n  font-weight: var(--echo-weight-bold, 700);\n  font-variant-numeric: tabular-nums;\n  line-height: var(--echo-leading-none, 1);\n}\n\n/* The primary cap, like every lit control — not a second, lighter accent. */\n.echo-count-badge[data-variant=\"accent\"] {\n  color: var(--echo-primary-cap-ink, var(--echo-text));\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  /* A lit top edge, no halo — the library throws no outer glows. */\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.35 * var(--echo-gloss, 1))),\n    inset 0 -1px 0 color-mix(in oklab, var(--echo-cast-ink, black) calc(0.25 * var(--echo-shade, 1) * 100%), transparent);\n}\n\n.echo-count-badge[data-variant=\"neutral\"] {\n  color: var(--echo-text);\n  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 100%);\n  box-shadow: var(\n    --echo-shadow-chip,\n    inset 0 1px 0 rgb(255 255 255 / calc(0.15 * var(--echo-gloss, 1))),\n    0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent)\n  );\n}\n\n/*\n * Motion. The badge pops into place on a spring when it appears, and each\n * new count rolls up into the face — so a number going up is seen to go up.\n */\n.echo-count-badge {\n  animation: echo-count-pop var(--echo-duration-pop) var(--echo-ease-pop);\n}\n.echo-count-badge__num {\n  display: inline-block;\n  animation: echo-count-roll var(--echo-duration-pop) var(--echo-ease-pop);\n}\n@keyframes echo-count-pop {\n  from {\n    transform: scale(0);\n  }\n}\n@keyframes echo-count-roll {\n  from {\n    opacity: 0;\n    transform: translateY(70%);\n  }\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-count-badge,\n  .echo-count-badge__num {\n    animation: none;\n  }\n}\n"
+    },
+    {
+      "path": "count-badge/count-badge.tsx",
+      "sha256": "6e0402e2d994af8e98353b111612d68669f56a7c27cef96e372c2e22626053a0",
+      "content": "/**\n * CountBadge — a number worth noticing. The lit\n * sibling of Badge: where Badge names a state, CountBadge counts a thing.\n *\n * Static; consumes only var(--echo-*) via count-badge.css.\n */\nimport type { HTMLAttributes } from \"react\";\nimport \"./count-badge.css\";\n\n/**\n * Renamed from `CountBadgeTone` when `tone` became Echo's status vocabulary.\n *\n * This was never a tone. `tone` is what a thing MEANS — `info`, `active`,\n * `warn`, `danger` (`EchoTone`) — and \"accent or neutral\" is a colour choice,\n * which is what `variant` already means everywhere else in Echo\n * (`PanelVariant`, `SkeletonVariant`, `HardwareButtonVariant`). A count badge\n * has no status to report; it reports a number.\n */\nexport type CountBadgeVariant = \"accent\" | \"neutral\";\n\nexport interface CountBadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, \"children\"> {\n  count: number;\n  /**\n   * What the number counts, e.g. \"unread messages\". The accessible name\n   * becomes \"3 unread messages\" — a bare \"3\" tells a screen-reader user\n   * nothing.\n   */\n  label: string;\n  /** Cap the display; above it renders as `${max}+`. Default 99. */\n  max?: number;\n  /** Render at zero instead of disappearing. Default false. */\n  showZero?: boolean;\n  variant?: CountBadgeVariant;\n}\n\nexport function CountBadge({\n  count,\n  label,\n  max = 99,\n  showZero = false,\n  variant = \"accent\",\n  className,\n  ...rest\n}: CountBadgeProps) {\n  if (count <= 0 && !showZero) return null;\n\n  const clamped = count > max;\n  const display = clamped ? `${max}+` : String(count);\n  // Say the real number even when the face is capped: \"127 unread messages\"\n  // is useful, \"99+ unread messages\" is a rendering detail.\n  const spoken = `${count} ${label}`;\n\n  return (\n    <span\n      className={[\"echo-count-badge\", className].filter(Boolean).join(\" \")}\n      data-variant={variant}\n      data-capped={clamped ? \"\" : undefined}\n      role=\"status\"\n      aria-label={spoken}\n      {...rest}\n    >\n      {/* Keyed by the number, so a new count mounts fresh and rolls in. */}\n      <span key={display} className=\"echo-count-badge__num\" aria-hidden=\"true\">\n        {display}\n      </span>\n    </span>\n  );\n}\n"
+    },
+    {
+      "path": "count-badge/index.ts",
+      "sha256": "d02f585561866dd36ea56d66fa8f0c8d893667fc8aa36d6ab6dc152c0b453618",
+      "content": "export { CountBadge } from \"./count-badge\";\nexport type { CountBadgeProps, CountBadgeVariant } from \"./count-badge\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "breaking"
+      ],
+      "summary": "**Breaking: `tone` means one thing now.** It meant three. `echo-banner` used it for semantic status (`info`/`active`/`warn`/`danger`), `echo-toast` for activity state (`\"default\" | \"active\"`), and `echo-count-badge` for a colour choice (`\"accent\" | \"neutral\"`). Learning `tone` on one component taught you nothing about the next, and Toast's `\"active\"` and Banner's `\"active\"` were not the same idea."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

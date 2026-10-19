@@ -1,0 +1,81 @@
+/**
+ * Cloudflare Workers — static assets only.
+ *
+ * WHY NOT vinext / OpenNext. Cloudflare's default guidance for Next.js is
+ * vinext, which reimplements the Next runtime on Workers so server rendering
+ * works. This app has no server rendering to port: `next build` reports all 76
+ * routes as static or SSG, with no dynamic route anywhere. It is a prerendered
+ * docs site plus a folder of registry JSON, so it deploys as files — which is
+ * fewer moving parts, no framework shim, and nothing to keep in sync with
+ * Next's release cadence. If a route ever genuinely needs a server, that is the
+ * moment to revisit vinext, and this comment is the trigger.
+ *
+ * `not_found_handling: "404-page"` serves the exported 404.html for unknown
+ * paths. `dynamicParams = false` on both dynamic routes means anything not
+ * prerendered is genuinely not ours.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "echo-ui",
+  "compatibility_date": "2026-09-11",
+  /*
+   * One canonical URL. With these unset, Cloudflare also serves the site at
+   * the account's own workers.dev address and at a preview URL per deployment —
+   * three public addresses for one site, which splits search ranking and, worse
+   * for a registry, gives people a second host to paste into their
+   * `components.json`. An install pinned to a workers.dev URL keeps working
+   * right up until it doesn't.
+   */
+  "workers_dev": false,
+  "preview_urls": false,
+
+  /*
+   * Declared here, not just clicked in the dashboard. Adding the custom domain
+   * through the UI works, but it leaves the binding as account state that no
+   * checkout of this repo knows about — `wrangler deploy` reported "No targets
+   * deployed" precisely because the config described no route. With this, the
+   * domain is reproducible: a fresh clone deploys to the same place.
+   */
+  "routes": [{ "pattern": "echo-ui.com", "custom_domain": true }],
+
+  /*
+   * ONE DEPLOY SHIPS THE DOCS AND THE REGISTRY, AND WHEN TO SPLIT THEM.
+   *
+   * `./out` holds the marketing site, the guides, AND `/e/` — the contract
+   * `npx echo-ui-cli` installs from, the one carrying "once a URL is public,
+   * it stays". So a broken MDX page is a registry outage, and a copy tweak and
+   * a registry publish are the same action. That coupling is accepted
+   * deliberately: splitting means a second deploy target, a
+   * second set of headers and a second thing to keep in sync, run by one
+   * person, and the cost is theoretical until someone depends on `/e/`.
+   *
+   * It is accepted WITH mitigations, which live in `scripts/prune-fixtures.mjs`
+   * (Playwright's fixture routes never reach this directory, and an export with
+   * no usable `e/index.json` is refused), in `scripts/released-only.mjs` (a
+   * deploy with a component at a version no release froze is refused: the
+   * docs can't publish registry files a release hasn't) and in the
+   * post-deploy smoke check.
+   *
+   * SPLIT WHEN EITHER IS TRUE. Pinned here rather than left to memory, in the
+   * style of the vinext note above:
+   *
+   *   1. A docs change needs to ship on a different cadence than a registry
+   *      change — someone waits on a copy edit to publish a component, or the
+   *      reverse.
+   *   2. A docs build breaks the registry ONCE. Not "could": the first time
+   *      `/e/` is unreachable because of something on the marketing side, the
+   *      cost stopped being theoretical and this note has been paid for.
+   *
+   * Splitting means a second Worker serving `public/e` with its own
+   * `_headers`, and `--registry` still pointing at whatever URL it answers on.
+   * Nothing in the `/e/` format assumes one host, which is what keeps this
+   * reversible.
+   */
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

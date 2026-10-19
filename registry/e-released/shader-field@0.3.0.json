@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "name": "shader-field",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "ShaderField",
+  "description": "The live brand field: a WebGL domain-warped fbm gradient sampled from the accent ramp, blooming toward the cursor, with animated grain and TPDF debanding. Reads the accent ramp from the CSS it sits in (or from a pinned theme mirror), so it relights with the seed like every other surface. Reduced motion draws one static frame; no WebGL falls back to the wrapper's CSS gradient; the GL context is released on unmount.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "shader-field/shader-field.css",
+      "sha256": "eb94ec572b9c17bf4b81c951f82ed45c12dbab57ab60e5b3c3774c391f3ed498",
+      "content": "/**\n * ShaderField. The wrapper carries a CSS gradient in\n * the accent ramp: it is what shows before the first frame paints, and the\n * permanent fallback where WebGL is unavailable or blocked.\n */\n.echo-shader-field {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  overflow: hidden;\n  background: radial-gradient(80% 100% at 30% 30%, var(--echo-accent-5), var(--echo-accent-7));\n}\n\n.echo-shader-field__canvas {\n  display: block;\n  width: 100%;\n  height: 100%;\n}\n"
+    },
+    {
+      "path": "shader-field/shader.ts",
+      "sha256": "8754fb2fae9d0a64b80bed277db38755167c32e9987ee46d67498e096776bae8",
+      "content": "/**\n * ShaderField GLSL. Kept in its own module so the\n * component file stays readable and the shader can be unit-checked as data.\n *\n * The field is an iterative domain warp (fbm of fbm of fbm, after Inigo\n * Quilez) — organic, non-repeating flow. Octaves are rotated between passes so\n * no axis artefacts show. Colour is sampled from the Echo accent ramp passed\n * in as uniforms, so the field relights with the seed like everything else.\n * Per-channel chromatic split, a cursor bloom that warps the flow toward the\n * pointer, and TPDF debanding + animated grain so the dark base never\n * posterises — the grain law, made live.\n */\n\nexport const VERT = \"attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }\";\n\nexport const FRAG = `\nprecision highp float;\nuniform vec2 uRes; uniform float uTime; uniform vec2 uMouse;\nuniform vec3 cVoid, cA, cB, cC;\n\nmat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }\nfloat hash(vec2 p){ p = fract(p * vec2(123.34, 345.45)); p += dot(p, p + 34.345); return fract(p.x * p.y); }\nfloat noise(vec2 p){\n  vec2 i = floor(p), f = fract(p);\n  float a = hash(i), b = hash(i + vec2(1.0,0.0)), c = hash(i + vec2(0.0,1.0)), d = hash(i + vec2(1.0,1.0));\n  vec2 u = f*f*(3.0 - 2.0*f);\n  return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);\n}\nfloat fbm(vec2 p){\n  float v = 0.0, a = 0.5;\n  mat2 m = rot(0.55);\n  for(int i = 0; i < 6; i++){ v += a * noise(p); p = m * p * 2.0 + 11.3; a *= 0.5; }\n  return v;\n}\n// the accent ramp sampled by a scalar field: deep → mid → glow → light\nvec3 pal(float x){\n  x = clamp(x, 0.0, 1.0);\n  vec3 c = mix(cVoid, cA, smoothstep(0.0, 0.5, x));\n  c = mix(c, cB, smoothstep(0.45, 0.78, x));\n  c = mix(c, cC, smoothstep(0.74, 1.0, x));\n  return c;\n}\n\nvoid main(){\n  vec2 uv = gl_FragCoord.xy / uRes.xy;\n  float asp = uRes.x / uRes.y;\n  vec2 p = vec2(uv.x * asp, uv.y) * 1.6;\n  vec2 m = vec2(uMouse.x * asp, uMouse.y) * 1.6;\n  float t = uTime * 0.06;\n\n  // ---- iterative domain warp ----\n  vec2 q = vec2(fbm(p + t), fbm(p + vec2(5.2, 1.3) - t));\n  vec2 r = vec2(fbm(p + 4.0*q + vec2(1.7, 9.2) + 0.7*t),\n                fbm(p + 4.0*q + vec2(8.3, 2.8) - 0.6*t));\n\n  // cursor bloom warps the flow field toward the pointer\n  float md = length(m - p);\n  r += (m - p) * 0.35 * exp(-md * 1.3);\n\n  float f = fbm(p + 4.0*r);\n\n  // ---- per-channel chromatic split (widens near the cursor) ----\n  float split = 0.035 + 0.05 * exp(-md * 2.0);\n  vec3 col = vec3(pal(f + split).r, pal(f).g, pal(f - split).b);\n\n  // depth: warp magnitude adds richness where the field folds\n  col = mix(col, col * 1.18, clamp(dot(r, r), 0.0, 1.0));\n\n  // hot bloom under the cursor (emissive)\n  col += (cC * 0.14 + cA * 0.20) * exp(-md * 3.0);\n\n  // let the deep folds sink toward the void so the field has real dark\n  col = mix(cVoid * 0.45, col, smoothstep(0.06, 0.62, f));\n  // vignette\n  col *= 1.0 - 0.28 * pow(length(uv - 0.5), 2.2);\n\n  // ---- grain + TPDF debanding (the anti-cheap finish) ----\n  float grain = hash(gl_FragCoord.xy * 0.7 + uTime * 60.0) - 0.5;\n  col += grain * 0.03;\n  float dz = hash(gl_FragCoord.xy + uTime) - hash(gl_FragCoord.xy + 7.1 - uTime);\n  col += dz * (1.5 / 255.0);\n\n  gl_FragColor = vec4(col, 1.0);\n}`;\n\n/** #RRGGBB (or #RGB) → normalised RGB triple for a GL uniform. */\nexport function hexToRgb(hex: string): [number, number, number] {\n  let h = hex.trim().replace(\"#\", \"\");\n  if (h.length === 3) h = h[0]! + h[0]! + h[1]! + h[1]! + h[2]! + h[2]!;\n  const n = Number.parseInt(h.slice(0, 6), 16);\n  if (!Number.isFinite(n)) throw new TypeError(`hexToRgb: not a hex colour: ${hex}`);\n  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];\n}\n"
+    },
+    {
+      "path": "shader-field/shader-field.tsx",
+      "sha256": "0430c718cb850f62d5db5a1ccca6f7ee7719b2673866ff2d56f03f3a4d1ebdf3",
+      "content": "\"use client\";\n\n/**\n * ShaderField — the live brand field. A domain-warped\n * fbm gradient in the Echo accent ramp that blooms toward the cursor, with\n * animated grain.\n *\n * WebGL cannot read CSS variables, so the colours have to reach the shader\n * as values. Pass `theme` (the JS mirror, `createEchoTheme().values`) to pin\n * them. Leave it out and the field reads the accent ramp from the CSS it sits\n * in — `--echo-accent-{2,3,5,7}` — and reads it again whenever a stylesheet\n * in <head>, or <html>'s class/style, changes. So a field on a page that is\n * reseeded at runtime follows the seed like every CSS-skinned component does,\n * instead of staying on the default seed's colour.\n *\n * Discipline: all WebGL lives in the effect, so this server-renders to an\n * empty canvas over a CSS gradient fallback; reduced motion draws ONE static\n * composed frame instead of running the loop; the GL context is explicitly\n * released on unmount (browsers cap live contexts, and route changes would\n * otherwise leak them).\n */\nimport { useEffect, useLayoutEffect, useRef, useState } from \"react\";\nimport type { CSSProperties } from \"react\";\nimport { createEchoTheme } from \"echo-ui-core/theme\";\nimport type { EchoTheme } from \"echo-ui-core/theme\";\nimport { VERT, FRAG, hexToRgb } from \"./shader\";\nimport \"./shader-field.css\";\n\nexport interface ShaderFieldProps {\n  /**\n   * Theme mirror driving the field colours. Omit it and the field follows the\n   * `--echo-accent-*` variables in scope (falling back to the default seed\n   * where there are none).\n   */\n  theme?: EchoTheme;\n  /**\n   * Accessible name. Omit (the default) and the field is decorative and\n   * hidden from assistive tech — which is almost always right for a\n   * background.\n   */\n  label?: string;\n  className?: string;\n  style?: CSSProperties;\n}\n\nconst defaultRamp = createEchoTheme({}, { quiet: true }).values.accentRamp;\n\n/** Ramp indices of the four stops the field samples: void → mid → glow → light. */\nconst STOPS = [6, 4, 2, 1] as const;\nconst HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;\n\n/** The four stops as declared in the CSS `el` sits in, or null if any is not a hex. */\nfunction readStops(el: Element): string[] | null {\n  const cs = getComputedStyle(el);\n  const stops = STOPS.map((i) => cs.getPropertyValue(`--echo-accent-${i + 1}`).trim());\n  return stops.every((v) => HEX.test(v)) ? stops : null;\n}\n\nexport function ShaderField({ theme, label, className, style }: ShaderFieldProps) {\n  const ref = useRef<HTMLDivElement>(null);\n  const [live, setLive] = useState<string[] | null>(null);\n\n  // No pinned theme: sample the CSS before first paint, then again whenever\n  // the page's theme can have changed.\n  useLayoutEffect(() => {\n    const host = ref.current;\n    if (theme || !host) return;\n    const sample = () =>\n      setLive((prev) => {\n        const next = readStops(host);\n        return prev && next && prev.join() === next.join() ? prev : next;\n      });\n    sample();\n    let frame = 0;\n    const observer = new MutationObserver(() => {\n      cancelAnimationFrame(frame);\n      frame = requestAnimationFrame(sample);\n    });\n    observer.observe(document.head, { childList: true, subtree: true, characterData: true });\n    observer.observe(document.documentElement, { attributes: true, attributeFilter: [\"class\", \"style\"] });\n    return () => {\n      cancelAnimationFrame(frame);\n      observer.disconnect();\n    };\n  }, [theme]);\n\n  const ramp = theme?.accentRamp;\n  const stops = ramp ? STOPS.map((i) => ramp[i]!) : (live ?? STOPS.map((i) => defaultRamp[i]!));\n  const [cVoid, cA, cB, cC] = stops as [string, string, string, string];\n\n  useEffect(() => {\n    const host = ref.current;\n    if (!host) return;\n    /*\n     * A FRESH canvas per effect run, created here and removed in cleanup.\n     *\n     * Cleanup releases the GL context (browsers cap live contexts; route\n     * changes would leak them). But a context released with loseContext() is\n     * gone for good on THAT canvas: getContext() hands the same dead context\n     * back, every compile fails with a null log, and a lost canvas paints\n     * white. The effect re-runs on the same element whenever it remounts —\n     * Strict Mode does exactly that in development, and so does a theme\n     * change — so the field shipped as a white box after any client-side\n     * navigation. A new canvas each run gets a new context.\n     */\n    const canvas = document.createElement(\"canvas\");\n    canvas.className = \"echo-shader-field__canvas\";\n    host.appendChild(canvas);\n    const gl = canvas.getContext(\"webgl\", { antialias: false, alpha: false });\n    if (!gl) {\n      canvas.remove(); // the wrapper's CSS gradient is the fallback\n      return;\n    }\n    // A context the browser reclaims later (GPU reset, too many contexts)\n    // must not leave a white box either: drop back to the gradient.\n    const onLost = () => {\n      canvas.style.visibility = \"hidden\";\n    };\n    canvas.addEventListener(\"webglcontextlost\", onLost);\n\n    const compile = (type: number, src: string) => {\n      const s = gl.createShader(type);\n      if (!s) return null;\n      gl.shaderSource(s, src);\n      gl.compileShader(s);\n      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {\n        console.warn(\"ShaderField:\", gl.getShaderInfoLog(s));\n        gl.deleteShader(s);\n        return null;\n      }\n      return s;\n    };\n\n    const vs = compile(gl.VERTEX_SHADER, VERT);\n    const fs = compile(gl.FRAGMENT_SHADER, FRAG);\n    const prog = vs && fs ? gl.createProgram() : null;\n    if (!vs || !fs || !prog) {\n      canvas.remove();\n      return;\n    }\n\n    gl.attachShader(prog, vs);\n    gl.attachShader(prog, fs);\n    gl.linkProgram(prog);\n    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {\n      console.warn(\"ShaderField:\", gl.getProgramInfoLog(prog));\n      canvas.remove();\n      return;\n    }\n    gl.useProgram(prog);\n\n    // One full-screen triangle.\n    const buf = gl.createBuffer();\n    gl.bindBuffer(gl.ARRAY_BUFFER, buf);\n    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);\n    const loc = gl.getAttribLocation(prog, \"p\");\n    gl.enableVertexAttribArray(loc);\n    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);\n\n    const uRes = gl.getUniformLocation(prog, \"uRes\");\n    const uTime = gl.getUniformLocation(prog, \"uTime\");\n    const uMouse = gl.getUniformLocation(prog, \"uMouse\");\n    gl.uniform3fv(gl.getUniformLocation(prog, \"cVoid\"), hexToRgb(cVoid));\n    gl.uniform3fv(gl.getUniformLocation(prog, \"cA\"), hexToRgb(cA));\n    gl.uniform3fv(gl.getUniformLocation(prog, \"cB\"), hexToRgb(cB));\n    gl.uniform3fv(gl.getUniformLocation(prog, \"cC\"), hexToRgb(cC));\n\n    const mouse: [number, number] = [0.5, 0.55];\n    const target: [number, number] = [0.5, 0.55];\n    const onMove = (e: PointerEvent) => {\n      const r = canvas.getBoundingClientRect();\n      if (!r.width || !r.height) return;\n      target[0] = (e.clientX - r.left) / r.width;\n      target[1] = 1 - (e.clientY - r.top) / r.height;\n    };\n    window.addEventListener(\"pointermove\", onMove, { passive: true });\n\n    const resize = () => {\n      const dpr = Math.min(window.devicePixelRatio || 1, 1.75);\n      canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));\n      canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));\n      gl.viewport(0, 0, canvas.width, canvas.height);\n    };\n    resize();\n    window.addEventListener(\"resize\", resize);\n\n    const draw = (time: number) => {\n      gl.uniform2f(uRes, canvas.width, canvas.height);\n      gl.uniform1f(uTime, time);\n      gl.uniform2f(uMouse, mouse[0], mouse[1]);\n      gl.drawArrays(gl.TRIANGLES, 0, 3);\n    };\n\n    const reduce = window.matchMedia?.(\"(prefers-reduced-motion: reduce)\").matches ?? false;\n    let raf = 0;\n    if (reduce) {\n      draw(6); // one static, composed frame — no loop, no cursor tracking\n    } else {\n      const t0 = performance.now();\n      const loop = () => {\n        mouse[0] += (target[0] - mouse[0]) * 0.06;\n        mouse[1] += (target[1] - mouse[1]) * 0.06;\n        draw((performance.now() - t0) / 1000);\n        raf = requestAnimationFrame(loop);\n      };\n      loop();\n    }\n\n    return () => {\n      cancelAnimationFrame(raf);\n      window.removeEventListener(\"pointermove\", onMove);\n      window.removeEventListener(\"resize\", resize);\n      gl.deleteBuffer(buf);\n      gl.deleteProgram(prog);\n      gl.deleteShader(vs);\n      gl.deleteShader(fs);\n      canvas.removeEventListener(\"webglcontextlost\", onLost);\n      gl.getExtension(\"WEBGL_lose_context\")?.loseContext();\n      canvas.remove();\n    };\n  }, [cVoid, cA, cB, cC]);\n\n  return (\n    <div\n      className={[\"echo-shader-field\", className].filter(Boolean).join(\" \")}\n      style={style}\n      {...(label ? { role: \"img\", \"aria-label\": label } : { \"aria-hidden\": true })}\n      ref={ref}\n    />\n  );\n}\n"
+    },
+    {
+      "path": "shader-field/index.ts",
+      "sha256": "97179a21923f882ae77053acb722174b77d66ba4f456c6753d1338b31145e6ed",
+      "content": "export { ShaderField } from \"./shader-field\";\nexport type { ShaderFieldProps } from \"./shader-field\";\nexport { VERT, FRAG, hexToRgb } from \"./shader\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

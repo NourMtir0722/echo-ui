@@ -1,0 +1,62 @@
+/**
+ * Link. The words are text; the accent is the underline.
+ */
+.echo-link {
+  color: var(--echo-text);
+  text-decoration-line: underline;
+  /* Drawn, the underline is the ink. */
+  text-decoration-color: var(--echo-drawn-ink, var(--echo-accent));
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  border-radius: var(--echo-radius-xs);
+  transition:
+    text-decoration-thickness var(--echo-duration-tick) ease,
+    text-underline-offset var(--echo-duration-tick) ease;
+}
+/* Reaching for it: the underline thickens and rises toward the words. */
+@media (hover: hover) {
+  .echo-link:hover {
+    text-decoration-thickness: 2.5px;
+    text-underline-offset: 2px;
+  }
+}
+.echo-link:focus-visible {
+  /* Drawn only in forced colors, which drops the shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+.echo-link[data-tone="muted"] {
+  color: var(--echo-text-dim);
+}
+.echo-link__out {
+  display: inline-block;
+  margin-inline-start: 0.2em;
+  vertical-align: 0.05em;
+}
+.echo-link__out:dir(rtl) {
+  transform: scaleX(-1);
+}
+.echo-link__sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-link {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-link {
+    color: LinkText;
+    text-decoration-color: LinkText;
+  }
+}

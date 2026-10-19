@@ -1,0 +1,10 @@
+/**
+ * RangeSlider. Slider's rail, fill and knobs (slider.css); the fill spans
+ * the two knobs instead of running from the start.
+ */
+.echo-range-slider .echo-slider__indicator::before {
+  display: none;
+}
+.echo-range-slider .echo-slider__indicator {
+  background: linear-gradient(90deg, var(--echo-accent-glow) 0%, var(--echo-accent-5) 50%, var(--echo-accent-glow) 100%);
+}

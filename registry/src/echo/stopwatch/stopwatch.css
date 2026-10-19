@@ -1,0 +1,7 @@
+/* Digits that don't move as they change: the cap keeps its width while it runs. */
+.echo-stopwatch__time {
+  font-variant-numeric: tabular-nums;
+}
+.echo-stopwatch__laps {
+  display: inline-flex;
+}

@@ -1,0 +1,48 @@
+# Echo installs source code into other people's applications, so a stale
+# transitive dependency is their problem as much as ours — and the actions are
+# the part nobody remembers to look at until one is compromised.
+#
+# Grouped on purpose: ten separate patch PRs a week is how dependency updates
+# stop being read at all.
+#
+# The updates are listed, never opened as pull requests (open-pull-requests-limit:
+# 0): an update lands as a commit of its own, after the full suite, never by
+# merging a bot's pull request. Dependabot's alerts, a
+# repository setting of their own, still name every dependency with a known
+# vulnerability.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 0
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-patches:
+        dependency-type: production
+        update-types: [patch]
+    labels: [dependencies, skip-changelog]
+    # The peer dependencies Echo's components are built against. A major here
+    # is a decision about what the library supports, not an upgrade to merge —
+    # it belongs in an issue with the matrix run against it.
+    ignore:
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: "@base-ui/react"
+        update-types: [version-update:semver-major]
+      - dependency-name: gsap
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 0
+    labels: [dependencies, skip-changelog]

@@ -1,0 +1,52 @@
+/**
+ * JogWheel. Knob's cap, well and pointer (knob.css), larger, with a ring
+ * engraved on the cap and a finger dimple, both turning with it. No lit
+ * scale: it has no ends to light up to. Composes var(--echo-*).
+ */
+.echo-jog-wheel {
+  --knob: 96px;
+}
+.echo-jog-wheel[data-size="lg"] {
+  --knob: 128px;
+}
+.echo-jog-wheel__dial {
+  inline-size: calc(var(--knob) + 16px);
+  block-size: calc(var(--knob) + 16px);
+}
+.echo-jog-wheel__rotor {
+  inset: 0;
+}
+.echo-jog-wheel__engraving {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.echo-jog-wheel__engraving line {
+  stroke: var(--echo-seam);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+/* Where a finger goes: a shallow dish near the rim. */
+.echo-jog-wheel__dimple {
+  position: absolute;
+  inset-block-start: 16%;
+  inset-inline-start: 50%;
+  inline-size: 22%;
+  block-size: 22%;
+  translate: -50% 0;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.12 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+
+@media (forced-colors: active) {
+  .echo-jog-wheel__engraving line {
+    stroke: ButtonText;
+  }
+  .echo-jog-wheel__dimple {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+}

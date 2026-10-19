@@ -1,0 +1,168 @@
+import { CheckRules, PageRules } from "@/components/guides/live";
+
+# Checks and tests
+
+Echo checks what's built with it at five moments: the line an agent just saved, the page as it
+renders in development, every page of the app, the moment the agent says it's done, and the pull
+request. Each one sees what the one before it can't. Nothing needs configuring: `init` sets up the
+ones that run on their own, and the rest are one command.
+
+## Which runs where
+
+| What runs | Reads | Runs when | Rules | axe | How it ends |
+| --- | --- | --- | --- | --- | --- |
+| `check` | Your source files | You run it, or CI does | [The code rules](#every-rule) | No | Exit 1 on a finding |
+| The hook | The file just edited | After every edit, in Claude Code | The code rules | No | The findings go straight to the agent |
+| `<EchoCheck />` | The page, as it renders | In development, as the page settles or changes | [The page rules](#on-the-running-page) | No | A line in the console for each |
+| `check --url` | One running page, headless | You run it | The page rules | Yes | Exit 1 on a finding |
+| `test` | Every page of the app, at each width | You run it, or CI does | The page rules | Yes | Exit 1, and a report in `.echo/report/` |
+| The Stop gate | The pages the agent's change touched | The agent tries to finish, in Claude Code | Those of `test` | Yes | The agent keeps working until they pass |
+| `init --ci` | Every pull request | GitHub Actions | Those of `test` | Yes | The job fails |
+| MCP `check_code` | Code handed to it | A chat with no terminal | The code rules, on the default theme | No | The findings |
+
+## The words
+
+The same few names are used everywhere in Echo's docs and output.
+
+- **The check** is `npx echo-ui-cli check`: your source, read for what an agent gets wrong about
+  Echo. **The hook** is Claude Code running it on each file the agent saves.
+- **The page check** is what `<EchoCheck />` runs in development and `check --url` runs headless:
+  the page as the browser paints it.
+- **The design tests** are four of the page check's rules, `alignment`, `depth`, `corners` and
+  `icons`: what a designer checks on a screen an agent built.
+- **Echo's tests** are what `test` runs on every page: the page check, the design tests among it,
+  then axe.
+- **The Stop gate** is Claude Code running Echo's tests when the agent tries to stop.
+
+## In your code
+
+```sh
+npx echo-ui-cli check
+```
+
+The check reads your own `.tsx`, `.jsx` and `.css`, never Echo's folder, whose files are the
+components. It finds colours and spacing written by hand, raw elements where Echo has the
+component, props a component doesn't take, controls with no name, markup a keyboard can't use, and
+what reads as made by AI, and each line says the Echo way to do it. Props are checked against the
+version you installed, from the component's own types, so the check and the compiler agree.
+
+`init` writes the hook that runs it after every edit in Claude Code; in Codex and Cursor, the Echo
+block tells the agent to run it itself. [The CLI's `check`](/docs/cli#check) has every kind of
+finding with an example.
+
+## On the running page
+
+Some things exist only once the page runs: a colour as the browser computes it, a name a control
+gets at runtime, text against whatever ends up behind it. The page check looks at the page itself.
+
+<PageRules />
+
+In development, put `<EchoCheck />` once in the root layout and it prints an `Echo check ·` line to
+the browser console for each finding, and Next.js 16's dev server prints the same lines in its
+terminal ([Watch the running page](/docs/installation#watch-the-running-page) has the setup). A
+production build gets a version that renders nothing. With no browser, `check --url` runs the same
+check headless, then axe:
+
+```sh
+npx echo-ui-cli check --url http://localhost:3000/settings
+```
+
+It renders the page in the Chrome already on your machine, or in your project's own Playwright
+when there's no Chrome, and installs nothing. It doesn't measure text over an image, a video or
+blurred glass, since styles can't say what's behind it.
+
+## On every page
+
+```sh
+npx echo-ui-cli test
+```
+
+Echo's tests, run the way a test suite runs: each page loaded headless, measured by the page check
+and scanned by axe's WCAG 2.0, 2.1 and 2.2 A and AA rules, which catch what's written outside Echo's
+parts (an image with no `alt`, a target under 24px, `aria-hidden` over something a keyboard reaches).
+The pages are the ones you name, else `test.routes` in [`echo.json`](/docs/echo-json), else every
+route the app has; the app is `--url`, else `test.url`, else the port its dev script runs on.
+
+A report with a picture of each finding goes to `.echo/report/index.html`, and `.echo/` keeps
+itself out of git. [The CLI's `test`](/docs/cli#test) has the options.
+
+## When the agent finishes
+
+### The Stop gate
+
+In Claude Code, `init` adds a second hook beside the check's: when the agent tries to finish, it
+runs Echo's tests on the pages its change touched, and if they find something, the agent is handed
+the findings and keeps working until they pass. It lets the agent stop when nothing a person sees
+changed, when the app isn't running (and says so), and after three rounds in a row (saying what's
+left), so it never loops. A page that can't be loaded, or that shows the dev server's error overlay
+instead of itself, is named, never passed. In a monorepo, a change to one of the app's pages tests
+that page, and a change outside the app's folder (a shared package) counts for every page.
+`"test": { "stop": false }` in `echo.json` turns it off;
+`test` still runs. In Codex and Cursor, the Echo block tells the agent to run `test` itself.
+
+The agent is told that a finding in markup it can't change, a library's widget or an embed, is for
+you to hear about, and never to turn the rule off or work around it. If `echo.json` lets more
+through than it did at the last commit (a rule turned `off` or to `info`, or the gate itself turned
+off), the gate tells you which when the agent stops. It doesn't block on it: whether that stays is
+yours to decide.
+
+## On every pull request
+
+```sh
+npx echo-ui-cli init --ci
+```
+
+It writes `.github/workflows/echo-design.yml`, a GitHub Actions job that builds and starts the app
+on the runner and runs `test` on it, so a screen that fails the tests fails the pull request. The
+runner's own Chrome renders the pages, so the job installs nothing the project doesn't, and the
+report is kept as an artifact when it fails. It uses the project's own package manager, and for
+pnpm, the version `package.json` names (`packageManager`) or, without one, the version the project
+runs when `init` writes the job. It's never written over a file that's already there, and it's
+yours to edit.
+
+## In a chat
+
+A tool with no terminal can't run the CLI. The MCP server's `check_code` takes a file's code and
+answers with the check's findings, against the default theme: the same rules as `check`, from the
+same code. [MCP server](/docs/mcp) has the setup, hosted or on your machine.
+
+## A finding, and what to do with it
+
+Every finding says where it is, which rule, what it measured, and the one change that fixes it. A
+design test's ends with what to leave alone, so an agent changes that and nothing else:
+
+```text
+/pricing  alignment  div.echo-hw "Choose Team": 3 cards side by side have their actions at 2 heights (412px, 388px, 388px from the top of the row). Line them up at the bottom of their cards: put each card's actions last, at `margin-top: auto` (an Echo Card's footer is). Change only the cards' layout, not the actions, the text or the colours.
+```
+
+An axe finding names its rule and its WCAG criterion, and says Echo's answer when one of its parts
+or props is it. Contrast stays Echo's own rule, and a control with no name is said once, by `name`.
+Distances have a tolerance of 2px.
+
+## Tuning it
+
+Nothing needs configuring, and `echo.json`'s `check` section only adds. Turn a rule `off`, or to
+`info` to say it without counting it:
+
+```json
+{
+  "check": { "rules": { "space": "info", "axe:target-size": "info" } }
+}
+```
+
+A project that starts with problems axe already finds keeps them rule by rule, `axe:<id>` for each
+one that fires, taken out as that rule is cleared: those are said without being counted, and
+anything new still counts. `"axe": "info"` would hide the new ones too, which is what the tests are
+there to catch. A rule name that isn't one stops the check and says so. [`echo.json`](/docs/echo-json)
+has every field.
+
+## What only a person can check
+
+The tests say what they can't decide, and never count it: under each page, the report lists what
+axe couldn't decide, each iframe (axe doesn't look inside frames), and a page axe couldn't run on.
+None of it is handed to an agent. Beyond that, no check can judge the reading order, or whether a
+name makes sense to the person hearing it.
+
+## Every rule
+
+<CheckRules />

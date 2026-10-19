@@ -1,0 +1,74 @@
+/**
+ * NotificationCenter. The bell cap with its count pinned to the corner; the
+ * panel a short list of Items, each with an LED lit while unread.
+ */
+.echo-notifications {
+  position: relative;
+  display: inline-flex;
+}
+/* Over the bell's top corner: above it, never past its side (that would push
+   a narrow row open). */
+.echo-notifications__badge {
+  position: absolute;
+  top: calc(-1 * var(--echo-space-4));
+  inset-inline-end: 0;
+  pointer-events: none;
+}
+.echo-notifications__panel {
+  display: grid;
+  gap: var(--echo-space-4);
+  width: min(22rem, calc(100vw - 2rem));
+}
+.echo-notifications__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-6);
+}
+.echo-notifications__count {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-notifications__list {
+  max-height: min(24rem, 60vh);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+.echo-notifications__led {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--echo-radius-full);
+  background: color-mix(in oklab, var(--echo-cap) 70%, var(--echo-text-dim));
+}
+.echo-notifications__led[data-unread] {
+  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));
+  box-shadow: 0 0 6px color-mix(in oklch, var(--echo-accent-glow) 60%, transparent);
+}
+.echo-notifications__sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.echo-notifications__empty {
+  margin: 0;
+  padding: var(--echo-space-8) 0;
+  text-align: center;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+@media (forced-colors: active) {
+  .echo-notifications__led[data-unread] {
+    background: Highlight;
+  }
+}

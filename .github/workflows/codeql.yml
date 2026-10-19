@@ -1,0 +1,55 @@
+# Static analysis on the default branch and on pull requests.
+#
+# The reason it is here rather than "nice to have": this repository's output is
+# source code that other people compile into their applications, and the CLI
+# reads a network response and writes files to a disk. An injection or a path
+# problem in either is not a bug in a demo — it reaches everyone who installed.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Tuesday, so a new rule set is applied within a week of landing.
+    - cron: "0 5 * * 2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze JavaScript and TypeScript
+    # Code scanning takes results from public repositories only (or with
+    # paid Advanced Security). While this one is private the upload fails
+    # after the whole analysis and reddens every pull request; the
+    # job starts running the day the repository goes public.
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Writing the alerts is the whole job.
+      security-events: write
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      # No build step: CodeQL analyses this codebase from source. A `pnpm
+      # build` here would only add a way for the scan to fail for a reason that
+      # is not a finding.
+      - name: Analyse
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript

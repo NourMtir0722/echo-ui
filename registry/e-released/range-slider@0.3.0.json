@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "name": "range-slider",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "RangeSlider",
+  "description": "Two knobs on one rail for a span (a price range, a time window), with the rail lit between them. Slider's rail and knobs, with Slider's mass: the value moves at once and each knob catches up on a spring. They never cross; minGap keeps them apart. Each knob is its own slider for assistive tech, named from label.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "gsap": "^3.13.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "slider"
+  ],
+  "files": [
+    {
+      "path": "range-slider/range-slider.tsx",
+      "sha256": "c4986f38a17c630ef3124698f5f352551ed97730b94124f41773a55ed0701f9d",
+      "content": "\"use client\";\n\n/**\n * RangeSlider. Two knobs on one rail, for a span: a price range, a time\n * window, frequencies to keep. The rail lights between them. Each knob keeps\n * Slider's mass: Base UI puts it at its value at once (the value, the range\n * inputs and the screen reader never wait) and the knob you see catches up on\n * a spring. They can't cross; `minGap` keeps them apart by that many steps.\n *\n * The same rail, fill and knobs as Slider, so a Slider and a RangeSlider\n * side by side are one control language. Each knob is its own slider for\n * assistive tech, named \"{label}, minimum\" and \"{label}, maximum\".\n */\nimport { forwardRef, useEffect, useRef } from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport gsap from \"gsap\";\nimport { Slider as BaseSlider } from \"@base-ui/react/slider\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { springs } from \"echo-ui-core/motion\";\nimport { createSpring, useReducedMotionRef, watchTravel, type Spring } from \"echo-ui-core/tactile\";\nimport \"../slider/slider.css\";\nimport \"./range-slider.css\";\n\ninterface RangeSliderOwnProps extends EchoInterop {\n  /** What the span is (\"Price\"); each knob is named from it. */\n  label: string;\n  value?: [number, number];\n  defaultValue?: [number, number];\n  onValueChange?: (value: [number, number]) => void;\n  min?: number;\n  max?: number;\n  step?: number;\n  /** How many steps the knobs keep between them. Default 1. */\n  minGap?: number;\n  /** `md` (default) or `sm`, as Slider. */\n  size?: \"sm\" | \"md\";\n  /** How a value reads for assistive tech (\"$40\"). Default: the number. */\n  formatValue?: (value: number) => string;\n}\n\nfunction Knob({ index, label, formatValue }: { index: number; label: string; formatValue?: (value: number) => string }) {\n  const thumb = useRef<HTMLDivElement | null>(null);\n  const travel = useRef<HTMLSpanElement | null>(null);\n  const reduced = useReducedMotionRef();\n  useEffect(() => {\n    const t = thumb.current;\n    const frame = t?.parentElement;\n    if (!t || !frame) return;\n    const lag: Spring = createSpring(0, springs.bouncy, (x) => gsap.set(travel.current, { x }));\n    const stop = watchTravel({\n      part: t,\n      frame,\n      on: t,\n      attributes: [\"style\"],\n      onMove: (dx) => {\n        if (reduced.current) return;\n        lag.shift(dx);\n        lag.to(0, { config: Math.abs(dx) > 20 ? springs.bouncy : springs.track });\n      },\n    });\n    return () => {\n      stop();\n      lag.stop();\n    };\n  }, [reduced]);\n  return (\n    <BaseSlider.Thumb\n      ref={thumb}\n      index={index}\n      className=\"echo-slider__thumb\"\n      aria-label={label}\n      {...(formatValue ? { getAriaValueText: (_: string, v: number) => formatValue(v) } : {})}\n    >\n      <span ref={travel} className=\"echo-slider__travel\" aria-hidden>\n        <span className=\"echo-slider__cap\">\n          <span className=\"echo-slider__grip\" />\n        </span>\n      </span>\n    </BaseSlider.Thumb>\n  );\n}\n\nexport type RangeSliderProps = RangeSliderOwnProps;\n\n/** `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on the root. */\nexport const RangeSlider = forwardRef<HTMLDivElement, RangeSliderProps>(function RangeSlider({\n  label,\n  value,\n  defaultValue = [25, 75],\n  onValueChange,\n  min = 0,\n  max = 100,\n  step = 1,\n  minGap = 1,\n  size = \"md\",\n  formatValue,\n  ...interop\n}, ref) {\n  const sound = useSoundOptional();\n  const last = useRef<string>(\"\");\n  return (\n    <BaseSlider.Root\n      ref={ref}\n      className=\"echo-slider echo-range-slider\"\n      data-size={size}\n      {...(value !== undefined ? { value } : { defaultValue })}\n      min={min}\n      max={max}\n      step={step}\n      minStepsBetweenValues={minGap}\n      {...interop}\n      onValueChange={(next) => {\n        const pair = next as number[];\n        const key = pair.join(\",\");\n        if (key !== last.current) {\n          last.current = key;\n          sound?.play(\"tap\");\n        }\n        onValueChange?.([pair[0]!, pair[1]!]);\n      }}\n    >\n      <BaseSlider.Control className=\"echo-slider__control\">\n        <BaseSlider.Track className=\"echo-slider__track\">\n          <span className=\"echo-slider__rail\" aria-hidden>\n            <BaseSlider.Indicator className=\"echo-slider__indicator\" />\n          </span>\n          <Knob index={0} label={`${label}, minimum`} formatValue={formatValue} />\n          <Knob index={1} label={`${label}, maximum`} formatValue={formatValue} />\n        </BaseSlider.Track>\n      </BaseSlider.Control>\n    </BaseSlider.Root>\n  );\n});\n"
+    },
+    {
+      "path": "range-slider/range-slider.css",
+      "sha256": "8102ce5dd3f19dbbd60ef6c5977f2778932c3d90cae33b3c9b3cbc31e106d095",
+      "content": "/**\n * RangeSlider. Slider's rail, fill and knobs (slider.css); the fill spans\n * the two knobs instead of running from the start.\n */\n.echo-range-slider .echo-slider__indicator::before {\n  display: none;\n}\n.echo-range-slider .echo-slider__indicator {\n  background: linear-gradient(90deg, var(--echo-accent-glow) 0%, var(--echo-accent-5) 50%, var(--echo-accent-glow) 100%);\n}\n"
+    },
+    {
+      "path": "range-slider/index.ts",
+      "sha256": "4af6504ba3894ec7133db8c76386f0f75e0cb62a1c5c74d5e087bdf90803f1e0",
+      "content": "export { RangeSlider } from \"./range-slider\";\nexport type { RangeSliderProps } from \"./range-slider\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The rest of the inputs: `Toggle`, `Toolbar`, `Meter`, `RangeSlider`, and two instruments, `Knob` and `LevelMeter`.** Plus `start` and `end` on `Field`. - **`Toggle` / `ToggleGroup`**: the quiet toolbar key. On is the cap held down in its well, not a light; a group shares one well, with arrow keys between its keys, `multiple` or at most one. - **`Toolbar` / `ButtonGroup`**: caps sharing one long well. A Toolbar is one tab stop with the arrow keys, Home and End along it, and `sm` controls; Toggles and ToggleGroups inside join its order by themselves. A ButtonGroup is the look alone. - **`Field` `start` / `end`**: a search icon or a currency sign engraved into the well before the text; a unit or a small key (clear, show password) after it. - **`Meter`**: a measurement in a range (storage, battery), a tube of lit plastic that settles to its level with a small slosh; `marks` engrave a limit without a second colour. - **`RangeSlider`**: two of Slider's knobs on one rail for a span, named \"…, minimum\" and \"…, maximum\"; they never cross. - **`Knob`**: a rotary cap with a lit scale. Drag it, wheel it once focused, or use the slider keys; it clicks at each step and settles onto each detent on a spring. - **`LevelMeter`**: a live level as LED cells with real ballistics and a held peak. It draws without re-rendering, stops once it's still, and tells a screen reader its level at most once a second."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

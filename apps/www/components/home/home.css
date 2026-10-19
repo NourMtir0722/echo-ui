@@ -1,0 +1,1060 @@
+/* === the landing, below the hero ======================================== */
+
+.home {
+  --home-gutter: clamp(1.25rem, 4vw, 3rem);
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--home-gutter);
+}
+
+.sec {
+  position: relative;
+  padding-block: clamp(5rem, 11vw, 10rem) 0;
+}
+
+/*
+ * Two-tone: the claim in the text colour, the rest of the sentence dimmer, at
+ * one size, one paragraph (the middle of the page speaks this way).
+ */
+.two-tone {
+  margin: 0;
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+  line-height: 1.55;
+  color: var(--echo-text-dim);
+  text-wrap: pretty;
+}
+.two-tone strong {
+  font-weight: 600;
+  color: var(--echo-text);
+}
+
+/*
+ * Rise into place the first time it scrolls into view (use-reveal.ts): up
+ * out of its own lower edge. A clip, never a fade, so text is at full
+ * contrast at every frame it shows, and nothing leaves the accessibility
+ * tree while it waits. Once risen, the clip comes off (`done`), so shadows
+ * and anything a demo throws past its box are drawn in full.
+ */
+[data-reveal] {
+  transition:
+    clip-path 1s cubic-bezier(0.2, 0.7, 0.2, 1),
+    translate 1s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-reveal="out"] {
+  clip-path: inset(100% -60px -60px -60px);
+  translate: 0 56px;
+}
+[data-reveal="in"] {
+  clip-path: inset(-60px);
+}
+
+/* A perch: the room the guide sits in, feet on its floor. */
+.guide-stop {
+  --guide-size: 72px;
+  display: block;
+  flex: none;
+  width: var(--guide-size);
+  height: var(--guide-size);
+  pointer-events: none;
+}
+
+/* --- Echo in 3D --------------------------------------------------------- */
+
+/* One canvas over the window; the creatures are drawn onto the page through it. */
+.echo3d {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* A supporter's name, over their creature in the heap while it's pointed at or for a moment after a tap. */
+.echo3d-tag {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 41;
+  padding: 4px 12px;
+  border-radius: var(--echo-radius-full, 999px);
+  background: color-mix(in oklab, var(--echo-surface) 92%, transparent);
+  color: var(--echo-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px -8px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.echo3d-tag[data-on] {
+  opacity: 1;
+}
+
+/* --- the guide ---------------------------------------------------------- */
+
+.guide {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 188px;
+  height: 188px;
+  transform-origin: 50% 92.1%;
+  pointer-events: none;
+  visibility: hidden;
+  will-change: transform;
+}
+.guide__lean {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 60%;
+}
+.guide .echo-creature {
+  filter: drop-shadow(0 18px 18px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.45 * var(--echo-shade, 1) * 100%), transparent));
+}
+
+/*
+ * The middle of the page is a ruled sheet: cells divided by the Divider's
+ * seam (a dark groove with a faint light lip), nothing around a cell. A seam
+ * runs between neighbours only, never doubled, never at an outer edge.
+ */
+.home {
+  --seam-v: linear-gradient(180deg, transparent, var(--echo-seam) 12%, var(--echo-seam) 88%, transparent);
+  --seam-h: linear-gradient(90deg, transparent, var(--echo-seam) 8%, var(--echo-seam) 92%, transparent);
+  --lip: rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1)));
+}
+/*
+ * Every object draws a seam on its left (::before) and its top (::after); each
+ * layout says which of them show, through --seam-l and --seam-t, so the rule
+ * holds when the sheet folds from three columns to two to one.
+ */
+.objects__cell::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--seam-v);
+  box-shadow: 1px 0 0 var(--lip);
+  opacity: var(--seam-l, 0);
+  pointer-events: none;
+}
+.objects__cell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: var(--seam-h);
+  box-shadow: 0 1px 0 var(--lip);
+  opacity: var(--seam-t, 0);
+  pointer-events: none;
+}
+.objects__cell:not(:nth-child(3n + 1)) {
+  --seam-l: 1;
+}
+.objects__cell:nth-child(n + 4) {
+  --seam-t: 1;
+}
+
+/* --- the demos inside the puzzle's panels and the install card ----------------- */
+
+.who__deferred:is([data-deferred], :has(.deferred__holding)) {
+  min-height: 14rem;
+}
+/* On the homepage a column is narrow: code wraps rather than scrolling sideways. */
+.home .doc-code__pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* The developers' and designers' terminals: the road's (journey.css), the screen's whole width. */
+.who__term {
+  width: 100%;
+  min-width: 0;
+}
+/* Lines set close, as a terminal sets them; each command with what it printed, one run under the other. */
+.who__term .term__body {
+  gap: 0.1rem;
+}
+/*
+ * A run keeps room for its command's strip, which reaches 0.45rem past the words either side
+ * (`.term__cmd` in journey.css): without it the strip stuck out of the run, 7px wider than its box
+ * at every width. The words stay where they were.
+ */
+.who__run {
+  display: grid;
+  gap: 0.1rem;
+  margin-inline: -0.45rem;
+  padding-inline: 0.45rem;
+}
+.who__run + .who__run {
+  margin-top: 0.75rem;
+}
+/* The designers' demo: the colours, then the finding under them. */
+.who__design {
+  display: grid;
+  gap: var(--echo-space-8);
+  min-width: 0;
+}
+/* The designers' demo: the same parts, relit by each preset. */
+.ways__seeds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--echo-space-7);
+}
+.ways__seed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-7);
+}
+.ways__hex {
+  flex-basis: 100%;
+  font-family: var(--echo-font-mono);
+  font-size: var(--echo-text-xs);
+  letter-spacing: 0.06em;
+  color: var(--echo-text-dim);
+}
+
+/* --- objects: the 3×3, then a whole screen in the seed's light ---------- */
+
+.objects__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/*
+ * Each object is two rows of the sheet (subgrid): its stage, then its words.
+ * So in a row of objects every stage is as tall as the tallest and every
+ * object stands on the same shelf line, and every name starts on one line too,
+ * however long the words under a neighbour's run.
+ */
+.objects__cell {
+  position: relative;
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  min-width: 0;
+  margin: 0;
+}
+/* Every object stands on the same shelf, just above its name: none floats in the middle of a tall row. */
+.objects__stage {
+  display: grid;
+  /* One column, the cell's width: an object is held to it, never widens it past a phone. */
+  grid-template-columns: minmax(0, 1fr);
+  place-items: end center;
+  min-width: 0;
+  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.75rem);
+}
+.objects__stage > * {
+  max-width: 100%;
+}
+.objects__stage:is([data-deferred], :has(.deferred__holding)) {
+  min-height: 12rem;
+}
+.objects__label {
+  display: grid;
+  align-content: start;
+  gap: var(--echo-space-3);
+  padding: 0 clamp(1rem, 2vw, 1.75rem) clamp(1.5rem, 3vw, 2.25rem);
+}
+.objects__name {
+  justify-self: start;
+  font-size: var(--echo-text-sm);
+  font-weight: 700;
+  color: var(--echo-text);
+  text-decoration: none;
+}
+.objects__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+.objects__tag {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--echo-text) 18%, transparent);
+  border-radius: 999px;
+  font-family: var(--site-font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--echo-text-dim);
+  white-space: nowrap;
+}
+.objects__name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.objects__what {
+  font-size: var(--echo-text-sm);
+  line-height: 1.45;
+  color: var(--echo-text-dim);
+}
+.objects__stop {
+  position: absolute;
+  top: calc(var(--guide-size) * -1 + 4px);
+  right: clamp(1rem, 2vw, 1.75rem);
+  z-index: 1;
+  --guide-size: 84px;
+}
+.bench__due {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-4);
+}
+.bench__due-keys {
+  display: flex;
+  gap: var(--echo-space-3);
+}
+.bench__lift {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-5);
+}
+.bench__lift-keys {
+  display: flex;
+  gap: var(--echo-space-3);
+}
+.bench__companions {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--echo-space-9);
+}
+
+.objects__screens {
+  position: relative;
+  display: grid;
+  /* One column, the section's width: sized to its content, the 1180px screen inside widened it past a phone. */
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  margin-top: clamp(4rem, 8vw, 6.5rem);
+}
+.objects__screens > .big-title {
+  width: 100%;
+}
+/*
+ * A whole screen in a bezel: the device's own body round a dark window, a
+ * crisp edge and a shadow under it. No coloured light: the screen is the
+ * picture. Each screen is shown whole, scaled to the frame (FitScreen), so
+ * nothing in it scrolls under the wheel. Both are the running templates, so
+ * everything in them works.
+ */
+/*
+ * The keys and the frame: one block, as tall as the window has room for
+ * (snap.ts frames it whole). The page's words sit on its left edge; its
+ * objects sit in the middle of its column, as the motion panel does: so the
+ * block is centred, and its keys' row is exactly the frame's width, the way
+ * in on the left of it and the way out on the right. Its width is what the
+ * window's height allows: the screen is 1180 by 720 of its own px, under the
+ * bar, with the keys above it and a little air.
+ */
+.objects__show {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--echo-space-8);
+  justify-self: center;
+  width: min(100%, calc((100svh - var(--echo-shell-rail-h, 56px) - 7.5rem) * 1180 / 720 + 24px));
+}
+/* The keys on the frame's left, the way in full on its right: the motion panel's row. */
+.objects__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--echo-space-6) var(--echo-space-9);
+}
+.objects__frame {
+  position: relative;
+  box-sizing: border-box;
+  padding: clamp(8px, 1vw, 12px);
+  border-radius: clamp(1.25rem, 2.2vw, 2rem);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--echo-cap) 70%, var(--echo-surface)), var(--echo-surface));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 35.0%, transparent),
+    0 2px 4px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.35 * var(--echo-shade, 1) * 100%), transparent),
+    0 40px 80px -40px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);
+}
+/* The screen, whole and scaled to the frame (FitScreen): nothing in it scrolls under the wheel. */
+.objects__fit {
+  border-radius: clamp(0.9rem, 1.6vw, 1.5rem);
+  background: var(--echo-well);
+  box-shadow:
+    inset 0 2px 10px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 50.0%, transparent);
+}
+/* Both screens are shown 1180 by 720 (Objects.tsx), so the box is that shape loaded or not. */
+.objects__screen {
+  aspect-ratio: 1180 / 720;
+}
+/* The chat, at the height of its own window; its thread keeps the newest message in view by script, never by the wheel. */
+.objects__fit .echo-chat {
+  height: 720px;
+  max-width: none;
+}
+.objects__fit .echo-chat__thread {
+  overflow: hidden;
+}
+/*
+ * A phone: each screen laid out at the frame's own width, as it reflows on a phone of its own (FitScreen's
+ * `reflow`), not its desktop layout drawn too small to read. Both at one height, what the window has room
+ * for under the bar with the keys above it, so the keys and the frame are still one screen.
+ */
+@media (max-width: 47.99rem) {
+  .objects__show {
+    --screen-h: clamp(24rem, 100svh - var(--echo-shell-rail-h, 56px) - 12rem, 40rem);
+  }
+  .objects__screen {
+    aspect-ratio: auto;
+    height: var(--screen-h);
+  }
+  .objects__fit {
+    max-height: var(--screen-h);
+  }
+  .objects__fit .echo-chat {
+    height: var(--screen-h);
+  }
+}
+
+/* --- a screen shown whole (FitScreen.tsx) ------------------------------------- */
+.fit {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  /* The screen is laid out wider than the box and drawn scaled to it: its layout overflows, nothing it draws does. */
+  --echo-clip: decorative;
+}
+.fit__screen {
+  transform-origin: top left;
+}
+/* Cropped: the rest of the screen fades out under the box's foot. */
+.fit[data-cropped]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 6rem;
+  background: linear-gradient(to bottom, transparent, var(--fit-fade, var(--echo-well)));
+  pointer-events: none;
+}
+.objects__open {
+  margin: 0;
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+.objects__open a {
+  color: var(--echo-text);
+  text-underline-offset: 3px;
+}
+.objects__pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--echo-space-6);
+}
+/* The chosen screen: the library's one "you are here", a lit rail under it. */
+.objects__pick .echo-hw {
+  position: relative;
+}
+.objects__pick .echo-hw:has(.echo-hw__cap[aria-pressed="true"])::after {
+  content: "";
+  position: absolute;
+  left: var(--echo-space-5);
+  right: var(--echo-space-5);
+  bottom: calc(var(--echo-space-3) * -1);
+  height: 2px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-accent-glow);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--echo-accent-glow) 70%, transparent);
+}
+.objects__more {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(3rem, 6vw, 4.5rem);
+}
+/* --- the letter, and keeping Echo free ------------------------------------ */
+
+/*
+ * The page's second bookend, on the seed's light like the hero: the pool sits
+ * behind the letter, and the text beside it stays on the plain ground.
+ */
+.letter-sec {
+  position: relative;
+  overflow: clip;
+  /* With its padding, the same space above its title as every section above has (.sec): the pool needs the padding. */
+  margin-top: clamp(2rem, 4vw, 4rem);
+  padding-block: clamp(3rem, 7vw, 6rem) clamp(4rem, 8vw, 7rem);
+}
+.letter-sec::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 40%;
+  background:
+    radial-gradient(45% 55% at 50% 45%, color-mix(in oklch, var(--echo-accent-glow) 28%, transparent), transparent 72%),
+    radial-gradient(25% 30% at 50% 40%, color-mix(in oklch, var(--echo-accent) 18%, transparent), transparent 70%);
+  pointer-events: none;
+}
+/* On the homepage the letter has no light of its own: the page's light is Echo's. */
+.home-lit .letter-sec::before {
+  display: none;
+}
+.letter-sec__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: clamp(3.5rem, 7vw, 5.5rem);
+  /* The same measure as the sections above (.home): 1240px of content inside the gutters, so its title starts where theirs do. */
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+  box-sizing: content-box;
+}
+.letter-sec__head {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-8);
+  text-align: center;
+}
+
+/*
+ * The letter: paper, lit from the top left, typed. Paper and ink are the
+ * receipt's pair (the theme's text colour and its surface), which the engine
+ * keeps legible on any seed; nothing on the paper is dimmed below it.
+ */
+.letter {
+  position: relative;
+  box-sizing: border-box;
+  width: min(100%, 42rem);
+  padding: clamp(2.25rem, 5vw, 3.75rem) clamp(1.5rem, 5vw, 3.75rem) clamp(2rem, 4.5vw, 3.25rem);
+  border-radius: 3px;
+  color: var(--echo-surface);
+  background:
+    linear-gradient(155deg, color-mix(in oklab, var(--echo-text) 92%, white) 0%, var(--echo-text) 38%, color-mix(in oklab, var(--echo-text) 94%, var(--echo-surface)) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    2px 3px 6px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.25 * var(--echo-shade, 1) * 100%), transparent),
+    14px 24px 50px -12px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.55 * var(--echo-shade, 1) * 100%), transparent);
+  font-family: var(--site-font-mono), var(--echo-font-mono);
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+.letter p {
+  margin: 0 0 1.1em;
+}
+.letter__date {
+  font-size: 0.9em;
+}
+.letter .letter__sign {
+  margin-top: 1.6em;
+  font-family: var(--brand-font-display), var(--site-font-display), var(--echo-font-sans);
+  font-size: 2.1em;
+  line-height: 1;
+}
+/* Where to find Noor: one place a line, no "·" between them. */
+.letter__links {
+  display: grid;
+  gap: 0.2em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.letter__links a,
+.letter__ps a {
+  color: var(--echo-surface);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.letter .letter__ps {
+  margin: 1.8em 0 0;
+  padding-top: 1.1em;
+  border-top: 1px dashed color-mix(in oklab, var(--echo-surface) 45%, transparent);
+}
+.letter a:focus-visible {
+  outline: 2px solid var(--echo-surface);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+/* The photo, clipped on: it floats in the letter's corner, and the words go round it. */
+.letter__photo {
+  position: relative;
+  float: right;
+  width: clamp(5.5rem, 16vw, 8.5rem);
+  margin: calc(-1 * clamp(3.25rem, 6vw, 4.75rem)) calc(-1 * clamp(0.75rem, 3vw, 2rem)) 1rem 1.5rem;
+  padding: 6px 6px 16px;
+  background: color-mix(in oklab, var(--echo-text) 90%, white);
+  box-shadow:
+    1px 2px 3px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.25 * var(--echo-shade, 1) * 100%), transparent),
+    6px 12px 22px -8px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.45 * var(--echo-shade, 1) * 100%), transparent);
+  transform: rotate(3deg);
+}
+.letter__photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+.letter__clip {
+  position: absolute;
+  top: -22px;
+  left: 42%;
+  width: 14px;
+  height: 46px;
+  stroke: color-mix(in oklab, var(--echo-text) 62%, var(--echo-seam));
+}
+/* The guide peeks over the paper's top edge. */
+.letter__stop {
+  position: absolute;
+  top: calc(var(--guide-size) * -1 + 10px);
+  left: clamp(1.5rem, 8%, 3.5rem);
+  --guide-size: 96px;
+}
+
+/* Keep Echo free: under the letter, which its P.S. leads into. */
+.support {
+  display: grid;
+  justify-items: center;
+  gap: clamp(2rem, 4vw, 3rem);
+  width: 100%;
+}
+.support__head {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-7);
+  max-width: 40rem;
+  text-align: center;
+}
+.support__lede,
+.support__other {
+  margin: 0;
+  max-width: 40rem;
+  font-size: clamp(1.02rem, 1.3vw, 1.12rem);
+  line-height: 1.6;
+  color: var(--echo-text-dim);
+  text-align: center;
+  text-wrap: pretty;
+}
+.support__other a {
+  color: var(--echo-text);
+  text-underline-offset: 3px;
+}
+
+/* --- footer ------------------------------------------------------------- */
+
+/*
+ * The foot of the page: a field of light across the whole width (FootLight,
+ * `.foot__light`), and on it one panel exactly as wide as the page's objects,
+ * with the crowd heaped on its top edge.
+ */
+.foot {
+  position: relative;
+  overflow: clip;
+  padding: clamp(5rem, 9vw, 8rem) 0 clamp(4rem, 8vw, 7rem);
+}
+.foot__light {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* The same box as the page's content (.home), so the panel is exactly as wide as its objects. */
+.foot__col {
+  position: relative;
+  z-index: 1;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
+}
+.foot__panel {
+  position: relative;
+  padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.5rem, 4vw, 4rem) clamp(1.5rem, 3vw, 2.25rem);
+  border-radius: clamp(1.25rem, 2.4vw, 1.75rem);
+  color: var(--echo-text);
+  background: linear-gradient(165deg, var(--echo-cap) 0%, var(--echo-surface) 42%, var(--echo-surface) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 1px) var(--echo-line, var(--echo-seam)),
+    0 50px 100px -40px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) 85%, transparent);
+}
+.foot__inner {
+  display: grid;
+  /* The mark's column is never narrower than the lockup (249px): at 1280 it was 242, and the lockup hung out. */
+  grid-template-columns: minmax(min-content, 1fr) minmax(0, 3.2fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+@media (max-width: 56.25rem) {
+  .foot__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.foot__mark {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: var(--echo-space-8);
+}
+/*
+ * Under 336px the lockup (drawn at 249px) is wider than the panel's column, 232px at 320: drawn a tenth
+ * smaller there, it fits. `zoom` because the lockup is laid out in pixels, and zoom sizes its box
+ * along with it, where a scale would leave the box as wide as before.
+ */
+@media (max-width: 21rem) {
+  .foot__lockup {
+    zoom: 0.9;
+  }
+}
+.foot__line {
+  margin: 0;
+  max-width: 24rem;
+  font-size: var(--echo-text-sm);
+  line-height: 1.6;
+  color: var(--echo-text-dim);
+}
+/*
+ * Where it works, in a sentence: each name a link in the text's colour, underlined faintly, as the credits
+ * are, and never broken across lines ("Claude / Code"). The fine print's links stay as quiet as the fine
+ * print, the underline saying they're links; the maker's name is in the text's colour, as the names above.
+ */
+.foot__works a,
+.foot__legal-lines a,
+.foot__legal-link {
+  color: var(--echo-text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+  text-underline-offset: 3px;
+}
+.foot__works a {
+  white-space: nowrap;
+}
+.foot__legal-link {
+  color: inherit;
+}
+.foot__works a:hover,
+.foot__legal-lines a:hover,
+.foot__legal-link:hover {
+  text-decoration-color: var(--echo-accent);
+  text-decoration-thickness: 2px;
+}
+.foot__nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 2rem);
+}
+/* The phone's accordion of the same links: only on a phone (below). Its rows on the panel's text edge. */
+.foot__menu {
+  display: none;
+}
+/* The phone menu's heading, for whoever moves by headings; the groups say the rest. */
+.foot__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.foot__menu .echo-accordion__trigger {
+  padding-inline: 0;
+}
+.foot__menu .echo-accordion__panel-inner {
+  padding: 0 0 var(--echo-space-6);
+}
+.foot__menu-links {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.foot__menu-links a {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  color: var(--echo-text);
+  text-decoration: none;
+}
+@media (pointer: coarse) {
+  .foot__menu-links a {
+    min-height: 44px;
+  }
+}
+/* A column's name, in the words' own case: position and colour say it's a heading. */
+.foot__title {
+  margin: 0 0 var(--echo-space-8);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+.foot__col-links ul {
+  display: grid;
+  gap: var(--echo-space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.foot__col-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--echo-text);
+  text-decoration: none;
+}
+/* A link pointed at keeps its colour and takes the accent as an underline: on the panel the accent isn't
+   text-grade on every ground a seed can make; the text colour always is. */
+.foot__col-links a:hover,
+.foot__credits a:hover {
+  color: var(--echo-text);
+  text-decoration: underline;
+  text-decoration-color: var(--echo-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+/* Who it's from on the left; the fine print's pages, the credits and the light key together on the right. */
+.foot__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-4) var(--echo-space-8);
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding-top: 1.25rem;
+  box-shadow: inset 0 1px 0 var(--echo-seam);
+  font-size: var(--echo-text-xs);
+  color: var(--echo-text-dim);
+}
+.foot__legal-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  margin: 0 auto 0 0;
+}
+.foot__legal-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+/* The mood board's credits: one more line of the foot, its list a row of its own once opened. */
+.foot__credits[open] {
+  flex-basis: 100%;
+  order: 3;
+}
+.foot__credits summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
+  text-underline-offset: 3px;
+  list-style: none;
+}
+.foot__credits summary::-webkit-details-marker {
+  display: none;
+}
+.foot__credits ul {
+  columns: 2 22rem;
+  column-gap: 2rem;
+  margin: var(--echo-space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  line-height: 1.7;
+}
+.foot__credits a {
+  color: var(--echo-text);
+  text-underline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .foot__credits summary,
+  .foot__legal-link {
+    min-height: 44px;
+  }
+  /* "Terms" is 33px of words: it stands on its own in the row, so it's 44px wide too, its words centred. */
+  .foot__legal-link {
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+
+/* The heap, on the panel's top edge: the crowd lands on it. */
+.foot__pile {
+  position: relative;
+  height: clamp(180px, 22vw, 300px);
+}
+/* Echo's last perch: on the panel's edge, where the heap lies, so it's in view whenever the panel's top
+   is (a short window shows the panel and not the band above it), and Echo lands there and drops in. */
+.foot__stop {
+  --guide-size: 96px;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  translate: -50% 0;
+}
+.foot__flat {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0;
+  pointer-events: none;
+}
+.foot__flat > span {
+  margin-inline: -6px;
+  translate: 0 calc(var(--lift) * -1);
+}
+/* Seven are wider than a phone: the first four still read as a crowd, and fit. */
+@media (max-width: 34rem) {
+  .foot__flat > span:nth-child(n + 5) {
+    display: none;
+  }
+}
+/* Four are wider than the smallest phones (286px of crowd in 280 at 320): three still read as one. */
+@media (max-width: 21rem) {
+  .foot__flat > span:nth-child(n + 4) {
+    display: none;
+  }
+}
+/* Once the 3D crowd is on the page, the drawing of it makes way. */
+:root[data-echo3d] .foot__flat {
+  visibility: hidden;
+}
+/* Forced colours: the light is decoration, and steps aside. */
+@media (forced-colors: active) {
+  .foot__light {
+    display: none;
+  }
+}
+
+/* --- focus, targets ----------------------------------------------------- */
+
+.home a:focus-visible,
+.support a:focus-visible,
+.foot a:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+/* WCAG 2.2 2.5.8: a link standing on its own is a 24px target, and 44px on touch. */
+.objects__name,
+.letter__links a,
+.foot__col-links a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+/*
+ * A link in a sentence ("Open Console or Chat in full.") reaches as far, but by a clear pad round its
+ * words: grown itself, a short name pushed the words after it away ("Chat   in full.").
+ */
+.objects__open a {
+  position: relative;
+}
+.objects__open a::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 24px);
+  height: max(100%, 24px);
+  transform: translate(-50%, -50%);
+}
+@media (pointer: coarse) {
+  .objects__name,
+  .letter__links a,
+  .foot__col-links a {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* Each link is 44px tall under a finger: that's the air between them. */
+  .foot__col-links ul {
+    gap: 0;
+  }
+  .objects__open a::after {
+    width: max(100%, 44px);
+    height: 44px;
+  }
+  /* Links inside a sentence keep its flow; the lines open up to give them room. */
+  .support__other p {
+    line-height: 2.75;
+  }
+}
+
+/* --- narrower ------------------------------------------------------------ */
+
+/*
+ * Narrower than four columns in a row: the groups of links are the accordion's rows (HomeFooter.tsx), where
+ * it works among them, so the panel stays short and the heap on its edge is in view at the end of the page.
+ * In columns they ran a screen and a half on a phone; in one, three. Who it's from takes the foot
+ * row's first line, the fine print and the light key the next.
+ */
+@media (max-width: 64rem) {
+  .foot__nav,
+  .foot__works {
+    display: none;
+  }
+  .foot__menu {
+    display: block;
+  }
+  /* The accordion's last rule is the foot row's: one line between them, not two. */
+  .foot__legal {
+    margin-top: var(--echo-space-8);
+    padding-top: 0;
+    box-shadow: none;
+  }
+  .foot__legal-lines {
+    flex-basis: 100%;
+  }
+  /* The objects in two columns: the seams follow the new rows. */
+  .objects__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .objects__cell:nth-child(n) {
+    --seam-l: 0;
+    --seam-t: 0;
+  }
+  .objects__cell:nth-child(even) {
+    --seam-l: 1;
+  }
+  .objects__cell:nth-child(n + 3) {
+    --seam-t: 1;
+  }
+}
+
+/* One column: Echo a little smaller over the letter. */
+@media (max-width: 56.25rem) {
+  .letter__stop {
+    --guide-size: 68px;
+  }
+}
+
+@media (max-width: 40rem) {
+  .objects__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Smaller over the first object, so it stands in the space under the title, never on it. */
+  .objects__stop {
+    --guide-size: 60px;
+  }
+  .objects__cell:nth-child(n) {
+    --seam-l: 0;
+    --seam-t: 0;
+  }
+  .objects__cell:nth-child(n + 2) {
+    --seam-t: 1;
+  }
+  .ways__seeds {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A drawn look ([data-drawn], theme-boot.ts): the foot's panel is the paper, ruled round in the ink. */
+:root[data-drawn] .foot__panel {
+  background: var(--echo-surface);
+  box-shadow: inset 0 0 0 var(--echo-line-width) var(--echo-line);
+}

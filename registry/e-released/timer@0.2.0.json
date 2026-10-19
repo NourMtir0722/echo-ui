@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "name": "timer",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "Timer",
+  "description": "A timer that is one button. It opens into its durations; the others run into the one you pick, which fills with the primary plastic and drains as the time runs, then rings three times and folds back. Press the running cap to pause; × or Escape folds it.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "hardware-button",
+    "morph"
+  ],
+  "files": [
+    {
+      "path": "timer/timer.css",
+      "sha256": "7d377ca2cb717ca5aabc351197ccd055722b3f5ffbd460d0c67d7f8e998c66ce",
+      "content": "/* Digits that don't move as they change: the cap keeps its width while it counts. */\n.echo-timer__time {\n  font-variant-numeric: tabular-nums;\n}\n/* \"Time's up\" is the answer, not an action: disabled but at full strength. */\n.echo-timer .echo-hw__cap[data-fill]:disabled {\n  opacity: 1;\n}\n"
+    },
+    {
+      "path": "timer/timer.tsx",
+      "sha256": "85ceea3022d5dda89350300fc6ce74d922f1926b9870f3efed5837d0b30cdfff",
+      "content": "\"use client\";\n\n/**\n * Timer. \"Timer\" opens into its durations; the others run into the one you\n * pick, which fills with the primary plastic and drains as the time runs.\n * When it's up the cap rings three times and folds back. Pause by pressing\n * the running cap; × (or Escape) folds it at any point.\n *\n * Every state is real HardwareButtons in a Morph. The running cap is the\n * duration you picked (they share a `data-morph` name), so it's that cap the\n * others flow into, and its level is HardwareButton's `fill`.\n */\nimport { useEffect, useRef, useState, type ReactNode } from \"react\";\nimport type { MorphFeelName } from \"echo-ui-core/tactile\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Morph } from \"../morph\";\nimport \"./timer.css\";\n\nexport interface TimerDuration {\n  /** What the cap says, e.g. \"30s\". */\n  label: string;\n  ms: number;\n}\n\nexport interface TimerProps {\n  /** What it opens into. Keep to three or four. */\n  durations?: TimerDuration[];\n  /** Called when the time is up. */\n  onDone?: () => void;\n  /** The closed label. */\n  children?: string;\n  feel?: MorphFeelName;\n  size?: \"sm\" | \"md\" | \"lg\";\n  align?: \"center\" | \"start\" | \"end\";\n  className?: string;\n}\n\nconst DEFAULT_DURATIONS: TimerDuration[] = [\n  { label: \"10s\", ms: 10_000 },\n  { label: \"30s\", ms: 30_000 },\n  { label: \"1m\", ms: 60_000 },\n];\n\nconst Svg = ({ children }: { children: ReactNode }) => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.7\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    {children}\n  </svg>\n);\nconst Clock = () => (\n  <Svg>\n    <circle cx=\"8\" cy=\"9\" r=\"5.2\" />\n    <path d=\"M8 6.5v2.7l1.7 1.6M6.3 1.8h3.4\" />\n  </Svg>\n);\nconst Close = () => (\n  <Svg>\n    <path d=\"M4 4l8 8M12 4l-8 8\" />\n  </Svg>\n);\nconst Pause = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <path d=\"M4.5 3h2.6v10H4.5zM8.9 3h2.6v10H8.9z\" fill=\"currentColor\" />\n  </svg>\n);\nconst Play = () => (\n  <svg width=\"100%\" height=\"100%\" viewBox=\"0 0 16 16\" aria-hidden>\n    <path d=\"M5 3.2v9.6l8-4.8z\" fill=\"currentColor\" />\n  </svg>\n);\n\n/** 0:09 — whole seconds, rounded up, so it never says 0:00 while running. */\nexport const clock = (ms: number) => {\n  const s = Math.max(0, Math.ceil(ms / 1000));\n  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, \"0\")}`;\n};\n\ntype Phase = \"closed\" | \"pick\" | \"run\";\n\nexport function Timer({\n  durations = DEFAULT_DURATIONS,\n  onDone,\n  children = \"Timer\",\n  feel,\n  size,\n  align,\n  className,\n}: TimerProps) {\n  const sound = useSoundOptional();\n  const [phase, setPhase] = useState<Phase>(\"closed\");\n  const [chosen, setChosen] = useState(0);\n  const [paused, setPaused] = useState(false);\n  const [left, setLeft] = useState(0);\n  const [status, setStatus] = useState(\"\");\n  const cap = useRef<HTMLButtonElement>(null);\n  const loop = useRef(0);\n  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);\n  const run = useRef({ left: 0, total: 1, at: 0, paused: false });\n  const done = useRef(onDone);\n  done.current = onDone;\n\n  const stop = () => {\n    cancelAnimationFrame(loop.current);\n    timers.current.forEach(clearTimeout);\n    timers.current = [];\n  };\n  useEffect(() => stop, []);\n\n  const close = (said = \"Timer closed\") => {\n    stop();\n    setPhase(\"closed\");\n    setPaused(false);\n    setStatus(said);\n  };\n\n  const ring = () => {\n    setStatus(\"Time's up\");\n    done.current?.();\n    const hw = cap.current?.closest(\".echo-hw\");\n    // Three rings: the cap jumps as if struck, and chimes.\n    for (let k = 0; k < 3; k++) {\n      timers.current.push(\n        setTimeout(() => {\n          sound?.play(\"notify\");\n          hw?.animate(\n            [{ translate: \"0 0\" }, { translate: \"0 -6px\" }, { translate: \"0 0\" }],\n            { duration: 280, easing: \"cubic-bezier(.3,1.6,.5,1)\" },\n          );\n        }, k * 320),\n      );\n    }\n    timers.current.push(setTimeout(() => close(\"Timer finished\"), 1900));\n  };\n\n  const choose = (i: number) => {\n    stop();\n    const total = durations[i]!.ms;\n    run.current = { left: total, total, at: performance.now(), paused: false };\n    setChosen(i);\n    setLeft(total);\n    setPaused(false);\n    setPhase(\"run\");\n    setStatus(`Timer, ${durations[i]!.label}`);\n    let shown = clock(total);\n    const tick = (now: number) => {\n      const r = run.current;\n      if (!r.paused) r.left -= now - r.at;\n      r.at = now;\n      // The level runs every frame, straight onto the cap; the clock only\n      // re-renders when the second changes.\n      cap.current?.style.setProperty(\"--hw-fill\", Math.max(0, r.left / r.total).toFixed(4));\n      const text = clock(r.left);\n      if (text !== shown) {\n        shown = text;\n        setLeft(r.left);\n      }\n      if (r.left > 0) loop.current = requestAnimationFrame(tick);\n      else ring();\n    };\n    loop.current = requestAnimationFrame(tick);\n  };\n\n  const togglePause = () => {\n    const r = run.current;\n    r.paused = !r.paused;\n    r.at = performance.now();\n    setPaused(r.paused);\n    setStatus(r.paused ? \"Paused\" : \"Running\");\n  };\n\n  const over = phase === \"run\" && left <= 0;\n  const Close_ = (\n    <HardwareButton data-morph=\"close\" size={size} icon={<Close />} iconOnly aria-label=\"Close timer\" onClick={() => close()} />\n  );\n\n  return (\n    <Morph\n      feel={feel}\n      align={align}\n      className={[\"echo-timer\", className].filter(Boolean).join(\" \")}\n      status={status}\n      label={phase === \"pick\" ? \"Timer durations\" : undefined}\n      onEscape={phase === \"closed\" ? undefined : () => close()}\n    >\n      {phase === \"closed\" ? (\n        <HardwareButton size={size} icon={<Clock />} onClick={() => setPhase(\"pick\")}>\n          {children}\n        </HardwareButton>\n      ) : phase === \"pick\" ? (\n        <>\n          {durations.map((d, i) => (\n            <HardwareButton\n              key={d.label}\n              data-morph={`d${i}`}\n              size={size}\n              aria-label={`${d.label} timer`}\n              onClick={() => choose(i)}\n            >\n              {d.label}\n            </HardwareButton>\n          ))}\n          {Close_}\n        </>\n      ) : (\n        <>\n          <HardwareButton\n            ref={cap}\n            data-morph={`d${chosen}`}\n            size={size}\n            icon={paused ? <Play /> : <Pause />}\n            fill={1}\n            disabled={over}\n            aria-label={`${paused ? \"Resume\" : \"Pause\"} timer, ${clock(left)} left`}\n            onClick={togglePause}\n          >\n            <span className=\"echo-timer__time\">{over ? \"Time's up\" : clock(left)}</span>\n          </HardwareButton>\n          {Close_}\n        </>\n      )}\n    </Morph>\n  );\n}\n"
+    },
+    {
+      "path": "timer/index.ts",
+      "sha256": "7ee553b352783921809a3b28dfd91b598c821d3a36ea86e721132a0855d4dc1a",
+      "content": "export { Timer } from \"./timer\";\nexport type { TimerDuration, TimerProps } from \"./timer\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Six more that change shape as you use them, all on `Morph`.** `SaveButton` narrows into its own progress while your save runs, widens into a lit \"Saved\" and flows back. `Timer` opens into durations; the others run into the one you pick, which drains as the time runs and rings. `Stopwatch` buds a Lap button from Start, and every lap is a drop that lands in the lap count. `VoiceNote` records from the microphone: your voice swells the Stop button, and the take becomes a note that fills as it plays. `AddToBag` sends a drop from the button into the count beside it. `useBudOff` is that drop on its own, from any element into any other. `Morph` now keeps a button's identity across states when it has the same `data-morph` name, and draws filled caps as levels."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

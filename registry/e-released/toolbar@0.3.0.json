@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "name": "toolbar",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Toolbar",
+  "description": "Several caps sharing one long well, like keys on one bar. ButtonGroup is the look alone: HardwareButtons that belong together, each its own tab stop. Toolbar adds a toolbar's behaviour: one tab stop for the whole bar and the arrow keys between its controls (Base UI Toolbar), sm controls by default, ToolbarGroup to keep a few in their own well, ToolbarSeparator between groups. Toggles and ToggleGroups inside join its arrow-key order by themselves.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "size"
+  ],
+  "files": [
+    {
+      "path": "toolbar/toolbar.tsx",
+      "sha256": "5250c4ceb7a97476f3fa05ba99810859c105c445b25245d3dd06938b61424765",
+      "content": "\"use client\";\n\n/**\n * Toolbar and ButtonGroup. Several caps sharing one long well, like a row of\n * keys on one bar.\n *\n * ButtonGroup is the look alone: HardwareButtons that belong together (a\n * split \"Save | ▾\", Back and Next) in one well, each still its own tab stop.\n *\n * Toolbar is the look plus the behaviour of a toolbar: one tab stop for the\n * whole bar and the arrow keys between its controls (Base UI Toolbar), a\n * name, and `sm` controls unless you say otherwise. Put ToolbarButtons,\n * Toggles and ToggleGroups in it (they join its arrow-key order by\n * themselves), with ToolbarGroup to keep a few together and\n * ToolbarSeparator between groups. A toolbar that runs out of room wraps.\n */\nimport { forwardRef, type ReactNode } from \"react\";\nimport { Toolbar as BaseToolbar } from \"@base-ui/react/toolbar\";\nimport { HardwareButton, type HardwareButtonProps } from \"../hardware-button\";\nimport { SizeProvider, useControlSize, type ControlSize } from \"../size\";\nimport { InToolbar } from \"./toolbar-context\";\nimport \"./toolbar.css\";\n\ntype Named = { \"aria-label\": string; \"aria-labelledby\"?: string } | { \"aria-labelledby\": string; \"aria-label\"?: string };\n\nexport type ButtonGroupProps = {\n  /** HardwareButtons that belong together. */\n  children: ReactNode;\n  /** Height on the control scale for every button inside. */\n  size?: ControlSize;\n} & Named;\n\nexport function ButtonGroup({ children, size: ownSize, ...name }: ButtonGroupProps) {\n  const size = useControlSize(ownSize);\n  return (\n    <div className=\"echo-button-group\" role=\"group\" data-size={size} {...name}>\n      <SizeProvider size={size}>{children}</SizeProvider>\n    </div>\n  );\n}\n\nexport type ToolbarProps = {\n  /** ToolbarButtons, Toggles, ToggleGroups, ToolbarGroups, ToolbarSeparators. */\n  children: ReactNode;\n  orientation?: \"horizontal\" | \"vertical\";\n  /** Height on the control scale for everything inside. Default `sm`. */\n  size?: ControlSize;\n} & Named;\n\nexport function Toolbar({ children, orientation = \"horizontal\", size = \"sm\", ...name }: ToolbarProps) {\n  return (\n    <BaseToolbar.Root\n      className=\"echo-toolbar\"\n      data-size={size}\n      orientation={orientation}\n      // Home and End jump to the bar's ends, as the toolbar pattern has it;\n      // Base UI's roving focus follows wherever focus lands.\n      onKeyDown={(e) => {\n        if (e.key !== \"Home\" && e.key !== \"End\") return;\n        const items = [...e.currentTarget.querySelectorAll<HTMLElement>(\"[data-focusable]:not([data-disabled])\")];\n        const to = e.key === \"Home\" ? items[0] : items.at(-1);\n        if (!to) return;\n        e.preventDefault();\n        to.focus();\n      }}\n      {...name}\n    >\n      <InToolbar.Provider value={true}>\n        <SizeProvider size={size}>{children}</SizeProvider>\n      </InToolbar.Provider>\n    </BaseToolbar.Root>\n  );\n}\n\n/** A HardwareButton that takes its place in the Toolbar's arrow-key order. */\nexport const ToolbarButton = forwardRef<HTMLButtonElement, HardwareButtonProps>(function ToolbarButton(props, ref) {\n  return <BaseToolbar.Button ref={ref} render={<HardwareButton {...props} />} />;\n});\n\nexport type ToolbarGroupProps = { children: ReactNode; \"aria-label\"?: string };\n\n/** A few of a Toolbar's controls kept together in their own well. */\nexport function ToolbarGroup({ children, ...name }: ToolbarGroupProps) {\n  return (\n    <BaseToolbar.Group className=\"echo-toolbar__group\" {...name}>\n      {children}\n    </BaseToolbar.Group>\n  );\n}\n\n/** An engraved line between a Toolbar's groups. */\nexport function ToolbarSeparator() {\n  return <BaseToolbar.Separator className=\"echo-toolbar__separator\" />;\n}\n"
+    },
+    {
+      "path": "toolbar/toolbar-context.ts",
+      "sha256": "1883bd9349b0bb09d559889c4b2f79853ce35b18b54fa770ddf3b64e4c7f019c",
+      "content": "\"use client\";\n\nimport { createContext, useContext } from \"react\";\n\n/** True inside a Toolbar: its controls render through Base UI's Toolbar parts. */\nexport const InToolbar = createContext(false);\n\nexport const useInToolbar = () => useContext(InToolbar);\n"
+    },
+    {
+      "path": "toolbar/toolbar.css",
+      "sha256": "c0270a13f5735ce25a86eeb5d8ef5b45d163f267585e5516b54b68df9fe484fc",
+      "content": "/**\n * ButtonGroup and Toolbar. One long well; the caps inside give up their own\n * wells and sit side by side on its floor. The group is the control height:\n * each HardwareButton's cap is already the height less a well.\n */\n.echo-button-group,\n.echo-toolbar__group {\n  --tb-well: var(--echo-space-2, 4px);\n  display: inline-flex;\n  align-items: center;\n  box-sizing: border-box;\n  padding: var(--tb-well);\n  gap: var(--tb-well);\n  border-radius: var(--echo-radius-lg);\n  box-shadow: var(\n    --echo-shadow-well,\n    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n.echo-button-group[data-size=\"sm\"],\n.echo-toolbar[data-size=\"sm\"] .echo-toolbar__group {\n  --tb-well: var(--echo-space-1, 2px);\n}\n/* Inside the shared well, a button's own well is only its cap's footprint. */\n:is(.echo-button-group, .echo-toolbar__group) .echo-hw__well {\n  padding: 0;\n  box-shadow: none;\n}\n/* A Toggle or ToggleGroup in a group gives up its own well too. */\n:is(.echo-button-group, .echo-toolbar__group) :is(.echo-toggle, .echo-toggle-group) {\n  padding: 0;\n  box-shadow: none;\n  height: calc(var(--ctl-h) - 2 * var(--tb-well));\n}\n\n.echo-toolbar {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: var(--echo-space-4);\n  min-width: 0;\n}\n.echo-toolbar[data-orientation=\"vertical\"] {\n  flex-direction: column;\n  align-items: stretch;\n}\n.echo-toolbar__separator {\n  align-self: stretch;\n  width: var(--echo-border-hairline, 1px);\n  margin-block: var(--echo-space-2);\n  background: var(--echo-seam);\n  box-shadow: 1px 0 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1)));\n}\n.echo-toolbar[data-orientation=\"vertical\"] .echo-toolbar__separator {\n  width: auto;\n  height: var(--echo-border-hairline, 1px);\n  margin-block: 0;\n  margin-inline: var(--echo-space-2);\n}\n@media (forced-colors: active) {\n  .echo-button-group,\n  .echo-toolbar__group {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-toolbar__separator {\n    background: CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "toolbar/index.ts",
+      "sha256": "abe6451a9480f930b9f3af7f5150660c56915637afca52368f42416216a27ee5",
+      "content": "export { Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator, ButtonGroup } from \"./toolbar\";\nexport type { ToolbarProps, ToolbarGroupProps, ButtonGroupProps } from \"./toolbar\";\nexport { useInToolbar } from \"./toolbar-context\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The rest of the inputs: `Toggle`, `Toolbar`, `Meter`, `RangeSlider`, and two instruments, `Knob` and `LevelMeter`.** Plus `start` and `end` on `Field`. - **`Toggle` / `ToggleGroup`**: the quiet toolbar key. On is the cap held down in its well, not a light; a group shares one well, with arrow keys between its keys, `multiple` or at most one. - **`Toolbar` / `ButtonGroup`**: caps sharing one long well. A Toolbar is one tab stop with the arrow keys, Home and End along it, and `sm` controls; Toggles and ToggleGroups inside join its order by themselves. A ButtonGroup is the look alone. - **`Field` `start` / `end`**: a search icon or a currency sign engraved into the well before the text; a unit or a small key (clear, show password) after it. - **`Meter`**: a measurement in a range (storage, battery), a tube of lit plastic that settles to its level with a small slosh; `marks` engrave a limit without a second colour. - **`RangeSlider`**: two of Slider's knobs on one rail for a span, named \"…, minimum\" and \"…, maximum\"; they never cross. - **`Knob`**: a rotary cap with a lit scale. Drag it, wheel it once focused, or use the slider keys; it clicks at each step and settles onto each detent on a spring. - **`LevelMeter`**: a live level as LED cells with real ballistics and a held peak. It draws without re-rendering, stops once it's still, and tells a screen reader its level at most once a second."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

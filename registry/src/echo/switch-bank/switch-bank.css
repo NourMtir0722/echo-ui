@@ -1,0 +1,24 @@
+/**
+ * SwitchBank. A Table of Switches: the column headers carry a Checkbox that
+ * flips the column; the corner repeats nothing a reader needs, so it's kept
+ * quiet. Composes var(--echo-*).
+ */
+.echo-switch-bank {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+.echo-switch-bank__corner {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.echo-switch-bank__column {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+  white-space: nowrap;
+  flex-shrink: 0;
+}

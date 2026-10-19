@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "name": "keypad",
+  "version": "0.3.3",
+  "kind": "component",
+  "title": "Keypad",
+  "description": "A payment terminal's keys under its screen. An amount fills from the right the way a till does (1, 2, 4, 0 reads 12.40) with its unused digits dim; a PIN lights a socket per digit and never shows them; a code shows its digits in cells. Type on a real keyboard and the key on screen goes down with your finger. It replaces the phone's own keyboard, so none pops up over it.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button",
+    "segment-display",
+    "status-dot",
+    "scope"
+  ],
+  "files": [
+    {
+      "path": "keypad/keypad.tsx",
+      "sha256": "ac0d58d3859b7277e21d83fef1ed79b08de6a9bb2247a5d1dcf6b113cf385a33",
+      "content": "\"use client\";\n\n/**\n * Keypad. A payment terminal's keys under its screen: an amount, a PIN or a\n * code entered on HardwareButton caps, with the reading above them.\n *\n * - `amount` fills from the right, the way a till does: 1, 2, 4, 0 reads\n *   12.40, so nobody hunts for a decimal point. The unused digits stay on\n *   the screen, dim.\n * - `pin` shows a lit socket for each digit, never the digits.\n * - `digits` is a code or a number to dial, drawn in its cells.\n *\n * Type on a real keyboard and the key on screen goes down with your finger:\n * the pad shows what your hands did. It's one Tab stop; the arrow keys move\n * between keys, and digits and Backspace work wherever focus is on the pad.\n * The keypad replaces the phone's own keyboard, so none pops up over it.\n */\nimport {\n  forwardRef,\n  useCallback,\n  useEffect,\n  useRef,\n  useState,\n  type FocusEvent,\n  type KeyboardEvent,\n  type ReactNode,\n} from \"react\";\nimport type { EchoInterop } from \"echo-ui-core/types\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { SegmentDisplay } from \"../segment-display\";\nimport { StatusDot } from \"../status-dot\";\nimport { digitsOf, press, valueOf, type KeypadMode } from \"./entry\";\nimport \"../scope/scope.css\";\nimport \"./keypad.css\";\n\nexport type { KeypadMode } from \"./entry\";\n\nexport interface KeypadProps extends EchoInterop {\n  /** What is being entered: the machine label on the screen, and the pad's accessible name. */\n  label: string;\n  /** `amount` (default) fills from the right; `pin` shows a lit socket per digit; `digits` shows a code. */\n  mode?: KeypadMode;\n  /** Controlled value: \"12.40\" for an amount, the digits for a PIN or a code. */\n  value?: string;\n  defaultValue?: string;\n  onValueChange?: (value: string) => void;\n  /** Called once a PIN or a code has all its digits. */\n  onComplete?: (value: string) => void;\n  /** Most digits it takes: an amount's including its decimals (default 6), a PIN's length (default 4), a code's (default 12). */\n  maxLength?: number;\n  /** An amount's decimal places. Default 2. */\n  decimals?: number;\n  /** Engraved before the reading: \"$\", \"€\". */\n  prefix?: string;\n  /** Engraved after the reading, and said with it. */\n  unit?: string;\n  /** The way forward under the keys, usually one HardwareButton. */\n  action?: ReactNode;\n  /** `emissive` (default): a dark screen that glows. `reflective`: the paper-coloured glass of a pocket calculator, printed in ink. */\n  screen?: \"emissive\" | \"reflective\";\n}\n\nconst DEFAULT_MAX: Record<KeypadMode, number> = { amount: 6, pin: 4, digits: 12 };\n\n/** Delete, drawn: a key cap's own glyph. */\nconst DeleteGlyph = (\n  <svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden=\"true\">\n    <path d=\"M9 5h11v14H9l-6-7z\" />\n    <path d=\"M12.5 9.5l5 5M17.5 9.5l-5 5\" />\n  </svg>\n);\n\n/**\n * `forwardRef`, not a `ref` prop — see the note on `Field`. The ref lands on\n * the pad, which takes focus and hands it to the key you were last on.\n */\nexport const Keypad = forwardRef<HTMLDivElement, KeypadProps>(function Keypad(\n  {\n    label,\n    mode = \"amount\",\n    value,\n    defaultValue,\n    onValueChange,\n    onComplete,\n    maxLength,\n    decimals = 2,\n    prefix,\n    unit,\n    action,\n    screen = \"emissive\",\n    disabled = false,\n    readOnly = false,\n    name,\n    autoFocus,\n    onKeyDown: onKeyDownProp,\n    onFocus: onFocusProp,\n    onBlur: onBlurProp,\n    ...interop\n  },\n  ref,\n) {\n  const max = maxLength ?? DEFAULT_MAX[mode];\n  const [inner, setInner] = useState(() => digitsOf(defaultValue ?? \"\", mode, decimals));\n  const digits = value === undefined ? inner : digitsOf(value, mode, decimals);\n  const current = valueOf(digits, mode, decimals);\n  const off = disabled || readOnly;\n\n  const layout: (string | null)[] = [\n    \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\",\n    mode === \"amount\" ? \"00\" : null,\n    \"0\",\n    \"delete\",\n  ];\n  const keyRefs = useRef<(HTMLButtonElement | null)[]>([]);\n  const [active, setActive] = useState(0);\n\n  // One Tab stop: only the key you were last on is in the tab order.\n  useEffect(() => {\n    keyRefs.current.forEach((key, i) => {\n      if (key) key.tabIndex = i === active ? 0 : -1;\n    });\n  });\n  useEffect(() => {\n    if (autoFocus) keyRefs.current[0]?.focus();\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, []);\n\n  const latest = useRef(digits);\n  latest.current = digits;\n  const type = useCallback(\n    (key: string) => {\n      if (off) return;\n      const next = press(latest.current, key, mode, max);\n      if (next === latest.current) return;\n      latest.current = next;\n      if (value === undefined) setInner(next);\n      const out = valueOf(next, mode, decimals);\n      onValueChange?.(out);\n      if (mode !== \"amount\" && next.length === max && key !== \"delete\") onComplete?.(out);\n    },\n    [off, mode, max, value, decimals, onValueChange, onComplete],\n  );\n\n  /**\n   * A key typed on a real keyboard goes down on screen too, with its click,\n   * and stays down while the finger does: it comes up with the key, or when\n   * focus leaves the pad, and never sooner than a glimpse after it\n   * went down, so a quick tap still shows. The cap is moved directly, never by\n   * sending it key events, so nothing else on the page hears a key nobody\n   * pressed.\n   */\n  const [struck, setStruck] = useState<number | null>(null);\n  const release = useRef<number | undefined>(undefined);\n  const struckAt = useRef(0);\n  const strike = (index: number) => {\n    window.clearTimeout(release.current);\n    struckAt.current = performance.now();\n    setStruck(index);\n  };\n  const lift = () => {\n    window.clearTimeout(release.current);\n    const wait = Math.max(0, 90 - (performance.now() - struckAt.current));\n    release.current = window.setTimeout(() => setStruck(null), wait);\n  };\n  useEffect(() => () => window.clearTimeout(release.current), []);\n\n  // Focus given to the pad itself (a form library's setFocus, the ref's\n  // focus()) goes on to its key, so the arrows and the Tab stop work from there.\n  const onFocus = (e: FocusEvent<HTMLDivElement>) => {\n    onFocusProp?.(e);\n    if (e.target === e.currentTarget) keyRefs.current[active]?.focus();\n  };\n\n  const onKeyUp = (e: KeyboardEvent<HTMLDivElement>) => {\n    if (/^\\d$/.test(e.key) || e.key === \"Backspace\" || e.key === \"Delete\") lift();\n  };\n\n  const onBlur = (e: FocusEvent<HTMLDivElement>) => {\n    onBlurProp?.(e);\n    // Leaving the pad lets the key up: its keyup will land somewhere else.\n    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) lift();\n  };\n\n  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {\n    // The caller's handler runs first and may take the key for itself.\n    onKeyDownProp?.(e);\n    if (e.defaultPrevented) return;\n    const keys = keyRefs.current;\n    const at = keys.findIndex((k) => k === document.activeElement);\n    const move: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 3, ArrowUp: -3 };\n    if (at >= 0 && (e.key in move || e.key === \"Home\" || e.key === \"End\")) {\n      e.preventDefault();\n      const present = keys.map((k, i) => (k ? i : -1)).filter((i) => i >= 0);\n      let to = e.key === \"Home\" ? present[0]! : e.key === \"End\" ? present.at(-1)! : at + move[e.key]!;\n      // Step over the gap where a PIN pad has no key.\n      if (!keys[to]) to = e.key === \"ArrowLeft\" || e.key === \"ArrowUp\" ? to - 1 : to + 1;\n      const key = keys[to];\n      if (key) {\n        setActive(to);\n        key.focus();\n      }\n      return;\n    }\n    const typed = /^\\d$/.test(e.key) ? e.key : e.key === \"Backspace\" || e.key === \"Delete\" ? \"delete\" : null;\n    if (typed === null || e.metaKey || e.ctrlKey || e.altKey) return;\n    e.preventDefault();\n    const index = layout.indexOf(typed);\n    if (index >= 0 && keys[index] && !e.repeat && !off) strike(index);\n    type(typed);\n  };\n\n  const shown = mode === \"amount\" ? current || valueOf(\"0\", mode, decimals) : current;\n  const said =\n    mode === \"pin\"\n      ? `${digits.length} of ${max} digits entered`\n      : `${prefix ?? \"\"}${shown}${unit ? ` ${unit}` : \"\"}`;\n\n  return (\n    <div\n      ref={ref}\n      className=\"echo-keypad\"\n      role=\"group\"\n      aria-label={label}\n      tabIndex={-1}\n      data-disabled={disabled || undefined}\n      {...interop}\n      onKeyDown={onKeyDown}\n      onKeyUp={onKeyUp}\n      onFocus={onFocus}\n      onBlur={onBlur}\n    >\n      <div className=\"echo-keypad__screen\" data-echo-screen={screen === \"reflective\" ? \"reflective\" : undefined}>\n        <span className=\"echo-keypad__label\" aria-hidden=\"true\">\n          {label}\n        </span>\n        <div className=\"echo-keypad__reading\" aria-hidden=\"true\">\n          {mode === \"pin\" ? (\n            <span className=\"echo-keypad__sockets\">\n              {Array.from({ length: max }, (_, i) => (\n                <StatusDot key={i} on={i < digits.length} decorative />\n              ))}\n            </span>\n          ) : (\n            <>\n              {prefix ? <span className=\"echo-keypad__prefix\">{prefix}</span> : null}\n              <SegmentDisplay\n                variant=\"flush\"\n                label={label}\n                value={shown}\n                digits={max}\n                pad={mode === \"amount\" ? \"0\" : \" \"}\n                unit={unit}\n              />\n            </>\n          )}\n        </div>\n        <span className=\"echo-keypad__said\" aria-live=\"polite\">\n          {said}\n        </span>\n      </div>\n      <div className=\"echo-keypad__keys\">\n        {layout.map((key, i) =>\n          key === null ? (\n            <span key=\"gap\" className=\"echo-keypad__gap\" />\n          ) : (\n            <HardwareButton\n              key={key}\n              ref={(node: HTMLButtonElement | null) => {\n                keyRefs.current[i] = node;\n              }}\n              size=\"lg\"\n              fullWidth\n              disabled={off}\n              held={struck === i}\n              onFocus={() => setActive(i)}\n              onClick={() => type(key)}\n              {...(key === \"delete\"\n                ? { iconOnly: true as const, icon: DeleteGlyph, \"aria-label\": \"Delete\" }\n                : { children: key })}\n            />\n          ),\n        )}\n      </div>\n      {action ? <div className=\"echo-keypad__action\">{action}</div> : null}\n      {name ? <input type=\"hidden\" name={name} value={current} /> : null}\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "keypad/keypad.css",
+      "sha256": "5bb419eda71212b0f157e9c379fea17101c29c9d6cfd0e816f964fecb67d97b4",
+      "content": "/**\n * Keypad. The screen well with the reading, and a 3 × 4 grid of HardwareButton\n * caps under it. Composes var(--echo-*) — no hex literals; the only fixed\n * values are the single-key-light occlusion model.\n */\n.echo-keypad {\n  display: grid;\n  gap: var(--echo-space-8);\n  inline-size: 100%;\n  max-inline-size: 360px;\n  min-inline-size: 0;\n  outline: none;\n}\n\n.echo-keypad__screen {\n  position: relative;\n  display: grid;\n  gap: var(--echo-space-4);\n  padding: var(--echo-space-6) var(--echo-space-8) var(--echo-space-7);\n  border-radius: var(--echo-radius-xl);\n  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));\n  box-shadow: var(\n    --echo-shadow-well-deep,\n    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.9 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)\n  );\n}\n.echo-keypad:focus-visible .echo-keypad__screen {\n  box-shadow:\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow)),\n    inset 0 3px 7px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.9 * var(--echo-shade, 1) * 100%), transparent);\n}\n\n.echo-keypad__label,\n.echo-keypad__prefix {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n.echo-keypad__reading {\n  display: flex;\n  align-items: flex-start;\n  justify-content: flex-end;\n  gap: var(--echo-space-3);\n  min-block-size: 40px;\n  min-inline-size: 0;\n}\n.echo-keypad__prefix {\n  font-size: var(--echo-text-lg);\n  letter-spacing: var(--echo-tracking-normal, 0);\n  color: var(--echo-accent-ink, var(--echo-accent-glow));\n}\n\n/* A PIN: a socket per digit, lit as each is typed. */\n.echo-keypad__sockets {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: var(--echo-space-7);\n  inline-size: 100%;\n  min-block-size: 40px;\n}\n\n.echo-keypad__said {\n  position: absolute;\n  inline-size: 1px;\n  block-size: 1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n}\n\n.echo-keypad__keys {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: var(--echo-space-5);\n}\n/* Digits on a keypad read big, in the face readouts use. */\n.echo-keypad__keys .echo-hw {\n  --hw-font: var(--echo-text-xl);\n  --hw-icon: var(--echo-icon-lg, 20px);\n}\n.echo-keypad__keys .echo-hw__cap {\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-variant-numeric: tabular-nums;\n  letter-spacing: var(--echo-tracking-normal, 0);\n}\n\n.echo-keypad[data-disabled] .echo-keypad__screen {\n  opacity: 0.55;\n}\n\n@media (forced-colors: active) {\n  .echo-keypad__screen {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-keypad:focus-visible .echo-keypad__screen {\n    outline: 2px solid Highlight;\n    outline-offset: 2px;\n  }\n}\n"
+    },
+    {
+      "path": "keypad/entry.ts",
+      "sha256": "41ee4d8fa0eddf229b85bff329da04afc8e79989a83cc4cfe1dc699317a19fd9",
+      "content": "/**\n * What a keypad holds, as numbers. Pure: no React, no DOM.\n *\n * A keypad holds the digits typed, in order. An amount fills from the right,\n * the way a till does: typing 1, 2, 4, 0 with two decimals reads 12.40, so\n * nobody ever has to find a decimal point.\n */\n\nexport type KeypadMode = \"amount\" | \"pin\" | \"digits\";\n\n/**\n * The digits a value holds. A PIN or a code is its digits as written. An\n * amount is read as a number and given exactly `decimals` places, so it\n * doesn't matter how it was written: \"12.4\", \"12.40\" and String(12.4) are all\n * \"1240\" with two decimals, \"12\" is \"1200\", and \"0.05\" is \"5\". Places past the\n * pad's are cut, the way a till can't hold them.\n */\nexport function digitsOf(value: string, mode: KeypadMode, decimals = 2): string {\n  if (mode !== \"amount\") return value.replace(/\\D/g, \"\");\n  const [whole = \"\", fraction = \"\"] = value.replace(/[^\\d.]/g, \"\").split(\".\");\n  const cents = decimals > 0 ? fraction.slice(0, decimals).padEnd(decimals, \"0\") : \"\";\n  return `${whole}${cents}`.replace(/^0+/, \"\");\n}\n\n/** The value typed digits make: \"1240\" → \"12.40\" for an amount with two decimals. */\nexport function valueOf(digits: string, mode: KeypadMode, decimals: number): string {\n  if (mode !== \"amount\" || digits === \"\") return digits;\n  if (decimals === 0) return digits;\n  const padded = digits.padStart(decimals + 1, \"0\");\n  return `${padded.slice(0, -decimals)}.${padded.slice(-decimals)}`;\n}\n\n/**\n * Type one key. An amount never starts with a zero (0 then 5 is just 5) and\n * stops at `max` digits; a PIN or a code stops at its length.\n */\nexport function press(digits: string, key: string, mode: KeypadMode, max: number): string {\n  if (key === \"delete\") return digits.slice(0, -1);\n  let next = digits;\n  for (const d of key) {\n    if (!/\\d/.test(d) || next.length >= max) break;\n    if (mode === \"amount\" && next === \"\" && d === \"0\") continue;\n    next += d;\n  }\n  return next;\n}\n"
+    },
+    {
+      "path": "keypad/index.ts",
+      "sha256": "85a2368321de9286ffda87176d00cf61657ccdf5ec8e13431d3d48fd9e0201d3",
+      "content": "export { Keypad } from \"./keypad\";\nexport type { KeypadProps, KeypadMode } from \"./keypad\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.3",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments in 43 components, reworded.** Comments only: no behaviour, prop, class or token changed, so re-adding one gives you the same component."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`Keypad`: a payment terminal's keys under its screen.** `amount` fills from the right the way a till does (1, 2, 4, 0 reads 12.40) with its unused digits dim; `pin` lights a socket per digit and never shows or says them; `digits` shows a code in its cells. An amount set from outside is read as a number, however many places it's written with. Type on a real keyboard and the key on screen goes down with your finger. One Tab stop with arrow keys between the keys (focusing the pad hands focus to one), the reading announced after each one, and `action` for the button under the keys."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Reflective screens.** `screen=\"reflective\"` gives a screen the paper glass of a pocket calculator, printed in ink: digits, labels and ghost segments in the chassis colour, nothing glowing. The ink is held to AA on the glass under every theme. On `SegmentDisplay`, `Tuner`, `Keypad`, `DateTile`, `NowPlaying`, `Annunciator` and `DescriptionList`'s screen."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**A key typed on the keyboard stays down while it's held**. A Keypad key typed on a real keyboard went down on screen for 90ms, however long the finger stayed on it. It now comes up when that key is let go, or when focus leaves the pad, and a quick tap still shows."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

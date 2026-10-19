@@ -1,0 +1,65 @@
+import { CheckRules, ConfigReference, EchoConfig } from "@/components/guides/live";
+
+# echo.json
+
+`echo.json` is the one file that says how a project uses Echo: where the components go, which
+registry they come from, the seed its theme is made from, the style it wears, and what the check
+and Echo's tests do. `init` writes it, and this is what it writes:
+
+<EchoConfig />
+
+Everything else is added by a command (`init --seed`, `style use`, `style set`) or by you (`check`
+and `test`). Nothing past these is needed. The file points at its own schema, so an
+editor completes each field and says what it is, in the same words as this page.
+
+It's plain JSON, so a trailing comma or a comment makes it unreadable. Every command, the hook
+and the Stop gate included, then stops and says which file and where it stopped reading, and
+nothing is written over it, `init --yes` included. `echo-lock.json` is held the same way.
+
+## Every field
+
+<ConfigReference />
+
+`seed` is what [Theming](/docs/theming#the-seed) describes, and `style` is what
+[`style use`](/docs/styles#wearing-one) writes. Move a setting with `npx echo-ui-cli style set`,
+which checks every value first and writes `echo-theme.css` and `DESIGN.md` again; alone, it lists
+where each setting is.
+
+## What you add
+
+**Your team's rules**, in `check`. Turn a rule `off`, or to `info` (said, never counted); ban an
+import, in your own words; allow brand colours the seed doesn't make:
+
+```json
+{
+  "check": {
+    "rules": { "space": "info", "axe:target-size": "info" },
+    "ban": [{ "import": "lucide-react", "message": "our icons are in @/icons." }],
+    "colours": ["#FF5A1F"]
+  }
+}
+```
+
+**Where Echo's tests run**, in `test`: the app's address, the pages, the widths, and whether
+Claude Code's [Stop gate](/docs/checks#the-stop-gate) runs them:
+
+```json
+{
+  "test": { "url": "http://localhost:3000", "routes": ["/", "/pricing"], "widths": [390, 1280], "stop": true }
+}
+```
+
+Without `test`, `npx echo-ui-cli test` finds the app on the port its dev script runs on and tests
+every route it has.
+
+## Rule names
+
+These are the names `check.rules` takes. A name that isn't one of them stops the check and says so,
+rather than quietly turning nothing off.
+
+<CheckRules />
+
+`axe:<id>` takes one of the rules axe runs, by axe-core's own ID: `axe:target-size`,
+`axe:image-alt`. Keeping the problems a project already has, rule by rule, means new ones still
+count; `"axe": "info"` would hide those too. [Checks and tests](/docs/checks) has which rule runs
+where.

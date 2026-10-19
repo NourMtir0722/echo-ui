@@ -1,0 +1,188 @@
+{
+  "default (Nawwara)": {
+    "seed": {},
+    "roles": {
+      "surface": "#232130",
+      "cap": "#393748",
+      "cap-highlight": "#514f62",
+      "cap-shadow": "#171525",
+      "well": "#0c0917",
+      "accent": "#8b6fe8",
+      "accent-highlight": "#bcbef7",
+      "accent-pressed": "#6148aa",
+      "accent-glow": "#8f74eb",
+      "primary-cap-top": "#7258c5",
+      "primary-cap-mid": "#664eb3",
+      "primary-cap-base": "#503c8e",
+      "accent-fill-top": "#b8afec",
+      "accent-fill-base": "#9177eb",
+      "lcd": "#090713",
+      "lcd-glow": "#8f74eb",
+      "text": "#EFEBFA",
+      "text-dim": "#aba8b6",
+      "seam": "#070511"
+    }
+  },
+  "Raspberry": {
+    "seed": {
+      "accent": "#DE3B74",
+      "chassis": "#26222B",
+      "paper": "#F5EDE0"
+    },
+    "roles": {
+      "surface": "#26222B",
+      "cap": "#3d3842",
+      "cap-highlight": "#55505c",
+      "cap-shadow": "#1b1620",
+      "well": "#0e0b12",
+      "accent": "#de3b74",
+      "accent-highlight": "#f0a6c0",
+      "accent-pressed": "#a51e51",
+      "accent-glow": "#e7497d",
+      "primary-cap-top": "#c52f65",
+      "primary-cap-mid": "#b4265a",
+      "primary-cap-base": "#911a47",
+      "accent-fill-top": "#f0a3b5",
+      "accent-fill-base": "#e95884",
+      "lcd": "#0b070f",
+      "lcd-glow": "#e7497d",
+      "text": "#F5EDE0",
+      "text-dim": "#b1a99d",
+      "seam": "#09060d"
+    }
+  },
+  "Coral": {
+    "seed": {
+      "accent": "#F2674E",
+      "chassis": "#2B2224",
+      "paper": "#F9ECE7"
+    },
+    "roles": {
+      "surface": "#2B2224",
+      "cap": "#42383a",
+      "cap-highlight": "#5d4f52",
+      "cap-shadow": "#201618",
+      "well": "#120b0c",
+      "accent": "#ea6047",
+      "accent-highlight": "#ffbab5",
+      "accent-pressed": "#a1321f",
+      "accent-glow": "#e15b43",
+      "primary-cap-top": "#bf422c",
+      "primary-cap-mid": "#ad3824",
+      "primary-cap-base": "#8b2a1a",
+      "accent-fill-top": "#eba799",
+      "accent-fill-base": "#e2634c",
+      "lcd": "#0f0709",
+      "lcd-glow": "#e15b43",
+      "text": "#F9ECE7",
+      "text-dim": "#b5a8a4",
+      "seam": "#0d0607"
+    }
+  },
+  "Sky": {
+    "seed": {
+      "accent": "#3D8EF0",
+      "chassis": "#1F2330",
+      "paper": "#E9F0FA"
+    },
+    "roles": {
+      "surface": "#1F2330",
+      "cap": "#353a48",
+      "cap-highlight": "#4c5163",
+      "cap-shadow": "#131725",
+      "well": "#080b17",
+      "accent": "#3d8ef0",
+      "accent-highlight": "#a2cffa",
+      "accent-pressed": "#185dab",
+      "accent-glow": "#3e8dec",
+      "primary-cap-top": "#236dc4",
+      "primary-cap-mid": "#1b61b2",
+      "primary-cap-base": "#134b8c",
+      "accent-fill-top": "#93baec",
+      "accent-fill-base": "#3e8dec",
+      "lcd": "#060813",
+      "lcd-glow": "#3e8dec",
+      "text": "#E9F0FA",
+      "text-dim": "#a6acb6",
+      "seam": "#040611"
+    }
+  },
+  "low-chroma accent": {
+    "seed": {
+      "accent": "#1FA8A0"
+    },
+    "roles": {
+      "surface": "#232130",
+      "cap": "#393748",
+      "cap-highlight": "#514f62",
+      "cap-shadow": "#171525",
+      "well": "#0c0917",
+      "accent": "#1ea79f",
+      "accent-highlight": "#acdad0",
+      "accent-pressed": "#006e68",
+      "accent-glow": "#1aa199",
+      "primary-cap-top": "#007872",
+      "primary-cap-mid": "#006a65",
+      "primary-cap-base": "#00504b",
+      "accent-fill-top": "#8ec3be",
+      "accent-fill-base": "#1aa199",
+      "lcd": "#090713",
+      "lcd-glow": "#1aa199",
+      "text": "#EFEBFA",
+      "text-dim": "#aba8b6",
+      "seam": "#070511"
+    }
+  },
+  "very light accent": {
+    "seed": {
+      "accent": "#FFE9A0"
+    },
+    "roles": {
+      "surface": "#232130",
+      "cap": "#393748",
+      "cap-highlight": "#514f62",
+      "cap-shadow": "#171525",
+      "well": "#0c0917",
+      "accent": "#a6914a",
+      "accent-highlight": "#dccdaf",
+      "accent-pressed": "#6d5c21",
+      "accent-glow": "#9f8b46",
+      "primary-cap-top": "#7d6a2b",
+      "primary-cap-mid": "#705f22",
+      "primary-cap-base": "#564819",
+      "accent-fill-top": "#c1b795",
+      "accent-fill-base": "#9f8b46",
+      "lcd": "#090713",
+      "lcd-glow": "#9f8b46",
+      "text": "#EFEBFA",
+      "text-dim": "#aba8b6",
+      "seam": "#070511"
+    }
+  },
+  "dark chassis": {
+    "seed": {
+      "chassis": "#0A0A0C"
+    },
+    "roles": {
+      "surface": "#0A0A0C",
+      "cap": "#29292b",
+      "cap-highlight": "#414146",
+      "cap-shadow": "#030304",
+      "well": "#000000",
+      "accent": "#8b6fe8",
+      "accent-highlight": "#bcbef7",
+      "accent-pressed": "#6148aa",
+      "accent-glow": "#8f74eb",
+      "primary-cap-top": "#7258c5",
+      "primary-cap-mid": "#664eb3",
+      "primary-cap-base": "#503c8e",
+      "accent-fill-top": "#b7adec",
+      "accent-fill-base": "#8f74eb",
+      "lcd": "#000000",
+      "lcd-glow": "#8f74eb",
+      "text": "#EFEBFA",
+      "text-dim": "#aba8b6",
+      "seam": "#000000"
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "name": "pull-cord",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "PullCord",
+  "description": "A switch you pull. A real Echo Switch sits at the top and a cord hangs from it with a cap on its end; pull the cap and the cord stretches, clicks at the detent, and the switch changes when you let go past it. A short pull springs back. The Switch is the control — its state, name, focus, keyboard and form value — and the cord is a way to operate it by hand. Anything inside can read --echo-pull-on to light up.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "switch"
+  ],
+  "files": [
+    {
+      "path": "pull-cord/pull-cord.css",
+      "sha256": "3c67db97951e6d09ece9ea05512d1dabec3df35e78bf3869808527117467697a",
+      "content": "/**\n * PullCord. A real Switch at the top is the fitting the cord hangs from; the\n * cord is drawn, and the cap on its end is a handle in the neutral cap's\n * material, lit when on. `--echo-pull-on` runs 0–1 on a spring for whatever\n * it lights.\n */\n.echo-pull-cord {\n  --echo-pull-on: 0;\n  position: relative;\n  display: inline-flex;\n  flex-direction: column;\n  align-items: center;\n  inline-size: min(var(--echo-pull-width), 100%);\n}\n.echo-pull-cord__mount {\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  display: flex;\n  justify-content: center;\n}\n.echo-pull-cord__stage {\n  position: relative;\n  align-self: stretch;\n  block-size: var(--echo-pull-height);\n  touch-action: none;\n}\n\n.echo-pull-cord__lit {\n  position: absolute;\n  inset: 0;\n}\n\n.echo-pull-cord__cord {\n  position: absolute;\n  inset-block-start: 0;\n  inset-inline: 0;\n  /* The markup carries the width the cord would like to swing in, and the\n     script narrows it after hydration; until then that attribute pushed a\n     narrow screen sideways. The box is the cord's room, before and after. */\n  inline-size: 100%;\n  overflow: visible;\n  pointer-events: none;\n}\n.echo-pull-cord__rope {\n  fill: none;\n  stroke: var(--echo-text-dim);\n  stroke-width: 2;\n  stroke-linecap: round;\n}\n\n/* The cap on the end: placed (inline, translate) from the cord's own\n   coordinates. A handle for the hand; the Switch is the control. */\n.echo-pull-cord__bead {\n  position: absolute;\n  display: block;\n  inline-size: 22px;\n  block-size: 22px;\n  padding: 0;\n  border: 0;\n  border-radius: var(--echo-radius-full);\n  cursor: grab;\n  touch-action: none;\n  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 45%, var(--echo-cap-shadow) 100%);\n  box-shadow:\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),\n    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),\n    0 3px 0 var(--echo-line-width, 0px) var(--echo-seam),\n    0 6px 10px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-pull-cord__bead:active {\n  cursor: grabbing;\n}\n.echo-pull-cord[data-on] .echo-pull-cord__bead {\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow:\n    inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1))),\n    0 3px 0 var(--echo-accent-6),\n    0 6px 14px color-mix(in oklch, var(--echo-accent-4) 40%, transparent);\n}\n.echo-pull-cord[data-disabled] .echo-pull-cord__bead {\n  cursor: default;\n  opacity: 0.45;\n}\n\n@media (forced-colors: active) {\n  .echo-pull-cord__rope {\n    stroke: CanvasText;\n  }\n  .echo-pull-cord__bead {\n    border: var(--echo-border-hairline, 1px) solid ButtonText;\n  }\n  .echo-pull-cord[data-on] .echo-pull-cord__bead {\n    background: Highlight;\n  }\n}\n"
+    },
+    {
+      "path": "pull-cord/pull-cord.tsx",
+      "sha256": "058895d587e30013d7c7ba13687f08ef99b9e49917149a4f04c185139d12e4e7",
+      "content": "\"use client\";\n\n/**\n * PullCord. A switch you pull. A real Echo Switch sits at the top, and a cord\n * hangs from it with a cap on its end; grab the cap and pull, the cord\n * stretches a little, clicks at the detent, and the switch changes when you\n * let go past it. A short pull springs back and changes nothing.\n *\n * The Switch is the control: its state, its name (`label`), its focus and\n * keyboard, and its form value (`name`). The cord is a way to operate it by\n * hand, so it's hidden from assistive tech; flip the Switch any other way and\n * the cord gives a tug. What it lights is yours: anything inside `children`\n * can read `--echo-pull-on` (0 off, 1 on, on a spring) — a lamp, a room.\n */\nimport { useEffect, useRef, useState, type CSSProperties, type ReactNode } from \"react\";\nimport { createSpring } from \"echo-ui-core/tactile\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport { Switch } from \"../switch\";\nimport \"./pull-cord.css\";\n\nexport interface PullCordProps {\n  /** The switch's name, e.g. \"Light\". */\n  label: string;\n  checked?: boolean;\n  defaultChecked?: boolean;\n  onCheckedChange?: (checked: boolean) => void;\n  /** The switch's name in a form submission. */\n  name?: string;\n  /** Passed to the switch: its id, for a `<label for>` or an `aria-describedby`. */\n  id?: string;\n  disabled?: boolean;\n  required?: boolean;\n  /** How far the cord hangs, px. Default 120. */\n  length?: number;\n  /** What it lights: reads `--echo-pull-on`. Drawn behind the cord. */\n  children?: ReactNode;\n  className?: string;\n}\n\nconst CLICK: SoundRecipe = { wave: \"square\", freq: 1700, decay: 0.03, gain: 0.1, bend: -500 };\nconst RELEASE: SoundRecipe = { ...CLICK, freq: 1300 };\n\n/** Links in the cord, and the room it has to swing sideways. */\nconst LINKS = 14;\nconst REACH = 1.45;\nconst BEAD = 22;\n\nexport function PullCord({\n  label,\n  checked,\n  defaultChecked = false,\n  onCheckedChange,\n  name,\n  id,\n  disabled,\n  required,\n  length = 120,\n  children,\n  className,\n}: PullCordProps) {\n  const [inner, setInner] = useState(defaultChecked);\n  const on = checked ?? inner;\n  const onRef = useRef(on);\n  onRef.current = on;\n  const change = useRef(onCheckedChange);\n  change.current = onCheckedChange;\n  const setOn = (next: boolean) => {\n    if (checked === undefined) setInner(next);\n    change.current?.(next);\n  };\n  const setOnRef = useRef(setOn);\n  setOnRef.current = setOn;\n\n  const sound = useSoundOptional();\n  const play = useRef(sound?.play);\n  play.current = sound?.play;\n\n  const root = useRef<HTMLDivElement>(null);\n  const rope = useRef<SVGPathElement>(null);\n  const bead = useRef<HTMLSpanElement>(null);\n  // A pull that ends past the detent flips it; `tug` pulls the cord down and\n  // lets it go without flipping, for a flip that came from the Switch itself.\n  const tug = useRef<() => void>(() => undefined);\n  const pulled = useRef(false);\n  const off = useRef(disabled);\n  off.current = disabled;\n  const light = useRef<ReturnType<typeof createSpring> | null>(null);\n\n  const seg = length / (LINKS - 1);\n  // The room it would like to swing in; it takes less if its container is narrower.\n  const width = Math.round(length * REACH * 2);\n  const height = Math.round(length * REACH + BEAD);\n\n  // The light follows the switch, on a spring; a flip the cord didn't make\n  // still gives the cord a tug.\n  const was = useRef(on);\n  useEffect(() => {\n    light.current?.to(on ? 1 : 0, { config: on ? { duration: 0.5, bounce: 0.3 } : { duration: 0.45, bounce: 0 } });\n    if (was.current !== on && !pulled.current) tug.current();\n    was.current = on;\n    pulled.current = false;\n  }, [on]);\n\n  useEffect(() => {\n    const el = root.current!;\n    const reduced = typeof matchMedia === \"function\" && matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n    const lamp = createSpring(onRef.current ? 1 : 0, { duration: 0.45, bounce: 0 }, (v) =>\n      el.style.setProperty(\"--echo-pull-on\", v.toFixed(3)),\n    );\n    el.style.setProperty(\"--echo-pull-on\", onRef.current ? \"1\" : \"0\");\n    light.current = lamp;\n\n    // It hangs from the middle of whatever width it was given.\n    const svg = el.querySelector(\"svg\")!;\n    let W = el.clientWidth || width;\n    let ax = W / 2;\n    const ro = new ResizeObserver(() => {\n      const w = el.clientWidth || width;\n      if (w === W) return;\n      const shift = w / 2 - ax;\n      W = w;\n      ax = w / 2;\n      svg.setAttribute(\"width\", String(w));\n      for (const p of pts) {\n        p.x += shift;\n        p.px += shift;\n      }\n      kick();\n    });\n    ro.observe(el);\n    svg.setAttribute(\"width\", String(W));\n\n    // A verlet cord: points with momentum, held a link apart.\n    const pts = Array.from({ length: LINKS }, (_, i) => ({ x: ax, y: i * seg, px: ax, py: i * seg }));\n    let grab: { x: number; y: number } | null = null;\n    let armed = false;\n    let id = 0;\n    // Frames in a row the cord has hung still; past a handful it stops being\n    // simulated at all (BUG-87) until a pull, a tug or a resize wakes it.\n    let still = 0;\n    const kick = () => {\n      still = 0;\n      if (!id) id = requestAnimationFrame(step);\n    };\n    const detent = seg * 3;\n\n    const clampPull = (x: number, y: number) => {\n      const dx = x - ax;\n      const max = (LINKS - 1) * seg * REACH;\n      const d = Math.hypot(dx, y);\n      const p = d > max ? { x: ax + (dx / d) * max, y: (y / d) * max } : { x, y: Math.max(8, y) };\n      // Never past its own edges.\n      return { x: Math.min(Math.max(p.x, BEAD / 2), W - BEAD / 2), y: p.y };\n    };\n\n    const step = () => {\n      let moving = 0;\n      for (let i = 1; i < LINKS; i++) {\n        const p = pts[i]!;\n        const vx = (p.x - p.px) * 0.985;\n        const vy = (p.y - p.py) * 0.985;\n        moving = Math.max(moving, Math.abs(vx), Math.abs(vy));\n        p.px = p.x;\n        p.py = p.y;\n        p.x += vx;\n        p.y += vy + 0.45;\n      }\n      for (let k = 0; k < 12; k++) {\n        pts[0]!.x = ax;\n        pts[0]!.y = 0;\n        if (grab) {\n          pts[LINKS - 1]!.x = grab.x;\n          pts[LINKS - 1]!.y = grab.y;\n        }\n        for (let i = 0; i < LINKS - 1; i++) {\n          const a = pts[i]!;\n          const b = pts[i + 1]!;\n          const dx = b.x - a.x;\n          const dy = b.y - a.y;\n          const d = Math.hypot(dx, dy) || 1;\n          // It gives a little: a cord stretches a touch before it pulls.\n          const rest = grab ? seg * 1.08 : seg;\n          const diff = (d - rest) / d / 2;\n          if (i > 0) {\n            a.x += dx * diff;\n            a.y += dy * diff;\n          }\n          if (!(grab && i + 1 === LINKS - 1)) {\n            b.x -= dx * diff;\n            b.y -= dy * diff;\n          }\n        }\n      }\n      let d = `M ${pts[0]!.x} ${pts[0]!.y}`;\n      for (let i = 1; i < LINKS - 1; i++) {\n        const a = pts[i]!;\n        const b = pts[i + 1]!;\n        d += ` Q ${a.x.toFixed(1)} ${a.y.toFixed(1)} ${((a.x + b.x) / 2).toFixed(1)} ${((a.y + b.y) / 2).toFixed(1)}`;\n      }\n      const end = pts[LINKS - 1]!;\n      d += ` L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;\n      rope.current?.setAttribute(\"d\", d);\n      if (bead.current) bead.current.style.translate = `${(end.x - BEAD / 2).toFixed(1)}px ${(end.y - BEAD / 2).toFixed(1)}px`;\n\n      if (grab) {\n        const pull = end.y - (LINKS - 1) * seg;\n        if (!armed && pull > detent) {\n          armed = true;\n          // A tug is the Switch's own flip, which already sounds.\n          if (!tugging) play.current?.(CLICK);\n        } else if (armed && pull < detent * 0.66) armed = false;\n      }\n      still = grab || moving > 0.01 ? 0 : still + 1;\n      id = still > 20 ? 0 : requestAnimationFrame(step);\n    };\n    kick();\n\n    const point = (e: PointerEvent) => {\n      const r = el.querySelector(\"svg\")!.getBoundingClientRect();\n      return clampPull(e.clientX - r.left, e.clientY - r.top);\n    };\n    let tugging = 0;\n    const letGo = () => {\n      if (!grab) return;\n      grab = null;\n      if (armed && !tugging) {\n        pulled.current = true;\n        setOnRef.current(!onRef.current);\n        play.current?.(RELEASE);\n      }\n      armed = false;\n      tugging = 0;\n    };\n    const b = bead.current!;\n    const down = (e: PointerEvent) => {\n      if (off.current || e.button !== 0) return;\n      e.preventDefault();\n      b.setPointerCapture(e.pointerId);\n      grab = point(e);\n      armed = false;\n      kick();\n    };\n    const move = (e: PointerEvent) => {\n      if (grab) grab = point(e);\n    };\n    b.addEventListener(\"pointerdown\", down);\n    b.addEventListener(\"pointermove\", move);\n    b.addEventListener(\"pointerup\", letGo);\n    b.addEventListener(\"pointercancel\", letGo);\n\n    // The Switch flipped some other way (keyboard, a click on it, a form\n    // reset): the cord is tugged down past the detent and let go.\n    tug.current = () => {\n      if (reduced || grab) return;\n      const end = pts[LINKS - 1]!;\n      grab = { x: end.x, y: (LINKS - 1) * seg + detent + 6 };\n      kick();\n      clearTimeout(tugging);\n      tugging = window.setTimeout(letGo, 140);\n    };\n\n    return () => {\n      cancelAnimationFrame(id);\n      clearTimeout(tugging);\n      ro.disconnect();\n      lamp.stop();\n      b.removeEventListener(\"pointerdown\", down);\n      b.removeEventListener(\"pointermove\", move);\n      b.removeEventListener(\"pointerup\", letGo);\n      b.removeEventListener(\"pointercancel\", letGo);\n    };\n  }, [seg, width]);\n\n  return (\n    <div\n      ref={root}\n      className={[\"echo-pull-cord\", className].filter(Boolean).join(\" \")}\n      data-on={on || undefined}\n      data-disabled={disabled || undefined}\n      style={{ \"--echo-pull-width\": `${width}px`, \"--echo-pull-height\": `${height}px` } as CSSProperties}\n    >\n      {children ? <div className=\"echo-pull-cord__lit\">{children}</div> : null}\n      {/* The fitting the cord hangs from, and the control itself. */}\n      <div className=\"echo-pull-cord__mount\">\n        <Switch\n          aria-label={label}\n          checked={on}\n          onCheckedChange={(next) => setOn(next)}\n          {...(name !== undefined ? { name } : {})}\n          {...(id !== undefined ? { id } : {})}\n          {...(disabled !== undefined ? { disabled } : {})}\n          {...(required !== undefined ? { required } : {})}\n        />\n      </div>\n      <div className=\"echo-pull-cord__stage\">\n        <svg className=\"echo-pull-cord__cord\" width={width} height={height} aria-hidden>\n          <path ref={rope} className=\"echo-pull-cord__rope\" />\n        </svg>\n        {/* A handle for the hand; the Switch above is the control. */}\n        <span ref={bead} className=\"echo-pull-cord__bead\" aria-hidden=\"true\" style={{ left: 0, top: 0 }} />\n      </div>\n    </div>\n  );\n}\n"
+    },
+    {
+      "path": "pull-cord/index.ts",
+      "sha256": "6aca685ff2c4974f1c10c31ca1eb91149baeaf22c7839fc92b17ab5173c189cf",
+      "content": "export { PullCord } from \"./pull-cord\";\nexport type { PullCordProps } from \"./pull-cord\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`PullCord` pulls a real `Switch`.** Its cap used to be a switch of its own. Now an Echo `Switch` sits at the top as the fitting the cord hangs from, and it is the control: the state, the name (`label`), the focus ring, the keyboard, and a form value through the new `name` prop (with `id`, `disabled` and `required`). Pulling the cord past the detent flips that Switch; flipping the Switch any other way gives the cord a tug. The cap is now a handle for the hand, hidden from assistive tech, so a screen reader meets one switch instead of a switch that looked like a bead. It installs `echo-switch` with it. If a test of yours found the switch by its role and name, it still does; if it dragged the switch, drag `.echo-pull-cord__bead`."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Six other kinds of physics.** `PullCord` is a switch you pull: the cord stretches, clicks at a detent and changes as you let go. `SplitFlap` is a readout that turns over flap by flap. `LightSource` makes your pointer the light the HardwareButtons inside it are lit by. `Magnetic` makes the buttons inside lean toward your hand before you touch them. `ThrowStack` is a stack of Panels you flick away with the speed you gave them. `Ripple` is a surface that sends a wave from where you press. All of them are built from Echo's own caps, panels and roles, have a keyboard path, and hold still under reduced motion."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**`PullCord` stops working when it isn't moving.** Its cord was simulated every frame for as long as it was on the page, hanging still or scrolled out of sight. It now sleeps once the cord comes to rest and wakes when it's pulled, tugged or resized: the same cord, without the battery cost."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**`echo-pull-cord` no longer pushes a narrow screen sideways before it loads.** The cord's drawing was rendered at the width the cord would like to swing in (348px at the default length) and only narrowed to its container once the script ran, so on a phone the page scrolled sideways until then, and for good without JavaScript. The drawing now takes the cord's own box from the start. Nothing changes once it has loaded."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**`PullCord`: holding Space is one tug** (BUG-72). Each auto-repeat of a held Space or Enter tugged the cord again, so the switch flipped on and off for as long as the key was down."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

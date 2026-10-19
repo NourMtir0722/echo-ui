@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "name": "sheet",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Sheet",
+  "description": "A molded chassis panel that slides in from an edge — the console side panel and the mobile nav. Built on Base UI's Drawer, so it carries swipe-to-dismiss and a backdrop that tracks the swipe rather than a Dialog translated sideways. sound.transition on open. Compound API.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "sheet/sheet.css",
+      "sha256": "c4d2682c575beb1730e68ee9d82984c21ca7a30933b22e35f4f99144dc681224",
+      "content": "/*\n * Sheet. A molded chassis panel\n * that slides in from an edge, with the seam facing the room. Composes\n * var(--echo-*) only.\n *\n * The `--bleed` trick comes from Base UI's own Drawer recipe: the panel is\n * built wider than it looks and pushed past the edge by that much, so an\n * overscroll rubber-band on iOS reveals more panel instead of the page behind\n * it. The visible width is `--sheet-size`; the bleed is padding nobody sees.\n */\n\n.echo-sheet__backdrop {\n  position: fixed;\n  /*\n   * Above the site chrome: the sticky rail sits on --echo-z-sticky, and an\n   * overlay without a z-index renders UNDERNEATH it, which is exactly what\n   * this panel once did, with its title and close control hidden behind it.\n   */\n  z-index: var(--echo-z-overlay, 200);\n  inset: 0;\n  min-height: 100dvh;\n  background: color-mix(in oklab, var(--echo-seam) 88%, black);\n  /* Tracks the swipe: drag the panel back and the room comes back with it. */\n  opacity: calc(0.62 * (1 - var(--drawer-swipe-progress)));\n  transition: opacity var(--echo-duration-pop) cubic-bezier(0.32, 0.72, 0, 1);\n}\n\n.echo-sheet__backdrop[data-starting-style],\n.echo-sheet__backdrop[data-ending-style] {\n  opacity: 0;\n}\n\n.echo-sheet__backdrop[data-swiping] {\n  transition-duration: 0ms;\n}\n\n.echo-sheet__backdrop[data-ending-style] {\n  transition-duration: calc(var(--drawer-swipe-strength) * var(--echo-duration-pop));\n}\n\n.echo-sheet__viewport {\n  --viewport-padding: var(--echo-space-0);\n  position: fixed;\n  z-index: var(--echo-z-modal, 210);\n  inset: 0;\n  display: flex;\n  padding: var(--viewport-padding);\n}\n\n.echo-sheet__viewport[data-side=\"right\"] {\n  justify-content: flex-end;\n  align-items: stretch;\n}\n.echo-sheet__viewport[data-side=\"left\"] {\n  justify-content: flex-start;\n  align-items: stretch;\n}\n.echo-sheet__viewport[data-side=\"top\"] {\n  align-items: flex-start;\n}\n.echo-sheet__viewport[data-side=\"bottom\"] {\n  align-items: flex-end;\n}\n\n/* --- the panel ----------------------------------------------------------- */\n\n.echo-sheet__popup {\n  --bleed: 3rem;\n  --sheet-size: 22rem;\n  position: relative;\n  box-sizing: border-box;\n  padding: var(--echo-space-10);\n  background: linear-gradient(158deg, var(--echo-cap) 0%, var(--echo-surface) 42%);\n  color: var(--echo-text);\n  outline: none;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  touch-action: auto;\n  transition: transform var(--echo-duration-pop) cubic-bezier(0.32, 0.72, 0, 1);\n  will-change: transform;\n}\n\n.echo-sheet__popup[data-swiping] {\n  user-select: none;\n}\n\n.echo-sheet__popup[data-ending-style] {\n  transition-duration: calc(var(--drawer-swipe-strength) * var(--echo-duration-pop));\n}\n\n/* Left / right: full height, the lit seam on the inward edge. */\n.echo-sheet__popup[data-side=\"right\"],\n.echo-sheet__popup[data-side=\"left\"] {\n  height: 100%;\n  width: calc(var(--sheet-size) + var(--bleed));\n  max-width: calc(100vw - 2.5rem + var(--bleed));\n  transform: translateX(var(--drawer-swipe-movement-x));\n}\n\n.echo-sheet__popup[data-side=\"right\"] {\n  margin-right: calc(-1 * var(--bleed));\n  padding-right: calc(26px + var(--bleed));\n  border-left: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n  box-shadow:\n    inset 1px 0 0 color-mix(in oklab, var(--echo-cap-highlight) 40%, transparent),\n    -26px 0 60px -20px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-sheet__popup[data-side=\"right\"][data-starting-style],\n.echo-sheet__popup[data-side=\"right\"][data-ending-style] {\n  transform: translateX(calc(100% - var(--bleed) + var(--viewport-padding) + 2px));\n}\n\n.echo-sheet__popup[data-side=\"left\"] {\n  margin-left: calc(-1 * var(--bleed));\n  padding-left: calc(26px + var(--bleed));\n  border-right: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n  box-shadow:\n    inset -1px 0 0 color-mix(in oklab, var(--echo-cap-highlight) 40%, transparent),\n    26px 0 60px -20px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-sheet__popup[data-side=\"left\"][data-starting-style],\n.echo-sheet__popup[data-side=\"left\"][data-ending-style] {\n  transform: translateX(calc(-100% + var(--bleed) - var(--viewport-padding) - 2px));\n}\n\n/* Top / bottom: full width. */\n.echo-sheet__popup[data-side=\"top\"],\n.echo-sheet__popup[data-side=\"bottom\"] {\n  width: 100%;\n  max-height: calc(100dvh - 3rem + var(--bleed));\n  transform: translateY(var(--drawer-swipe-movement-y));\n}\n\n.echo-sheet__popup[data-side=\"bottom\"] {\n  margin-bottom: calc(-1 * var(--bleed));\n  padding-bottom: calc(26px + var(--bleed));\n  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n  border-radius: var(--echo-radius-2xl) var(--echo-radius-2xl) 0 0;\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 40%, transparent),\n    0 -26px 60px -20px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-sheet__popup[data-side=\"bottom\"][data-starting-style],\n.echo-sheet__popup[data-side=\"bottom\"][data-ending-style] {\n  transform: translateY(calc(100% - var(--bleed) + var(--viewport-padding) + 2px));\n}\n\n.echo-sheet__popup[data-side=\"top\"] {\n  margin-top: calc(-1 * var(--bleed));\n  padding-top: calc(26px + var(--bleed));\n  border-bottom: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n  border-radius: 0 0 var(--echo-radius-2xl) var(--echo-radius-2xl);\n  box-shadow:\n    inset 0 -1px 0 color-mix(in oklab, var(--echo-cap-highlight) 40%, transparent),\n    0 26px 60px -20px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.8 * var(--echo-shade, 1) * 100%), transparent);\n}\n.echo-sheet__popup[data-side=\"top\"][data-starting-style],\n.echo-sheet__popup[data-side=\"top\"][data-ending-style] {\n  transform: translateY(calc(-100% + var(--bleed) - var(--viewport-padding) - 2px));\n}\n\n/* --- contents ------------------------------------------------------------ */\n\n.echo-sheet__content {\n  display: grid;\n  gap: var(--echo-space-3);\n  align-content: start;\n  height: 100%;\n}\n\n.echo-sheet__title {\n  margin: 0;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-lg);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-tight, -0.01em);\n  color: var(--echo-text);\n}\n\n.echo-sheet__desc {\n  margin: 0 0 var(--echo-space-5);\n  font-size: var(--echo-text-sm);\n  line-height: var(--echo-leading-body, 1.55);\n  color: var(--echo-text-dim);\n}\n\n/* --- controls ------------------------------------------------------------ */\n\n.echo-sheet__trigger {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-4);\n  height: calc(40px * var(--echo-density, 1));\n  padding: 0 var(--echo-space-8);\n  border: 0;\n  border-radius: var(--echo-radius-lg);\n  cursor: pointer;\n  color: var(--echo-text);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-md);\n  background: linear-gradient(\n    180deg,\n    var(--echo-cap-highlight) 0%,\n    color-mix(in oklab, var(--echo-cap-highlight) 50%, var(--echo-cap)) 40%,\n    var(--echo-cap) 62%,\n    var(--echo-cap-shadow) 100%\n  );\n  box-shadow:\n    inset 0 1.5px 0 rgb(255 255 255 / calc(0.42 * var(--echo-gloss, 1))),\n    inset 0 -3px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent),\n    0 calc(4px + 1px * var(--lift, 0) - 3px * var(--press, 0)) 0 var(--echo-seam),\n    0 calc(9px + 5px * var(--lift, 0) - 6px * var(--press, 0)) calc(14px + 10px * var(--lift, 0) - 9px * var(--press, 0))\n      color-mix(in oklab, var(--echo-cast-ink, black) calc(0.55 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  /* usePressable owns the transform: lift, lean, travel onto the seam. */\n}\n\n.echo-sheet__trigger:focus-visible,\n.echo-sheet__close:focus-visible,\n.echo-sheet__action:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: 2px;\n  box-shadow: var(\n    --echo-shadow-ring,\n    0 0 0 2px var(--echo-surface),\n    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))\n  );\n}\n\n/*\n * The close control is pinned to the panel's VISIBLE corner, which on a\n * right-hand sheet is inset by the bleed rather than by the padding.\n */\n.echo-sheet__close {\n  position: absolute;\n  top: 16px;\n  display: grid;\n  place-items: center;\n  width: 30px;\n  height: calc(30px * var(--echo-density, 1));\n  border: 0;\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  background: var(--echo-cap);\n  color: var(--echo-text-dim);\n  font-size: var(--echo-text-sm);\n  line-height: var(--echo-leading-none, 1);\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 60%, transparent),\n    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-cap-shadow);\n}\n\n.echo-sheet__popup[data-side=\"right\"] .echo-sheet__close,\n.echo-sheet__popup[data-side=\"top\"] .echo-sheet__close,\n.echo-sheet__popup[data-side=\"bottom\"] .echo-sheet__close {\n  inset-inline-end: calc(16px + var(--bleed));\n}\n.echo-sheet__popup[data-side=\"left\"] .echo-sheet__close {\n  inset-inline-end: 16px;\n}\n.echo-sheet__popup[data-side=\"top\"] .echo-sheet__close {\n  top: calc(16px + var(--bleed));\n}\n\n@media (hover: hover) {\n  .echo-sheet__close:hover {\n    color: var(--echo-text);\n  }\n}\n\n.echo-sheet__action {\n  height: calc(36px * var(--echo-density, 1));\n  padding: 0 var(--echo-space-7);\n  border: 0;\n  border-radius: var(--echo-radius-lg);\n  cursor: pointer;\n  background: var(--echo-cap);\n  color: var(--echo-text);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-sm);\n  box-shadow:\n    inset 0 1px 0 color-mix(in oklab, var(--echo-cap-highlight) 60%, transparent),\n    0 calc(2px - 1.5px * var(--press, 0)) 0 var(--echo-cap-shadow);\n}\n\n/*\n * Reduced motion. The slide is the sheet's whole identity, so it is shortened\n * rather than removed — a panel that teleports in reads as a rendering bug,\n * and Echo's rule is that motion collapses, not that it vanishes.\n */\n@media (prefers-reduced-motion: reduce) {\n  .echo-sheet__popup,\n  .echo-sheet__backdrop {\n    transition-duration: var(--echo-duration-tick);\n  }\n}\n\n/*\n * Coarse-pointer targets.\n *\n * These already clear WCAG 2.2 2.5.8's 24px. This is the other\n * threshold: the 44px both platform guidelines use, which is about a\n * fingertip rather than about conformance.\n *\n * Gated on `@media (pointer: coarse)` so the desktop rendering does not move\n * — these are \"passing AA but under the\n * platform guideline\", not broken. Pagination is first among them because\n * people tap it repeatedly, which is exactly when a 30px target starts\n * costing mis-taps.\n */\n@media (pointer: coarse) {\n  .echo-sheet__close {\n    width: 44px;\n    height: 44px;\n  }\n\n  .echo-sheet__trigger {\n    min-height: 44px;\n  }\n}\n"
+    },
+    {
+      "path": "sheet/sheet.tsx",
+      "sha256": "b3de5047a13b99cedbf22e46b25329c278dc7c2c57bd617cefbcb98929a1070f",
+      "content": "\"use client\";\n\n/**\n * Sheet. A panel that slides in\n * from an edge: the console side panel and the mobile nav.\n *\n * BUILT ON BASE UI'S `Drawer`, NOT ON `Dialog`. It was first planned as\n * \"Dialog + side variant\", which was decided before Base UI 1.6 shipped a real\n * Drawer primitive. Drawer gives swipe-to-dismiss, the swipe-progress custom\n * properties the backdrop tracks, and the overscroll bleed — none of which a\n * Dialog with a translated popup would have, and all of which are exactly what\n * a mobile nav needs. Dialog would have been a hand-rolled worse version.\n *\n *   <Sheet side=\"right\">\n *     <Sheet.Trigger>Open</Sheet.Trigger>\n *     <Sheet.Content title=\"Channels\" description=\"Pick one.\">\n *       …\n *     </Sheet.Content>\n *   </Sheet>\n *\n * `side` sets BOTH the swipe direction and the edge the panel is pinned to, so\n * a right-hand sheet cannot end up dismissing on an upward swipe — the pair is\n * one decision, and splitting it across two props is how they drift apart.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport { createContext, useContext, type ComponentProps, type ReactNode } from \"react\";\nimport { Drawer } from \"@base-ui/react/drawer\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport { usePressable } from \"echo-ui-core/tactile\";\nimport \"./sheet.css\";\n\nconst cx = (...c: (string | undefined)[]) => c.filter(Boolean).join(\" \");\n\n/** Narrow Base UI's string-or-function className to a plain string for skinning. */\ntype Skin<T> = Omit<T, \"className\"> & { className?: string };\n\nexport type SheetSide = \"left\" | \"right\" | \"top\" | \"bottom\";\n\nexport interface SheetProps extends Omit<ComponentProps<typeof Drawer.Root>, \"swipeDirection\"> {\n  /** Edge the sheet is pinned to, and the direction it swipes away. Default \"right\". */\n  side?: SheetSide;\n}\n\nexport interface SheetContentProps\n  // `title` is omitted from the passthrough because Drawer.Popup inherits the\n  // DOM title attribute (a string tooltip) and ours is the panel's heading.\n  extends Omit<Skin<ComponentProps<typeof Drawer.Popup>>, \"title\"> {\n  /**\n   * Accessible name for the panel. Required in practice: a drawer with no\n   * title is an unlabelled region to anyone not looking at it.\n   */\n  title?: ReactNode;\n  description?: ReactNode;\n  /** Show the corner close control. Default true. */\n  showClose?: boolean;\n  /**\n   * Where the panel mounts. Defaults to <body>. Pass an element inside a\n   * scoped theme (`createEchoTheme(seed, { selector })`) and the panel wears\n   * that theme too — mounted on <body>, it can only read the :root one.\n   */\n  container?: ComponentProps<typeof Drawer.Portal>[\"container\"];\n  children?: ReactNode;\n}\n\n/**\n * `side` has to reach Content (to pin the edge) as well as Root (to set the\n * swipe axis), and Content is a sibling subtree rather than a prop away — so\n * it travels by context. A module-level variable would be smaller and wrong:\n * two sheets with different sides on one page would overwrite each other, and\n * on the server every request would share the same slot.\n */\nconst SheetSideContext = createContext<SheetSide>(\"right\");\n\n/** Swipe axis for an edge. Pinning and dismissal are one decision, not two. */\nconst SWIPE: Record<SheetSide, \"left\" | \"right\" | \"up\" | \"down\"> = {\n  left: \"left\",\n  right: \"right\",\n  top: \"up\",\n  bottom: \"down\",\n};\n\nfunction SheetRoot({ side = \"right\", onOpenChange, children, ...props }: SheetProps) {\n  const sound = useSoundOptional();\n\n  return (\n    <Drawer.Root\n      swipeDirection={SWIPE[side]}\n      onOpenChange={(open, eventDetails) => {\n        if (open) sound?.play(\"transition\");\n        onOpenChange?.(open, eventDetails);\n      }}\n      {...props}\n    >\n      {/*\n        Base UI allows children to be a payload render function (for\n        handle-driven sheets), so the provider wraps the RESULT in that case\n        rather than the function — narrowing children to ReactNode here would\n        quietly drop a Drawer capability.\n      */}\n      {typeof children === \"function\"\n        ? (arg: { payload: unknown }) => <SheetSideContext.Provider value={side}>{children(arg)}</SheetSideContext.Provider>\n        : <SheetSideContext.Provider value={side}>{children}</SheetSideContext.Provider>}\n    </Drawer.Root>\n  );\n}\n\n/* The trigger, the close key and the actions are molded caps, so they press\n   like the library's keys (usePressable). */\nfunction SheetTrigger({ className, ...props }: Skin<ComponentProps<typeof Drawer.Trigger>>) {\n  const press = usePressable<HTMLButtonElement>(props, { tilt: 3 });\n  return <Drawer.Trigger className={cx(\"echo-sheet__trigger\", className)} {...props} {...press} />;\n}\n\nfunction SheetCloseKey() {\n  const press = usePressable<HTMLButtonElement>({}, { lift: 0, travel: 1.5, tilt: 0 });\n  return (\n    <Drawer.Close className=\"echo-sheet__close\" aria-label=\"Close\" {...press}>\n      ✕\n    </Drawer.Close>\n  );\n}\n\nfunction SheetContent({\n  title,\n  description,\n  showClose = true,\n  className,\n  container,\n  children,\n  ...props\n}: SheetContentProps) {\n  const side = useContext(SheetSideContext);\n\n  return (\n    <Drawer.Portal container={container}>\n      <Drawer.Backdrop className=\"echo-sheet__backdrop\" />\n      <Drawer.Viewport className=\"echo-sheet__viewport\" data-side={side}>\n        <Drawer.Popup className={cx(\"echo-sheet__popup\", className)} data-side={side} {...props}>\n          <Drawer.Content className=\"echo-sheet__content\">\n            {title != null ? (\n              <Drawer.Title className=\"echo-sheet__title\">{title}</Drawer.Title>\n            ) : null}\n            {description != null ? (\n              <Drawer.Description className=\"echo-sheet__desc\">{description}</Drawer.Description>\n            ) : null}\n            {children}\n          </Drawer.Content>\n          {showClose ? (\n            <SheetCloseKey />\n          ) : null}\n        </Drawer.Popup>\n      </Drawer.Viewport>\n    </Drawer.Portal>\n  );\n}\n\nfunction SheetClose({ className, ...props }: Skin<ComponentProps<typeof Drawer.Close>>) {\n  const press = usePressable<HTMLButtonElement>(props, { travel: 1.5, tilt: 3 });\n  return <Drawer.Close className={cx(\"echo-sheet__action\", className)} {...props} {...press} />;\n}\n\n// Assembled into `Sheet` in index.ts, which isn't a client module (BUG-10).\nexport { SheetRoot, SheetTrigger, SheetContent, SheetClose };\n"
+    },
+    {
+      "path": "sheet/index.ts",
+      "sha256": "1c940424fd41dc8d507fa28db82c842b6e757e3a33ef88bfb541012b34ce4742",
+      "content": "/**\n * The entry point for Sheet, deliberately NOT a client module: the parts are\n * attached here, from named client exports. Attached inside the \"use client\"\n * file, they didn't survive a server component's import, so Sheet.Trigger was\n * undefined in a Next.js page or layout and the build failed (BUG-10).\n */\nimport { SheetRoot, SheetTrigger, SheetContent, SheetClose } from \"./sheet\";\n\nexport const Sheet = Object.assign(SheetRoot, {\n  Trigger: SheetTrigger,\n  Content: SheetContent,\n  Close: SheetClose,\n});\nexport type { SheetProps, SheetContentProps, SheetSide } from \"./sheet\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [
+    "transition"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**Popups opened inside a dialog appeared behind it.** A `Select`, `Popover`, `Tooltip` or `Menu` inside a `Modal` or `Sheet` opened under the dialog's backdrop. They now stack above it."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**45 components** across controls, overlays, structure, surfaces, primitives, navigation and texture — including `Command` (a dot-matrix command palette), `AppShell`, `Sheet` (on Base UI's Drawer, with swipe-to-dismiss), `AlertDialog`, `Menu` + `ContextMenu`, `Textarea`, and `Chart`."
+    }
+  ]
+}

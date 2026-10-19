@@ -1,0 +1,55 @@
+/**
+ * StatusDot — rebuilt so state never rests on colour alone.
+ *
+ * What it was: an 8px disc that signalled state by FILL COLOUR ALONE, at
+ * 1.81:1 between on and off — below even the 3:1 that 1.4.11 asks of non-text
+ * — and ΔE 0.070 under protanopia, a 72% loss against normal vision. For a
+ * protanope it was two identical grey dots. It failed 1.4.1 and 1.4.11 at the
+ * same time, which is to say it did not do the one thing it exists to do.
+ *
+ * What it is now: a socket that is either EMPTY or FILLED.
+ *
+ * - Off is a dead socket: the dark well showing through a visible rim, with an
+ *   inset shadow so it reads as a hole. Hollow.
+ * - On is a lit LED: the socket filled with accent-glow, rim gone.
+ *
+ * The state difference is therefore carried two ways at once — fill vs
+ * hollow (shape) and well vs accent-glow (5.25:1 luminance at worst across the
+ * four shipped seeds). Colour rides on top, it is not the signal. (It used to
+ * bloom as a third signal; the bloom went with every other outer glow in the
+ * library on 2026-09-18, and the two load-bearing signals were untouched.) Verified by `status-dot.test.ts` under protan, deuteran, tritan
+ * and greyscale on every seed.
+ *
+ * 10px rather than 8: a 1.5px rim inside an 8px disc leaves a 5px centre,
+ * which is not enough for hollow-vs-filled to read.
+ */
+.echo-status-dot {
+  display: inline-block;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  /* The dead socket. */
+  background: var(--echo-well);
+  border: var(--echo-border-fine, 1.5px) solid color-mix(in oklab, var(--echo-text-dim) 72%, transparent);
+  box-shadow: inset 0 1px 1.5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+  /* Lighting up and going dark take a moment, like a lamp, not a frame. */
+  transition:
+    background-color var(--echo-duration-tick) ease-out,
+    border-color var(--echo-duration-tick) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-status-dot {
+    transition: none;
+  }
+}
+
+.echo-status-dot[data-on] {
+  /* Filled and lit: no rim left to see, because the socket is full. */
+  background: var(--echo-accent-glow);
+  border-color: var(--echo-accent-glow);
+  /* A lit top edge inside the LED — no halo (2026-09-18: the library throws
+     no outer glows). Fill-vs-hollow and luminance still carry the state. */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));
+}

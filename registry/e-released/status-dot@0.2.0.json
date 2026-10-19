@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "name": "status-dot",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "StatusDot",
+  "description": "A tiny LED socket, filled and blooming or hollow and dead. State is carried by fill-vs-hollow and by a 5.25:1 luminance step, not by hue, so it survives protan/deuteran/tritan and greyscale. Requires `label` or `decorative`. Consumes var(--echo-*).",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "status-dot/status-dot.css",
+      "sha256": "3e27591af33ff7a2cc676b7a3b305fd446f565cc1d1c981815897ae07cb98dc5",
+      "content": "/**\n * StatusDot — rebuilt so state never rests on colour alone.\n *\n * What it was: an 8px disc that signalled state by FILL COLOUR ALONE, at\n * 1.81:1 between on and off — below even the 3:1 that 1.4.11 asks of non-text\n * — and ΔE 0.070 under protanopia, a 72% loss against normal vision. For a\n * protanope it was two identical grey dots. It failed 1.4.1 and 1.4.11 at the\n * same time, which is to say it did not do the one thing it exists to do.\n *\n * What it is now: a socket that is either EMPTY or FILLED.\n *\n * - Off is a dead socket: the dark well showing through a visible rim, with an\n *   inset shadow so it reads as a hole. Hollow.\n * - On is a lit LED: the socket filled with accent-glow, rim gone.\n *\n * The state difference is therefore carried two ways at once — fill vs\n * hollow (shape) and well vs accent-glow (5.25:1 luminance at worst across the\n * four shipped seeds). Colour rides on top, it is not the signal. (It used to\n * bloom as a third signal; the bloom went with every other outer glow in the\n * library on 2026-09-18, and the two load-bearing signals were untouched.) Verified by `status-dot.test.ts` under protan, deuteran, tritan\n * and greyscale on every seed.\n *\n * 10px rather than 8: a 1.5px rim inside an 8px disc leaves a 5px centre,\n * which is not enough for hollow-vs-filled to read.\n */\n.echo-status-dot {\n  display: inline-block;\n  box-sizing: border-box;\n  flex-shrink: 0;\n  width: 10px;\n  height: 10px;\n  border-radius: 50%;\n  /* The dead socket. */\n  background: var(--echo-well);\n  border: var(--echo-border-fine, 1.5px) solid color-mix(in oklab, var(--echo-text-dim) 72%, transparent);\n  box-shadow: inset 0 1px 1.5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent);\n  /* Lighting up and going dark take a moment, like a lamp, not a frame. */\n  transition:\n    background-color var(--echo-duration-tick) ease-out,\n    border-color var(--echo-duration-tick) ease-out;\n}\n@media (prefers-reduced-motion: reduce) {\n  .echo-status-dot {\n    transition: none;\n  }\n}\n\n.echo-status-dot[data-on] {\n  /* Filled and lit: no rim left to see, because the socket is full. */\n  background: var(--echo-accent-glow);\n  border-color: var(--echo-accent-glow);\n  /* A lit top edge inside the LED — no halo (2026-09-18: the library throws\n     no outer glows). Fill-vs-hollow and luminance still carry the state. */\n  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(0.45 * var(--echo-gloss, 1)));\n}\n"
+    },
+    {
+      "path": "status-dot/status-dot.tsx",
+      "sha256": "a8e8c0e4e427fb55547552610ba5e02f1eecdc3605c8f476be8315f5bcb906fb",
+      "content": "/**\n * StatusDot — a tiny LED socket, filled or empty.\n *\n * See `status-dot.css` for why the state difference is\n * carried by fill-vs-hollow and luminance rather than by hue.\n */\nimport type { HTMLAttributes } from \"react\";\nimport \"./status-dot.css\";\n\n/*\n * Bundlers replace `process.env.NODE_ENV` at build time, but an app without\n * Node's types (a standard Vite project) has no `process` to type-check\n * against. Declared in this module so the file compiles in any React app\n * (BUG-1).\n */\ndeclare const process: { env: { NODE_ENV?: string } };\n\ninterface StatusDotBase extends Omit<HTMLAttributes<HTMLSpanElement>, \"aria-label\"> {\n  /** Lit socket vs dead one. */\n  on?: boolean;\n}\n\n/**\n * A dot must either NAME its state or declare that something else does.\n *\n * The old component was `aria-hidden` unless you remembered to pass `label`,\n * so the default was a control that signalled nothing to assistive tech — and\n * in the console template it usually had no accompanying text either, which\n * meant the state was available to nobody. Making the choice explicit at the\n * type level means it cannot be forgotten, only decided.\n */\nexport type StatusDotProps = StatusDotBase &\n  (\n    | {\n        /** Accessible name for the state, e.g. \"Recording\" / \"Offline\". */\n        label: string;\n        decorative?: false;\n      }\n    | {\n        /**\n         * Adjacent visible text already states the state, so the dot is\n         * decorative and hidden from assistive tech. Saying so is deliberate:\n         * it is a claim about the surrounding markup.\n         */\n        decorative: true;\n        label?: undefined;\n      }\n  );\n\nexport function StatusDot({ on = true, label, decorative, className, ...rest }: StatusDotProps) {\n  if (process.env.NODE_ENV !== \"production\" && !label && !decorative) {\n    warnUnlabelledDot();\n  }\n\n  return (\n    <span\n      className={[\"echo-status-dot\", className].filter(Boolean).join(\" \")}\n      data-on={on ? \"\" : undefined}\n      role={label ? \"img\" : undefined}\n      aria-label={label}\n      aria-hidden={label ? undefined : true}\n      {...rest}\n    />\n  );\n}\n\nlet warnedUnlabelled = false;\nfunction warnUnlabelledDot(): void {\n  if (warnedUnlabelled) return;\n  warnedUnlabelled = true;\n  console.warn(\n    \"[echo-ui] <StatusDot> needs either `label` (an accessible name for the state) \" +\n      \"or `decorative` (adjacent visible text states it). Without one it signals \" +\n      \"nothing to assistive technology.\",\n  );\n}\n"
+    },
+    {
+      "path": "status-dot/index.ts",
+      "sha256": "f5c68c0fd4f34fe2859d8eecab4e3358dce053c0517fd4df080036637ac7f2f1",
+      "content": "export { StatusDot } from \"./status-dot\";\nexport type { StatusDotProps } from \"./status-dot\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Status is carried by shape, not only colour.** `StatusDot` states and `Banner` tones differ by luminance and form on every shipped seed and under colour-vision deficiencies."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

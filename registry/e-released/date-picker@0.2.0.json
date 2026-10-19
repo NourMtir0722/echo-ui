@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "name": "date-picker",
+  "version": "0.2.0",
+  "kind": "component",
+  "title": "DatePicker",
+  "description": "A DateField with a calendar key in its well. Type the date, or open a Calendar under the field and choose it; the flaps turn over to the day you chose. The value is an ISO date.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {},
+  "items": [
+    "date-field",
+    "calendar",
+    "popover",
+    "hardware-button"
+  ],
+  "files": [
+    {
+      "path": "date-picker/date-picker.css",
+      "sha256": "88f3a87ac9cc8bb7b21a74e6b7513204b26bbd981f45364229c6f617d250e420",
+      "content": "/**\n * DatePicker. DateField and Calendar as they are; this only seats the\n * calendar's screen in the popover's panel. The panel becomes a thin bezel\n * around the screen, as wide as the month, rather than a text panel with a\n * screen inside it.\n */\n.echo-date-picker {\n  min-width: 0;\n}\n.echo-popover__popup:has(.echo-date-picker__calendar) {\n  max-width: none;\n  padding: var(--echo-space-3);\n}\n.echo-date-picker__calendar {\n  display: grid;\n}\n/*\n * In a popup nothing around the calendar has a width for its own to be a\n * share of: it takes seven days' width, or the screen's less its gutters.\n */\n.echo-date-picker__calendar .echo-calendar {\n  inline-size: min(\n    calc(100vw - 2 * var(--echo-space-8) - 2 * var(--echo-space-3)),\n    calc(7 * var(--cell) + 6 * var(--echo-space-2) + 2 * var(--echo-space-5))\n  );\n}\n"
+    },
+    {
+      "path": "date-picker/date-picker.tsx",
+      "sha256": "8cbcc17dbc9c3e9619177f6bd0f9d3d47142198be620286794fb1bbb5566ddcc",
+      "content": "\"use client\";\n\n/**\n * DatePicker. A DateField with a calendar key in its well: type the date, or\n * press the key (or Alt+↓ on a wheel) and choose it on a Calendar that opens\n * under the field. Choosing closes it, and the field's flaps turn over to\n * the day; Escape closes it without choosing. Either way focus goes back to\n * the key.\n *\n * It is the two parts, not a third look: the field is DateField, the\n * calendar is Calendar, and the popup is Popover, so the value, the keys and\n * the limits are theirs.\n */\nimport { forwardRef, useCallback, useRef, useState, type KeyboardEvent } from \"react\";\nimport { Calendar } from \"../calendar\";\nimport { DateField, type DateFieldProps } from \"../date-field\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { Popover } from \"../popover\";\nimport \"./date-picker.css\";\n\n/** DateField's props without `end`: DatePicker's end is its calendar key. */\ntype WithoutEnd<T> = T extends unknown ? Omit<T, \"end\"> : never;\n\nexport type DatePickerProps = WithoutEnd<DateFieldProps> & {\n  /** The week's first day on the calendar, 0 for Sunday to 6 for Saturday. Default: the locale's. */\n  firstDayOfWeek?: number;\n  /** The calendar key's name, and the popup's. Default \"Choose from a calendar\". */\n  calendarLabel?: string;\n};\n\nconst CalendarIcon = () => (\n  <svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.6\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden>\n    <rect x=\"2.5\" y=\"3.5\" width=\"11\" height=\"10\" rx=\"2\" />\n    <path d=\"M2.5 7h11M5.5 2v3M10.5 2v3\" />\n  </svg>\n);\n\nexport const DatePicker = forwardRef<HTMLSpanElement, DatePickerProps>(function DatePicker(\n  { value, defaultValue, onValueChange, firstDayOfWeek, calendarLabel = \"Choose from a calendar\", onKeyDown, ...field },\n  ref,\n) {\n  const [own, setOwn] = useState(defaultValue ?? \"\");\n  const current = value !== undefined ? value : own;\n  const set = (iso: string) => {\n    if (value === undefined) setOwn(iso);\n    onValueChange?.(iso);\n  };\n  const [open, setOpen] = useState(false);\n\n  // The popup sits under the whole well, not just the key; and opens on the day the keys start from.\n  const anchor = useRef<Element | null>(null);\n  const day = useRef<HTMLElement | null>(null);\n  const root = useCallback((el: HTMLDivElement | null) => {\n    anchor.current = el?.querySelector(\".echo-date-field__well\") ?? null;\n  }, []);\n  const calendar = useCallback((el: HTMLDivElement | null) => {\n    day.current = el?.querySelector<HTMLElement>('.echo-calendar__day[tabindex=\"0\"]') ?? null;\n  }, []);\n\n  const off = field.disabled || field.readOnly;\n  return (\n    <div ref={root} className=\"echo-date-picker\">\n      <DateField\n        ref={ref}\n        {...(field as DateFieldProps)}\n        value={current}\n        onValueChange={set}\n        onKeyDown={(event: KeyboardEvent<Element>) => {\n          onKeyDown?.(event);\n          if (event.defaultPrevented || off) return;\n          // Alt+↓ opens the calendar from a wheel, as it opens a list from a combobox.\n          if (event.altKey && event.key === \"ArrowDown\") {\n            event.preventDefault();\n            setOpen(true);\n          }\n        }}\n        end={\n          <Popover\n            open={open}\n            onOpenChange={setOpen}\n            anchor={anchor}\n            initialFocus={day}\n            align=\"end\"\n            aria-label={calendarLabel}\n            trigger={\n              <HardwareButton\n                size=\"sm\"\n                variant=\"ghost\"\n                iconOnly\n                aria-label={calendarLabel}\n                icon={<CalendarIcon />}\n                disabled={off}\n              />\n            }\n          >\n            <div ref={calendar} className=\"echo-date-picker__calendar\">\n              <Calendar\n                value={current}\n                onValueChange={(iso) => {\n                  set(iso);\n                  setOpen(false);\n                }}\n                min={field.min}\n                max={field.max}\n                unavailable={field.unavailable}\n                locale={field.locale}\n                firstDayOfWeek={firstDayOfWeek}\n                size={field.size}\n              />\n            </div>\n          </Popover>\n        }\n      />\n    </div>\n  );\n});\n"
+    },
+    {
+      "path": "date-picker/index.ts",
+      "sha256": "0034e1399eff0d62164a582e6a2317560eb67e47007d557340ebc6b3a5215b69",
+      "content": "export { DatePicker } from \"./date-picker\";\nexport type { DatePickerProps } from \"./date-picker\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**Dates: DateField, Calendar and DatePicker** (`echo-date-field`, `echo-calendar`, `echo-date-picker`). DateField types a date into wheels, day, month and year in the order the locale writes them, each a row of small flaps that turn over to the value, in Field's well and on its size scale: type the digits and a wheel moves on by itself, or step it with the arrows. On a phone it opens the numeric keyboard, and a pasted ISO date fills every wheel. Calendar is a month on a device screen: one Tab stop, the calendar keys (arrows, Home and End, Page Up and Page Down), the chosen day lit, today on a lit rail, and days that can't be chosen struck through. DatePicker is the two together: a calendar key in the field's well (or Alt+↓ on a wheel) opens the Calendar under it, and choosing a day closes it and turns the flaps. All three take `min`, `max` and `unavailable`, write the value as an ISO date (`2026-09-28`) so no time zone moves a day, follow the locale's order, names, digits and first weekday (Arabic runs right to left, Hebrew left to right), and put the date in a form with `name`. A date outside the limits is said in words under the field."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

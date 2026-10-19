@@ -1,0 +1,227 @@
+import { BorderScale, Breakpoints, IconScale, RoleTable, SeedTable, ShadowRecipes, ZScale } from "@/components/guides/live";
+
+# Theming
+
+A theme in Echo is a **seed**: three colours and a few optional settings. From it, one derivation
+produces every colour a component uses — surfaces, caps, wells, glows, screens and text. You never
+pick a hover colour or a shadow; you pick what the device is made of, and the rest follows.
+
+Try it first: the [Theme generator](/generator) relights this whole site from one colour.
+
+## The seed
+
+<SeedTable />
+
+Most themes change only `accent`. A new `chassis` changes the plastic; a new `paper` changes the
+text. The font fields are covered in [Typeset](/docs/typeset).
+
+## Shape and feel
+
+Five settings change what your device feels like without changing what it is. Leave them out and
+you get Echo's default look exactly.
+
+- **`finish`**, from `0` (matte) to `1` (glossy): how brightly lit edges shine and how deep shadows
+  fall. It never moves the light, which always comes from the top left.
+- **`radius`**, from `0` (crisp) to `1` (soft): the corners of boxes, panels and fields.
+- **`pills`**, `true` or `false`: whether buttons and segments are pills, whatever the radius.
+  Unset, they're pills at `radius` 1 and follow the radius below it.
+- **`density`**, `compact`, `default` or `comfortable`: spacing and control heights. Even
+  `compact` keeps every target at least 24×24px.
+- **`render`**, `molded` or `drawn`: plastic lit by the key light, or the same parts drawn in the
+  ink ([Molded or drawn](#molded-or-drawn)).
+
+`radius` and `pills` are apart so a style can have both kinds of corner it wants:
+
+| Seed | Boxes and fields | Buttons and segments |
+| --- | --- | --- |
+| `radius: 0.3, pills: true` | Crisp | Pills |
+| `radius: 0.9, pills: false` | Soft | Soft, not pills |
+| `radius: 1` | Soft | Pills |
+
+```tsx
+const { css } = createEchoTheme({ accent: "#3D8EF0", finish: 0.2, radius: 0.8, density: "compact" });
+```
+
+There's no setting for the light's direction. It's part of what makes every Echo part look like it
+came off the same device.
+
+## Using it
+
+```tsx
+import { createEchoTheme } from "echo-ui-core/theme";
+
+const { css, values } = createEchoTheme({ accent: "#3D8EF0" });
+```
+
+- **`css`** is a block of custom properties for `:root`. Put it in a `<style>` tag once, in your
+  root layout ([Installation](/docs/installation#import-the-theme)).
+- **`values`** is the same theme as JavaScript — `values.roles.accent`, `values.accentRamp`,
+  `values.fonts` — for GSAP, canvas and ShaderField, which cannot read CSS variables.
+
+To theme one part of a page differently, scope it to a selector:
+
+```tsx
+const coral = createEchoTheme({ accent: "#F2674E" }, { selector: ".coral-device" });
+// <style>{coral.css}</style> … <div className="coral-device">…</div>
+```
+
+Popups (Tooltip, Popover, AlertDialog and the rest) mount on `<body>` by default, where they can only
+see the `:root` theme. Inside a scoped theme, pass them a `container` element inside the scope, and
+they wear it too.
+
+## The roles
+
+Components read only these. The swatches show the current seed — change it in the generator and
+they change with it.
+
+<RoleTable />
+
+The derivation also emits the size scales: `--echo-radius-*`, `--echo-space-*`, `--echo-text-*`,
+`--echo-control-*`, `--echo-duration-*` and `--echo-ease-*`. Component CSS takes every radius, gap,
+size and duration from them.
+
+## The accent ramp
+
+`values.accentRamp` is seven stops of your accent, from light to dark. Lightness and chroma move together along it, which is why every
+stop reads as the same plastic under different light. The accent itself is held to a fixed lightness
+band, so a pale or dark seed does not change how loud a component is.
+
+## The material rules
+
+Echo looks like one device because every component follows the same few rules. They matter most
+when you build something of your own next to it.
+
+- **Raised things are plastic; lit things glow.** A molded surface with a label on it, like a primary
+  button, the current page or a badge, wears the primary cap colours with ordinary text. Only things
+  that emit light, like an LED, LCD digits, meter cells or the "you are here" rail, use the accent
+  and its glow.
+- **One "you are here".** A 2px lit accent rail: beside the label in a sidebar, under it in a tab
+  list.
+- **One rule.** Every separator is the same seam: a dark groove over a faint light lip.
+- **No outer glows on controls.** Glow belongs to rails and screens, not to buttons or badges.
+- **One key light**, from the top left. Every highlight and shadow agrees with it.
+
+These are the molded device's. A drawn device keeps the first three in ink instead of light: what a
+molded device lights is solid ink, the rail is an ink line, and the seam is one straight rule
+([Molded or drawn](#molded-or-drawn)).
+
+## Contrast is guaranteed
+
+Every text role is checked against WCAG AA on **every** ground it is used on, not just one. When a
+seed would break that, the engine adjusts the colour's lightness until it passes (the primary cap
+slides along its own ramp, so it stays the same plastic) and, in development, logs what it changed. When no colour can pass — a seed with too little contrast to
+work with — it says so in the console, in production too. A generated theme is never quietly
+inaccessible.
+
+### Readability, past AA
+
+AA is a ratio, and a pair can pass it and still be hard to read: lit blue on black passes at 5.3:1
+and reads poorly. So the theme also *reports* readability, without correcting it:
+
+- every text role on every ground it sits on, in APCA (the Accessible Perceptual Contrast Algorithm), which measures how readable a pair is rather than only its ratio;
+- on a dark device, the cap against its body and its lit rim against the cap;
+- lit text and the lit cap as people with protanopia, deuteranopia and tritanopia see them.
+
+Under **Lc 45**, text is hard to read for anyone: `style check` fails on it, and `style use` and
+`style set` warn. Under **Lc 60**, it's under comfortable for small text, and they note it. On a
+running page, the page check says when small text passes AA and still reads under Lc 45.
+
+```tsx
+import { apcaContrast, readability, simulate } from "echo-ui-core/theme";
+```
+
+## Layers, shadows, borders and icons
+
+These don't change with the seed; `createEchoTheme` emits them with everything else, so a component
+you install finds them.
+
+**Layers.** One stacking order, bottom to top. Whatever opens last lands on top: a Select opened
+inside a Modal is above the Modal, and a tooltip is above both.
+
+<ZScale />
+
+**Shadows.** Every Echo shadow is the same key light, so depth is a choice from a short list, not a
+new shadow. For a part of your own, take one: `box-shadow: var(--echo-shadow-well)`. They read the
+finish, so a matte theme softens them along with everything else. A shadow that moves with its part,
+like a cap's drop shortening as it's pressed, is drawn by that component and isn't a recipe.
+
+<ShadowRecipes />
+
+**Borders.** Most edges in Echo are light and shadow, not lines. When a line is the right answer,
+it's one of these.
+
+<BorderScale />
+
+**Icons.** Echo draws its own glyphs for its components. For your own icons, use
+[Lucide](https://lucide.dev) at these sizes with `strokeWidth={2.5}`, which matches the weight of
+Echo's glyphs at small sizes.
+
+<IconScale />
+
+**Breakpoints.** Media queries can't read custom properties, so these are exported for JavaScript
+(`import { BREAKPOINTS } from "echo-ui-core/theme"`). Component CSS uses only these widths.
+
+<Breakpoints />
+
+## Dark or light
+
+The chassis decides. A dark chassis makes a device with lit screens, recessed glass whose readouts
+glow. A pale one makes a light device, like a white calculator: its screens are paper glass printed
+in ink, what's lit (an LED, the current rail) is the accent at 3:1 on the plastic, the text it
+prints and the focus ring are the accent's ink (`--echo-accent-ink`), and the primary cap is the same cap as the
+dark device's, with a light label (`--echo-primary-cap-ink`). Its shadows are the body's own colour
+(`--echo-cast-ink`), and a cap keeps its bevel through its shaded side. There's no mode to switch:
+one seed makes one device. Retheme by seed, not by inverting.
+
+## Molded or drawn
+
+`render` is how the parts are made. **Molded**, the default, is Echo as it has always been: plastic
+lit by one key light. **Drawn** is the same parts drawn in the ink, the way a spec sheet draws a key:
+
+- **Every part is outlined at one weight**, `--echo-line-width` (1.5px) in `--echo-line` (the ink),
+  and hollow on the body.
+- **A raised part stands on a hard ink edge** as deep as it rises, and travels down it when pressed.
+  A recess is an outline drawn inside; something floating stands on a deeper edge.
+- **There's no light**, so no gloss, no soft shadow and no glow. What a molded device lights (an
+  LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a
+  low-emphasis action is its label, underlined.
+- **The accent keeps its own colour**, as the flat fill for what's on: a chosen segment, a checked
+  box, a slider's travel, a switch that's on. A molded device holds every accent to one lightness;
+  a drawn one doesn't, so an acid highlighter stays acid.
+- **In black and white** (the accent the ink), what's drawn on a fill inverts: a switch's thumb turns
+  paper, a fader's knob is knocked out with a paper ring.
+- **The main action is the paper key that stands highest**, on an ink edge twice as deep as a
+  neutral one's, the way a spec sheet draws its call to action.
+
+Pressing, travel, sound, what each material is for and every contrast guarantee are the same on
+both. `npx echo-ui-cli style set render drawn` turns it on.
+
+**For a part of your own**, the shadow recipes already draw it: `var(--echo-shadow-*)` carries the
+outline and the ink edge, which are 0px wide on a molded device. Where a component paints something
+a drawing does differently, it reads one of these, each `initial` on a molded device so the molded
+paint is the fallback:
+
+| Variable | What a drawn device puts there |
+| --- | --- |
+| `--echo-drawn-fill` | The accent, flat: what's on. |
+| `--echo-drawn-on-fill` | What's drawn on that fill: the ink, or the body when the ink doesn't stand off it. |
+| `--echo-drawn-ink` | A value drawn solid: a knob, a pip, a thumb. |
+| `--echo-drawn-rule` | A divider: one straight ink line. |
+| `--echo-drawn-glass` | A screen's field, flat. |
+| `--echo-drawn-hollow` | A recess's paint: a field, a track, a box to tick. |
+| `--echo-drawn-decoration` | A low-emphasis action's label: `underline`. |
+| `--echo-drawn-key`, `--echo-drawn-key-ink` | The primary key's face and label. |
+
+```css
+.my-gauge__fill {
+  background: var(--echo-drawn-fill, var(--echo-accent));
+}
+```
+
+## Don't
+
+- Don't hardcode a hex in component CSS. Use `var(--echo-*)`, so a new seed reaches it.
+- Don't write a `box-shadow` by hand. Use a `--echo-shadow-*` recipe, so it follows the light and
+  the finish.
+- Don't read the seed inside a component. Components see roles, never the seed.
+- Don't hand-write role values instead of calling `createEchoTheme` — you lose the contrast check.

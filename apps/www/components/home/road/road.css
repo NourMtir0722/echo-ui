@@ -1,0 +1,124 @@
+/*
+ * How it works, as a road (Workflow.tsx, road.ts): the way the stops are laid
+ * along, the perch Echo sits on, and the stops. The cable, its sleeves and
+ * jacks load with the cable (road-cable.css), and the motions with the motions
+ * (road-demos.css), not in front of the hero.
+ */
+
+/*
+ * The cable and Echo on it take a strip on the left (--cable-room). On a wide
+ * window that strip sits out in the page's margin, so the stops start on the
+ * column's edge with every other section's; as the window narrows, the margin
+ * holds less of it and the stops move in by the rest (--cable-out, the part
+ * that fits outside, 12px clear of the window's edge).
+ */
+.hiw__way {
+  --cable-room: clamp(4.75rem, 8vw, 7.5rem);
+  --cable-out: clamp(0px, (100vw - 1240px) / 2 + var(--home-gutter, 0px) - 12px, var(--cable-room));
+  position: relative;
+  margin-top: clamp(2rem, 5vw, 4rem);
+  margin-left: calc(-1 * var(--cable-out));
+}
+
+/*
+ * The perch Echo sits on: it travels the cable (Workflow.tsx moves it), and
+ * the 3D Echo, or the drawing without WebGL, sits on it wherever it is.
+ */
+.hiw__way .hiw__perch {
+  --guide-size: 64px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  will-change: transform;
+}
+
+/*
+ * What Echo carries down the cable to the next stop (Workflow.tsx PLUGS): a
+ * small tag in the material, beside Echo while it travels between stops, where
+ * the page is empty, and gone as it arrives (it has plugged the result in).
+ * The draft can switch it off.
+ */
+.hiw__plug {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  will-change: transform;
+  background: linear-gradient(180deg, var(--echo-cap-top, var(--echo-cap)), var(--echo-cap));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.25 * var(--echo-gloss, 1))),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 6px 14px -6px color-mix(in oklab, var(--echo-cast-ink, black) 70%, transparent);
+  color: var(--echo-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.hiw__plug[data-shown] {
+  opacity: 1;
+}
+.hiw__plug-swatches {
+  display: inline-flex;
+}
+.hiw__plug-swatches i {
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-left: -0.2rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--echo-cap);
+}
+.hiw__plug-swatches i:first-child {
+  margin-left: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hiw__plug {
+    transition: none;
+  }
+}
+
+/*
+ * The stops are demo cards, one under another, beside the cable: the list
+ * leaves room on the left for the cable and Echo riding it (Workflow.tsx lays
+ * the cable down the middle of that room).
+ */
+.hiw__cards {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: clamp(5rem, 10vw, 9rem);
+  margin: 0;
+  padding: clamp(3rem, 6vw, 5rem) 0 clamp(5rem, 9vw, 8rem) var(--cable-room);
+  list-style: none;
+}
+.hiw__card {
+  min-width: 0;
+}
+.hiw__card .demo {
+  width: 100%;
+}
+/*
+ * A phone has no strip to spare: there's no cable (Workflow.tsx), and the
+ * cards take the column's whole width. Echo waits standing on the play key of
+ * the card being read, so the cards keep the room above their heads for it.
+ */
+@media (max-width: 47.99rem) {
+  .hiw__way {
+    --cable-room: 0px;
+  }
+  .hiw__way .hiw__perch {
+    --guide-size: 46px;
+  }
+  .hiw__cards {
+    gap: 4.5rem;
+    padding-top: 3.5rem;
+  }
+}

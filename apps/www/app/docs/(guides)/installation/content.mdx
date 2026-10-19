@@ -1,0 +1,337 @@
+import { Claims, CspNeeds, CspPolicy, EchoConfig, Install, InitLine, InstallTree, PageRules, PreRelease } from "@/components/guides/live";
+
+# Installation
+
+<PreRelease />
+
+Two commands and two paste-ins: `init` makes the project ready, `add` copies components into it,
+and the two things a CLI should not do to your files — importing the theme and marking your client
+components — you do yourself.
+
+## Before you start
+
+- **React 18 or later**, with TypeScript. Components ship as `.tsx`.
+- **Next.js 16, if you use Next.js.** The React build that Next.js 15.5 bundles sometimes gives
+  tabs, menus and other parts different ids on the server and in the browser, which breaks the
+  links screen readers use between a tab and its panel. Next.js 16 fixes it. Vite apps aren't
+  affected.
+- **Node 20 or later**, for the CLI.
+- **A bundler that imports CSS from components.** Each component imports its own stylesheet. Next.js
+  and Vite both handle this out of the box.
+
+Nothing else to configure: no CSS framework, no config file, no path alias.
+
+## Browser support
+
+**Chrome/Edge 111+, Safari 16.2+, Firefox 113+.** Declared as a `browserslist` key so a build tool
+can read it, and checked on two engines — the test suite runs against Chromium and WebKit.
+
+The floor is `oklch()` and `color-mix()`. Echo's whole colour system derives every surface, every
+border and every state from one seed colour, and that derivation happens in CSS at paint time
+rather than being precomputed — which is what lets a theme relight from a single value. Those two
+functions are how.
+
+Below the floor the failure is silent: an unsupported `color-mix()` makes the whole declaration
+invalid rather than falling back, so a surface loses its colour instead of degrading. `createEchoTheme`
+therefore emits one `@supports not (color: color-mix(…))` guard that paints plain seed colours on
+the page root. An out-of-baseline visitor gets something legible and obviously unstyled rather than
+invisible text on an invisible background. There are no per-property fallbacks beyond that, and
+there will not be: a flat-colour twin for every `color-mix()` in the library is a second, worse
+design system running in parallel forever.
+
+## What Echo brings with it
+
+Two runtime dependencies arrive with the components that need them. You do not install either by
+hand — an item declares what it needs and the CLI installs it — but you should know they are
+there before you find them in your lockfile.
+
+**[Base UI](https://base-ui.com)** is the behaviour under most Echo controls: the keyboard
+handling, the focus management, the ARIA wiring. Echo skins it rather than reimplementing it,
+which is why a Select behaves like a Select.
+
+**[GSAP](https://gsap.com) is a required peer, not an optional enhancement.** The overlays,
+`hardware-button` and the controls built on it pull it in, and so does everything that uses them,
+and `echo-ui-core` declares it as a peer dependency, so installing any of them without it is a
+broken install rather than a degraded one.
+
+### Why it cannot simply fall back to CSS
+
+Because the thing it does is not a CSS transition. Base UI unmounts a popup when it closes, and it
+can wait for a **CSS** transition to finish before doing so — but it cannot detect a JavaScript
+one. `useGsapPresence` exists to bridge exactly that: it runs the exit animation and only then
+calls `unmount()`, so the element leaves the DOM after the animation rather than during it.
+
+A CSS fallback would have to reimplement that handshake in CSS for every overlay, which is the
+feature Base UI does not offer for JS animations and the reason the hook exists. Echo would rather
+say GSAP is required than ship an overlay that vanishes mid-exit on some installs and not others.
+
+If you cannot take the dependency, the components that do not use it — every control, every
+surface, the templates that avoid overlays — install and work without it.
+
+**Reduced motion is a different question, and it is already handled.** Every motion token has a
+reduced-motion form, and under `prefers-reduced-motion: reduce` the exit resolves immediately
+instead of waiting out a tween. GSAP being required does not mean animation is forced on anyone.
+
+### What it costs
+
+You only ship what you install. These are real builds, not estimates: a Vite + React 19 app built
+five times with different amounts of Echo in it, each row measured as every asset the production
+build emits, gzipped, minus the same app with no Echo at all (67.8 kB of React and the bundler).
+
+| What you installed | Gzipped, over the same app without it |
+| --- | --- |
+| A badge — no GSAP, no Base UI | **2.7 kB** |
+| A button (`hardware-button`) | **34.8 kB** |
+| A form — `field`, `textarea`, `switch`, `select`, a button | **89.3 kB** |
+| A template — `chat`, and the 7 items it pulls in | **49.5 kB** |
+| The whole library — all 115 items | **309.2 kB** |
+
+**Read the first row before the others.** 2.7 kB is what Echo itself costs for a component: the
+theme, `echo-ui-core` and the component's own code and CSS. Almost everything above it is the two
+libraries on this page. The button's 34.8 kB is mostly GSAP; the form's 89.3 kB is mostly Base UI,
+and it is the same Base UI whether you install one control or twelve. The template is eight items
+for 49.5 kB for the same reason: it shares the GSAP its button already brought. And all 115 items
+together are 309.2 kB, about three and a half forms. (Measured 2026-10-12, with the
+install matrix in Echo's repository run for sizes on Vite.)
+
+So the useful question is not how many components you install — it is which of the two libraries
+you have taken on. Once you have taken both, each further component is small.
+
+## What you can count on
+
+<Claims />
+
+## Set the project up
+
+<InitLine />
+
+`init` looks at what is already there — the framework, the lockfile, whether you keep source in
+`src/` — installs `echo-ui-core`, and writes three files:
+
+<EchoConfig />
+
+`echo.json` records where components go and which registry they come from. `echo-lock.json` starts
+empty and records what you install, file by file, so a later `add` can tell an untouched file from
+one you have edited. `echo-theme.css` is the theme, rendered once as plain CSS.
+
+It also writes what your agent reads: a short Echo block in `CLAUDE.md` or `AGENTS.md`, `DESIGN.md`,
+a hook that runs `check` after each edit, the [Stop gate](/docs/checks#the-stop-gate) that runs
+Echo's tests on the pages the agent changed before it finishes, and three skills (building with
+Echo, Design Eye and Style Fit). [What Echo puts in your project](/docs/in-your-project) lists each one, and
+[The workflow](/docs/workflow) shows them at work.
+
+If the project is outside what Echo supports, `init` says which part and what to do about it,
+rather than writing half an install into a project it doesn't understand. Nothing you already have
+is edited — that is true of every Echo command.
+
+Flags: `--dir` puts components somewhere other than the default, `--seed` generates the theme from
+your own accent colour, `--style` wears one of your styles from the start, `--registry` points at a
+different registry, `--yes` writes over an existing `echo.json`, `--skip-agent` leaves out what it
+writes for agents, `--ci` also writes a GitHub Actions job that runs Echo's tests on every pull
+request, and `--dry-run` says what it would do without doing it. [`echo.json`](/docs/echo-json) has
+every field it writes.
+
+## Add a component
+
+<Install item="echo-hardware-button" />
+
+Everything lands under the one folder `echo.json` names:
+
+<InstallTree item="echo-hardware-button" />
+
+Items import each other by relative path inside that folder, so they resolve the same way here as
+they do in Echo's own repo — there is no `@/` alias to set up. Adding a component adds the Echo
+items it builds on, and installs the npm packages it needs.
+
+Before anything is written, `add` checks the whole plan: every item resolves, every file hashes to
+what the registry published, and your `echo-ui-core` is in range for each item. A file you have
+edited stops the install and is named, rather than being replaced; `--overwrite` is how you say to
+replace it anyway.
+
+## Import the theme
+
+Components are styled only through `--echo-*` custom properties, and nothing defines them until the
+theme is on the page. `init` wrote it — import it once, wherever your global CSS is imported:
+
+```tsx
+// app/layout.tsx
+import "@/components/echo/echo-theme.css";
+import "./globals.css";
+```
+
+Give the page the device's own ground, dark or light as your chassis makes it:
+
+```css
+/* globals.css */
+body {
+  background: var(--echo-well);
+  color: var(--echo-text);
+  font-family: var(--echo-font-sans);
+}
+```
+
+Skip this step and every component renders with no colour at all.
+
+The static file is one seed frozen into CSS. To change the theme at runtime — a seed a person picks,
+or one that follows their brand — call `createEchoTheme` instead and put its CSS in a `<style>` at
+the root:
+
+```tsx
+import { createEchoTheme } from "echo-ui-core/theme";
+
+const { css } = createEchoTheme({ accent: "#3D8EF0" });
+
+<head>
+  <style>{css}</style>
+</head>;
+```
+
+[Theming](/docs/theming) covers the seed in full.
+
+## Turn on sound
+
+Components play sound through a `SoundProvider`. Without one they work, silently. Wrap the app:
+
+```tsx
+import { SoundProvider } from "echo-ui-core/sound";
+
+<body>
+  <SoundProvider>{children}</SoundProvider>
+</body>;
+```
+
+**Sound starts off.** Someone who hasn't chosen yet hears nothing until they turn it on, so give
+them a switch ([Patterns](/docs/patterns#a-sound-switch)), or pass `defaultMuted={false}` where
+sound is the point from the first press. Browsers only allow audio after a user gesture, so the
+provider starts audio on the first pointer press, never on page load, and a person's choice is
+remembered. [Motion & sound](/docs/motion-and-sound) has the rest.
+
+## Client components
+
+Echo components run in the browser. In the Next.js App Router, pages are server components, and a
+server component cannot pass a function to a client one — so a page that hands a component its
+`onSave`, `onSubmit` or `onClick` has to be a client component too:
+
+```tsx
+// app/page.tsx
+"use client";
+
+import { HardwareButton } from "@/components/echo/hardware-button";
+
+export default function Page() {
+  return <HardwareButton onClick={() => save()}>Save</HardwareButton>;
+}
+```
+
+Without the directive the build stops with "Event handlers cannot be passed to Client Component
+props".
+
+## Watch the running page
+
+`check` reads your source. What only exists once the page runs, it can't see: a colour as the
+browser computes it, a name a control gets at runtime, text against whatever ends up behind it, a
+screen put together from several files. `EchoCheck` looks at the page itself, in development. Put
+it once in the root layout:
+
+```tsx
+import { SoundProvider } from "echo-ui-core/sound";
+import { EchoCheck } from "echo-ui-core/check";
+
+<body>
+  <SoundProvider>{children}</SoundProvider>
+  <EchoCheck />
+</body>;
+```
+
+It looks when the page settles, and again whenever it changes, and says what it finds in the
+browser's console, one line each. The Next.js 16 dev server prints the same lines in its terminal,
+so an agent that started it reads them there.
+
+```text
+Echo check · contrast: p.hint "Saved a minute ago": 3.2:1 (#6f6a7d on #16131e). Text this size needs 4.5:1. …
+```
+
+<PageRules />
+
+`overlay` adds a small panel in the corner that lists them and points at each one.
+`ignore={["colour"]}` turns a rule off, and `colours` takes the brand colours the seed doesn't make
+that you use on purpose, as hex values: the same list as `check.colours` in `echo.json`.
+
+A production build gets a version that renders nothing. `echo-ui-core/check` points the
+`development` condition bundlers set in development at the page check, and every other build at an
+empty component, so none of its code ships and it can stay in the layout.
+
+It doesn't measure text over an image, a video or blurred glass, since styles can't say what's
+behind it, and it doesn't run axe. [`test`](/docs/cli#test) does: every page, headless, with
+everything here and axe's WCAG A and AA rules, and in Claude Code it runs when the agent stops.
+
+## Right-to-left
+
+Echo mirrors for right-to-left languages. It needs two things from your app: `dir="rtl"` on an
+ancestor, which flips the CSS, and Base UI's `DirectionProvider`, which makes arrow keys and slider
+drags follow the reading direction.
+
+```tsx
+import { DirectionProvider } from "@base-ui/react/direction-provider";
+
+<html lang="ar" dir="rtl">
+  <body>
+    <DirectionProvider direction="rtl">{children}</DirectionProvider>
+  </body>
+</html>;
+```
+
+The light doesn't mirror: it comes from the top left in every language, because it's part of the
+device. See every component both ways in the [right-to-left gallery](/gallery/rtl).
+
+## Under a Content Security Policy
+
+Echo adds no scripts of its own, evaluates no strings, starts no workers and loads nothing from
+another origin, and its CSS is files your bundler serves. So a strict policy works, with one
+allowance for everything and two more for one component each:
+
+<CspNeeds />
+
+The theme needs nothing when it's the `echo-theme.css` file `init` wrote. If you put it in a
+`<style>` at runtime instead, give that element your nonce. Next.js puts the nonce on its own
+scripts when your middleware sets the header; its
+[Content Security Policy guide](https://nextjs.org/docs/app/guides/content-security-policy) shows
+how. A policy for an app that uses Echo, with the two component lines in:
+
+<CspPolicy />
+
+Leave out `data:` if you don't use Textures, and the `media-src` line if you don't use VoiceNote.
+
+## Vite
+
+The same commands. `init` detects Vite on its own; the theme is imported from your entry file
+instead of a layout:
+
+```tsx
+// src/main.tsx
+import { createRoot } from "react-dom/client";
+import { SoundProvider } from "echo-ui-core/sound";
+import "./components/echo/echo-theme.css";
+import App from "./App";
+
+createRoot(document.getElementById("root")!).render(
+  <SoundProvider>
+    <App />
+  </SoundProvider>,
+);
+```
+
+## Troubleshooting
+
+| Symptom | Cause |
+| --- | --- |
+| `No echo.json here` | `add` before `init` ([set the project up](#set-the-project-up)). |
+| `echo.json isn't valid JSON` | A hand edit left a trailing comma or a comment. Fix the place the message names; nothing runs, and nothing is written over the file, until it reads. |
+| An import from `@base-ui-components/react` fails | That is Base UI's old package name; the current one is `@base-ui/react`. AI assistants trained on older code often suggest it. |
+| Components render with no colour | `echo-theme.css` is not imported ([import the theme](#import-the-theme)). |
+| `add` stops naming a file you changed | That file differs from what was installed. Keep your version, or pass `--overwrite` to take the registry's. |
+| `needs echo-ui-core >=…` | The item is newer than the core you have. Update `echo-ui-core`. |
+| `Could not reach …: fetch failed`, behind a company proxy | Node's `fetch`, which the CLI reads the registry with, goes around a proxy unless Node is told to use it. Set `NODE_USE_ENV_PROXY=1` beside your `HTTPS_PROXY`, on a Node whose `node --help` lists `--use-env-proxy`. Your package manager reads its own proxy settings. |
+| "Event handlers cannot be passed to Client Component props" | The page passing a callback needs `"use client"` ([client components](#client-components)). |
+| No sound | No `SoundProvider`; or nobody has turned sound on yet (it starts muted; `defaultMuted={false}` starts with it); or muted (the choice is saved in `localStorage` as `echo-sound-muted`); or the OS asks for reduced motion, which mutes by default; or the tab is not focused. |
+| Everything looks washed out on a white page | The page isn't on the device's ground. Use `var(--echo-well)` or `var(--echo-surface)` as the page ground; for a light device, give the seed a pale chassis rather than a white page under a dark one. |

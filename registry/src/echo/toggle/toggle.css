@@ -1,0 +1,158 @@
+/**
+ * Toggle. A small neutral cap in its own well; "on" is the cap held down,
+ * a little darker and closer to the floor, with no light. A ToggleGroup is
+ * one long well holding several caps. On the control scale: the outer height
+ * (well included) is sm 32, md 44, lg 60px.
+ */
+.echo-toggle,
+.echo-toggle-group {
+  --tg-well: var(--echo-space-2, 4px);
+  --ctl-h: var(--echo-control-default);
+  --tg-px: var(--echo-space-7);
+  --tg-font: var(--echo-text-xs);
+  --tg-icon: var(--echo-icon-md, 16px);
+}
+.echo-toggle[data-size="sm"],
+.echo-toggle-group[data-size="sm"] {
+  --tg-well: var(--echo-space-1, 2px);
+  --ctl-h: var(--echo-control-compact);
+  --tg-px: var(--echo-space-5);
+  --tg-font: var(--echo-text-2xs);
+  --tg-icon: var(--echo-icon-sm, 14px);
+}
+.echo-toggle[data-size="lg"],
+.echo-toggle-group[data-size="lg"] {
+  --ctl-h: var(--echo-control-large);
+  --tg-px: var(--echo-space-9);
+  --tg-font: var(--echo-text-sm);
+}
+
+/* The well: one per Toggle, or one for the whole group. */
+.echo-toggle,
+.echo-toggle-group {
+  display: inline-flex;
+  box-sizing: border-box;
+  height: var(--ctl-h);
+  padding: var(--tg-well);
+  gap: var(--tg-well);
+  border-radius: var(--echo-radius-lg);
+  box-shadow: var(
+    --echo-shadow-well,
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+.echo-toggle-group[data-orientation="vertical"] {
+  flex-direction: column;
+  height: auto;
+}
+/* Inside a group the group is the well; each Toggle is just its cap. */
+.echo-toggle-group .echo-toggle {
+  height: 100%;
+  padding: 0;
+  box-shadow: none;
+}
+.echo-toggle-group[data-orientation="vertical"] .echo-toggle {
+  height: calc(var(--ctl-h) - 2 * var(--tg-well));
+}
+
+.echo-toggle__cap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--echo-space-3);
+  box-sizing: border-box;
+  height: 100%;
+  min-width: calc(var(--ctl-h) - 2 * var(--tg-well));
+  padding: 0 var(--tg-px);
+  border: 0;
+  border-radius: var(--echo-radius-md);
+  cursor: pointer;
+  color: var(--echo-text-dim);
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--tg-font);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  text-transform: uppercase;
+  background: linear-gradient(180deg, var(--echo-cap-highlight) 0%, var(--echo-cap) 45%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(0.32 * var(--echo-gloss, 1))),
+    0 calc(2px - 1px * var(--press, 0)) 0 var(--echo-seam),
+    0 calc(4px + 2px * var(--lift, 0)) calc(6px + 4px * var(--lift, 0)) color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent);
+  /* Held down: the latch keeps it on its seam. By `top`: useCapPhysics owns
+     transform, and GSAP writes translate inline as it presses. */
+  top: 0;
+  transition:
+    top var(--echo-duration-pop) var(--echo-ease-pop),
+    box-shadow var(--echo-duration-swap) ease,
+    color var(--echo-duration-swap) ease;
+  will-change: transform;
+}
+.echo-toggle[data-icon-only] .echo-toggle__cap {
+  padding: 0;
+  width: calc(var(--ctl-h) - 2 * var(--tg-well));
+}
+.echo-toggle__cap[data-pressed] {
+  top: 1.5px;
+  color: var(--echo-text);
+  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);
+  box-shadow:
+    inset 0 1px 2px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 0.5px 0 var(--echo-line-width, 0px) var(--echo-seam);
+}
+/* The hit area is the full height, well included. */
+.echo-toggle__cap::after {
+  content: "";
+  position: absolute;
+  inset-block: calc(-1 * var(--tg-well));
+  inset-inline: 0;
+}
+.echo-toggle__cap:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(
+    --echo-shadow-ring,
+    0 0 0 2px var(--echo-surface),
+    0 0 0 4px var(--echo-accent-ink, var(--echo-accent-glow))
+  );
+}
+.echo-toggle__cap[data-disabled] {
+  cursor: default;
+  opacity: 0.45;
+}
+.echo-toggle__icon {
+  display: inline-flex;
+  width: var(--tg-icon);
+  height: var(--tg-icon);
+}
+.echo-toggle__icon > svg {
+  width: 100%;
+  height: 100%;
+}
+@media (pointer: coarse) {
+  .echo-toggle[data-size="sm"],
+  .echo-toggle-group[data-size="sm"] {
+    --ctl-h: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-toggle__cap {
+    transition: none;
+  }
+}
+/* Forced colors draws "on" as a system highlight: state can't live in a shade. */
+@media (forced-colors: active) {
+  .echo-toggle__cap {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-toggle__cap[data-pressed] {
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+  .echo-toggle__cap:focus-visible {
+    outline-color: Highlight;
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "name": "accordion",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Accordion",
+  "description": "Base UI Accordion (keyboard, a11y, height measurement) skinned as molded device panels that expand. Click sound on toggle; height animates via CSS. Compound API.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "accordion/accordion.css",
+      "sha256": "02138aceec7f1745e497dfe865fb5687254fcc27d344c2c03c1934e9d5f02799",
+      "content": "/**\n * Accordion. Molded panels that expand. Composes\n * var(--echo-*). Height animates via Base UI's --accordion-panel-height +\n * data-starting/ending-style (CSS transition; Base UI auto-detects it).\n */\n/*\n * Ruled rows, not molded bars (2026-09-18). Each header used to be a raised\n * cap with a separate box hung under it, so a three-item accordion was three\n * big buttons. A disclosure list is a LIST: hairlines between rows, the title\n * as text, and the chevron as the one affordance — the same language as the\n * template index.\n */\n.echo-accordion {\n  display: grid;\n  border-bottom: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n\n.echo-accordion__item {\n  border-top: var(--echo-border-hairline, 1px) solid var(--echo-seam);\n}\n\n.echo-accordion__header {\n  margin: 0;\n}\n\n.echo-accordion__trigger {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n  width: 100%;\n  min-height: var(--echo-control-default);\n  padding: var(--echo-space-6) var(--echo-space-3);\n  border: 0;\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  text-align: start;\n  color: var(--echo-text);\n  background: transparent;\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-md);\n  font-weight: var(--echo-weight-semibold, 600);\n  transition: background var(--echo-duration-tick) ease;\n}\n@media (hover: hover) {\n  .echo-accordion__trigger:hover {\n    background: color-mix(in oklab, var(--echo-cap) 28%, transparent);\n  }\n}\n.echo-accordion__trigger:focus-visible {\n  /* Drawn only in forced colors, which drops the shadow ring. */\n  outline: 2px solid transparent;\n  outline-offset: -2px;\n  box-shadow: var(--echo-shadow-ring-inset, inset 0 0 0 2px var(--echo-accent-ink, var(--echo-accent-glow)));\n}\n\n.echo-accordion__chevron {\n  flex: none;\n  color: var(--echo-text-dim);\n  /* It flips over on a spring, overshooting a touch past the turn. */\n  transition:\n    transform var(--echo-duration-pop) var(--echo-ease-pop),\n    color var(--echo-duration-tick) ease;\n}\n/* It notices the pointer: a nudge toward where the panel would go. */\n@media (hover: hover) {\n  .echo-accordion__trigger:not([data-disabled]):hover .echo-accordion__chevron {\n    transform: translateY(2px);\n    color: var(--echo-text);\n  }\n}\n.echo-accordion__trigger[data-panel-open] .echo-accordion__chevron {\n  transform: rotate(180deg);\n  color: var(--echo-text);\n}\n@media (hover: hover) {\n  .echo-accordion__trigger[data-panel-open]:not([data-disabled]):hover .echo-accordion__chevron {\n    transform: rotate(180deg) translateY(2px);\n  }\n}\n\n.echo-accordion__panel {\n  overflow: hidden;\n  height: var(--accordion-panel-height);\n  color: var(--echo-text-dim);\n  font-size: var(--echo-text-md);\n  line-height: var(--echo-leading-body, 1.55);\n  /* Apple's sheet curve: quick to open, settling without overshoot — a\n     panel that bounced would jolt everything below it. */\n  transition: height var(--echo-duration-pop) cubic-bezier(0.32, 0.72, 0, 1);\n}\n.echo-accordion__panel[data-starting-style],\n.echo-accordion__panel[data-ending-style] {\n  height: 0;\n}\n.echo-accordion__panel[data-ending-style] {\n  transition-duration: var(--echo-duration-sweep);\n}\n\n.echo-accordion__panel-inner {\n  padding: 0 var(--echo-space-3) var(--echo-space-8);\n  max-width: 62ch;\n  /* The contents surface once the panel has opened under them. */\n  transition:\n    opacity var(--echo-duration-sweep) ease var(--echo-duration-tick),\n    transform var(--echo-duration-pop) var(--echo-ease-pop) var(--echo-duration-tick);\n}\n.echo-accordion__panel[data-starting-style] .echo-accordion__panel-inner,\n.echo-accordion__panel[data-ending-style] .echo-accordion__panel-inner {\n  opacity: 0;\n  transform: translateY(-6px);\n}\n.echo-accordion__panel[data-ending-style] .echo-accordion__panel-inner {\n  transition-duration: var(--echo-duration-tick);\n  transition-delay: 0s;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-accordion__panel,\n  .echo-accordion__panel-inner,\n  .echo-accordion__chevron {\n    transition: none;\n  }\n  @media (hover: hover) {\n    .echo-accordion__trigger:not([data-disabled]):hover .echo-accordion__chevron {\n      transform: none;\n    }\n    .echo-accordion__trigger[data-panel-open]:not([data-disabled]):hover .echo-accordion__chevron {\n      transform: rotate(180deg);\n    }\n  }\n}\n"
+    },
+    {
+      "path": "accordion/accordion.tsx",
+      "sha256": "482e8f14d812f9ac2579343aa32886ad3d64b10724afe45d31e88cd155ed287b",
+      "content": "\"use client\";\n\n/**\n * Accordion. Base UI Accordion behavior (keyboard,\n * a11y, panel height measurement) skinned as molded device panels, with a click\n * sound on toggle. Panel height animates via CSS (Base UI auto-detects the\n * transition), so no GSAP presence is needed here.\n *\n * Compound API: <Accordion><Accordion.Item><Accordion.Trigger/><Accordion.Panel/></Accordion.Item></Accordion>.\n *\n * NOTE: the package is `@base-ui/react`, NOT `@base-ui-components/react`.\n */\nimport type { ComponentProps } from \"react\";\nimport { Accordion as BaseAccordion } from \"@base-ui/react/accordion\";\nimport { useSoundOptional } from \"echo-ui-core/sound\";\nimport \"./accordion.css\";\n\nconst cx = (...c: (string | undefined)[]) => c.filter(Boolean).join(\" \");\n\n/** Narrow Base UI's string-or-function className to a plain string for skinning. */\ntype Skin<T> = Omit<T, \"className\"> & { className?: string };\n\nfunction AccordionRoot({\n  onValueChange,\n  className,\n  ...props\n}: Skin<ComponentProps<typeof BaseAccordion.Root>>) {\n  const sound = useSoundOptional();\n  return (\n    <BaseAccordion.Root\n      className={cx(\"echo-accordion\", className)}\n      onValueChange={(value, eventDetails) => {\n        sound?.play(\"tap\");\n        onValueChange?.(value, eventDetails);\n      }}\n      {...props}\n    />\n  );\n}\n\nfunction AccordionItem({ className, ...props }: Skin<ComponentProps<typeof BaseAccordion.Item>>) {\n  return <BaseAccordion.Item className={cx(\"echo-accordion__item\", className)} {...props} />;\n}\n\nfunction Chevron() {\n  return (\n    <svg\n      className=\"echo-accordion__chevron\"\n      width=\"16\"\n      height=\"16\"\n      viewBox=\"0 0 16 16\"\n      fill=\"none\"\n      stroke=\"currentColor\"\n      strokeWidth=\"2\"\n      aria-hidden\n    >\n      <path d=\"M4 6l4 4 4-4\" strokeLinecap=\"round\" strokeLinejoin=\"round\" />\n    </svg>\n  );\n}\n\nfunction AccordionTrigger({\n  className,\n  children,\n  ...props\n}: Skin<ComponentProps<typeof BaseAccordion.Trigger>>) {\n  return (\n    <BaseAccordion.Header className=\"echo-accordion__header\">\n      <BaseAccordion.Trigger className={cx(\"echo-accordion__trigger\", className)} {...props}>\n        <span>{children}</span>\n        <Chevron />\n      </BaseAccordion.Trigger>\n    </BaseAccordion.Header>\n  );\n}\n\nfunction AccordionPanel({\n  className,\n  children,\n  ...props\n}: Skin<ComponentProps<typeof BaseAccordion.Panel>>) {\n  return (\n    <BaseAccordion.Panel className={cx(\"echo-accordion__panel\", className)} {...props}>\n      <div className=\"echo-accordion__panel-inner\">{children}</div>\n    </BaseAccordion.Panel>\n  );\n}\n\n// Assembled into `Accordion` in index.ts, which isn't a client module (BUG-10).\nexport { AccordionRoot, AccordionItem, AccordionTrigger, AccordionPanel };\n"
+    },
+    {
+      "path": "accordion/index.ts",
+      "sha256": "ffc731bc42c3d88adc04aaf269ffa5f33e185665baf45193e72670af4f411c47",
+      "content": "/**\n * The entry point for Accordion, deliberately NOT a client module: the parts are\n * attached here, from named client exports. Attached inside the \"use client\"\n * file, they didn't survive a server component's import, so Accordion.Item was\n * undefined in a Next.js page or layout and the build failed (BUG-10).\n */\nimport { AccordionRoot, AccordionItem, AccordionTrigger, AccordionPanel } from \"./accordion\";\n\nexport const Accordion = Object.assign(AccordionRoot, {\n  Item: AccordionItem,\n  Trigger: AccordionTrigger,\n  Panel: AccordionPanel,\n});\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "pop"
+  ],
+  "sound": [
+    "tap"
+  ],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only.** A few source comments used screens that are no longer in the library as their example; they now make the point without them. Nothing these components render or do changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

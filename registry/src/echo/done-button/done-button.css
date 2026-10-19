@@ -1,0 +1,8 @@
+/*
+ * The lit "Done" is the state reached, not an action: disabled, so it's
+ * announced as unavailable and can't be pressed, but lit at full strength —
+ * dimmed, it would read as "off", which is the opposite of what it says.
+ */
+.echo-done-button .echo-hw__cap[data-variant="primary"]:disabled {
+  opacity: 1;
+}

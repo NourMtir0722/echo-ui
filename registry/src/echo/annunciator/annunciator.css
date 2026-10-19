@@ -1,0 +1,70 @@
+/**
+ * Annunciator. A strip of screen with its marks printed on the glass: dark
+ * ones are only just there, lit ones glow in the accent. Composes
+ * var(--echo-*) — no hex literals; the only fixed values are the key light.
+ */
+.echo-annunciator {
+  display: inline-flex;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+.echo-annunciator__glass {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-2) var(--echo-space-7);
+  padding: var(--echo-space-3) var(--echo-space-6);
+  border-radius: var(--echo-radius-md);
+  background: var(--echo-drawn-glass, linear-gradient(160deg, var(--echo-well) 0%, var(--echo-lcd) 100%));
+  box-shadow:
+    inset 0 2px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.85 * var(--echo-shade, 1) * 100%), transparent),
+    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),
+    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-annunciator__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-2);
+  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--echo-text-2xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-wider, 0.12em);
+  line-height: var(--echo-leading-none, 1);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  /* Dark: printed on the glass, only just visible. */
+  color: color-mix(in oklab, var(--echo-text) 10%, transparent);
+}
+.echo-annunciator__mark > svg {
+  inline-size: var(--echo-icon-sm, 14px);
+  block-size: var(--echo-icon-sm, 14px);
+}
+/* Lit: emitting, in the accent. */
+.echo-annunciator__mark[data-on] {
+  color: var(--echo-accent-ink, var(--echo-accent-glow));
+  text-shadow: 0 0 8px color-mix(in oklab, var(--echo-lcd-glow) 55%, transparent);
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--echo-lcd-glow) 45%, transparent));
+}
+
+.echo-annunciator__said {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  .echo-annunciator__glass {
+    border: var(--echo-border-hairline, 1px) solid CanvasText;
+  }
+  .echo-annunciator__mark {
+    color: GrayText;
+  }
+  .echo-annunciator__mark[data-on] {
+    color: CanvasText;
+    filter: none;
+  }
+}

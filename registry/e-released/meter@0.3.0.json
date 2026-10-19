@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "name": "meter",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Meter",
+  "description": "A measurement within a known range (storage, battery, signal, a score), not a task's progress. A recessed tube with the primary plastic poured to the value; when the value changes the level travels there on a spring and settles with a small slosh. marks engrave levels on the tube without a second colour. Built on Base UI Meter: role=\"meter\" with the formatted value as aria-valuetext.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [],
+  "files": [
+    {
+      "path": "meter/meter.tsx",
+      "sha256": "6e4f685454955b453132f40a3d20d1e80fcff954960494ecabf83ba320969c88",
+      "content": "\"use client\";\n\n/**\n * Meter. A measurement within a known range: storage used, battery, signal,\n * a score. Not progress (that's Progress, a task on its way to done): a\n * meter's value is simply where things stand.\n *\n * A recessed tube with the primary plastic poured into it to the value.\n * When the value changes the level travels there on a spring and settles\n * with a small slosh, the way a liquid does, so you can see how far it moved.\n * `marks` engrave levels on the tube (a limit, a target) without a second\n * colour: what a level means is said in words.\n *\n * Base UI Meter gives it `role=\"meter\"` and the formatted value as\n * `aria-valuetext`. Under reduced motion the level jumps.\n */\nimport { useEffect, useRef, type CSSProperties } from \"react\";\nimport { Meter as BaseMeter } from \"@base-ui/react/meter\";\nimport { createSpring, useReducedMotionRef } from \"echo-ui-core/tactile\";\nimport \"./meter.css\";\n\nexport interface MeterProps {\n  /** What it measures; the visible label and the accessible name. */\n  label: string;\n  value: number;\n  /** Default 0. */\n  min?: number;\n  /** Default 100. */\n  max?: number;\n  /** How the value reads (\"62%\", \"4.2 GB\"): Intl number format options. Default percent of the range. */\n  format?: Intl.NumberFormatOptions;\n  /** Levels engraved on the tube: a limit, a target. Say what each means in the label or nearby. */\n  marks?: number[];\n  /** Show the value as text beside the label. Default true. */\n  showValue?: boolean;\n}\n\nexport function Meter({ label, value, min = 0, max = 100, format, marks = [], showValue = true }: MeterProps) {\n  const fill = useRef<HTMLDivElement>(null);\n  const reduced = useReducedMotionRef();\n  const level = Math.min(1, Math.max(0, (value - min) / (max - min || 1)));\n  const spring = useRef<ReturnType<typeof createSpring> | null>(null);\n\n  useEffect(() => {\n    const el = fill.current;\n    if (!el) return;\n    spring.current = createSpring(level, { duration: 0.6, bounce: 0.28 }, (x) => {\n      el.style.setProperty(\"--meter-level\", x.toFixed(4));\n    });\n    el.style.setProperty(\"--meter-level\", String(level));\n    return () => spring.current?.stop();\n    // Made once; later values go through `to` below.\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, []);\n\n  useEffect(() => {\n    if (!spring.current) return;\n    if (reduced.current) spring.current.set(level);\n    else spring.current.to(level);\n  }, [level, reduced]);\n\n  // Intl's percent style multiplies what it is given by 100, and Base UI gives\n  // a format the raw value: `{ style: \"percent\" }` read 78 as \"7,800%\". A\n  // meter's percent is its share of the range, so that one is formatted here,\n  // with the rest of the caller's options kept (BUG-93).\n  const percent = format?.style === \"percent\" ? new Intl.NumberFormat(undefined, format).format(level) : undefined;\n  const reading =\n    percent !== undefined ? { getAriaValueText: () => percent } : format ? { format } : {};\n\n  return (\n    <BaseMeter.Root className=\"echo-meter\" value={value} min={min} max={max} {...reading}>\n      <div className=\"echo-meter__head\">\n        <BaseMeter.Label className=\"echo-meter__label\">{label}</BaseMeter.Label>\n        {showValue ? (\n          <BaseMeter.Value className=\"echo-meter__value\">{percent !== undefined ? () => percent : undefined}</BaseMeter.Value>\n        ) : null}\n      </div>\n      <BaseMeter.Track className=\"echo-meter__track\">\n        <div ref={fill} className=\"echo-meter__fill\" style={{ \"--meter-level\": level } as CSSProperties} />\n        {marks.map((m) => {\n          const at = Math.min(1, Math.max(0, (m - min) / (max - min || 1)));\n          return <span key={m} className=\"echo-meter__mark\" style={{ \"--meter-mark\": at } as CSSProperties} aria-hidden=\"true\" />;\n        })}\n      </BaseMeter.Track>\n    </BaseMeter.Root>\n  );\n}\n"
+    },
+    {
+      "path": "meter/meter.css",
+      "sha256": "a2c5aa28801097c1f4f06ac3e6cb5056afa22fd8a0fd8729bffb9145d4fd2192",
+      "content": "/**\n * Meter. A machine label and its reading over a recessed tube, filled with\n * the primary plastic to the level (--meter-level, 0–1, on a spring).\n */\n.echo-meter {\n  display: grid;\n  gap: var(--echo-space-3);\n  min-width: 0;\n  width: 100%;\n}\n.echo-meter__head {\n  display: flex;\n  align-items: baseline;\n  justify-content: space-between;\n  gap: var(--echo-space-6);\n}\n.echo-meter__label {\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-widest, 0.25em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n.echo-meter__value {\n  font-family: var(--echo-font-lcd, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-sm);\n  font-variant-numeric: tabular-nums;\n  color: var(--echo-text);\n}\n/* The tube: a groove cut into the surface. */\n.echo-meter__track {\n  position: relative;\n  height: 12px;\n  padding: var(--echo-space-1);\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-lcd);\n  box-shadow:\n    inset 0 2px 4px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.7 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.05 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n  overflow: hidden;\n}\n/* The liquid: poured to the level, with a lit top and a rounded meniscus. */\n.echo-meter__fill {\n  height: 100%;\n  width: calc(var(--meter-level, 0) * 100%);\n  min-width: 8px;\n  border-radius: var(--echo-radius-full);\n  background: linear-gradient(\n    180deg,\n    var(--echo-primary-cap-top) 0%,\n    var(--echo-primary-cap-mid) 45%,\n    var(--echo-primary-cap-base) 100%\n  );\n  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));\n}\n/* An engraved level: a notch across the tube. */\n.echo-meter__mark {\n  position: absolute;\n  inset-block: 0;\n  inset-inline-start: calc(var(--meter-mark) * 100%);\n  width: 2px;\n  margin-inline-start: -1px;\n  background: color-mix(in oklab, var(--echo-text) 55%, transparent);\n  box-shadow: 1px 0 0 color-mix(in oklab, var(--echo-cast-ink, black) calc(0.5 * var(--echo-shade, 1) * 100%), transparent);\n}\n@media (forced-colors: active) {\n  .echo-meter__track {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n  }\n  .echo-meter__fill {\n    background: Highlight;\n  }\n  .echo-meter__mark {\n    background: CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "meter/index.ts",
+      "sha256": "30fc27cd83b2a4534b5ac345a90d6171b1f1b77a9c302b6d556efef6a8cc97b9",
+      "content": "export { Meter } from \"./meter\";\nexport type { MeterProps } from \"./meter\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The rest of the inputs: `Toggle`, `Toolbar`, `Meter`, `RangeSlider`, and two instruments, `Knob` and `LevelMeter`.** Plus `start` and `end` on `Field`. - **`Toggle` / `ToggleGroup`**: the quiet toolbar key. On is the cap held down in its well, not a light; a group shares one well, with arrow keys between its keys, `multiple` or at most one. - **`Toolbar` / `ButtonGroup`**: caps sharing one long well. A Toolbar is one tab stop with the arrow keys, Home and End along it, and `sm` controls; Toggles and ToggleGroups inside join its order by themselves. A ButtonGroup is the look alone. - **`Field` `start` / `end`**: a search icon or a currency sign engraved into the well before the text; a unit or a small key (clear, show password) after it. - **`Meter`**: a measurement in a range (storage, battery), a tube of lit plastic that settles to its level with a small slosh; `marks` engrave a limit without a second colour. - **`RangeSlider`**: two of Slider's knobs on one rail for a span, named \"…, minimum\" and \"…, maximum\"; they never cross. - **`Knob`**: a rotary cap with a lit scale. Drag it, wheel it once focused, or use the slider keys; it clicks at each step and settles onto each detent on a spring. - **`LevelMeter`**: a live level as LED cells with real ballistics and a held peak. It draws without re-rendering, stops once it's still, and tells a screen reader its level at most once a second."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**A `Meter` asked for a percent reads its share of the range.** `format={{ style: \"percent\" }}` formatted the raw value, so 78 read \"7,800%\", on screen and to a screen reader. It now reads \"78%\", with your other format options kept."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

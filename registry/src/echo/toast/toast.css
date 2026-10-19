@@ -1,0 +1,231 @@
+/**
+ * Toast. A raised slab with a status LED: lit when active, dim cream when
+ * neutral. Composes var(--echo-*).
+ *
+ * The slab is the chassis plastic, the same as the Select's sheet and the
+ * caps: a darkened, translucent WELL (the old recipe) read as a brown-red
+ * pane from nowhere in the system once it sat over anything warm.
+ */
+.echo-toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--echo-space-6);
+  overflow: hidden;
+  /*
+   * `min-width: 260px` is a floor, so it overflowed a narrower
+   * container outright (294 > 284 on the docs page). A toast still wants to
+   * be wide when there is room; `min()` gives it that without the floor.
+   */
+  min-width: min(260px, 100%);
+  /* `min-width: 100%` plus 32px of padding overflows without this. */
+  box-sizing: border-box;
+  padding: var(--echo-space-6) var(--echo-space-8);
+  border-radius: var(--echo-radius-xl);
+  border: 0;
+  background: linear-gradient(180deg, var(--echo-cap) 0%, var(--echo-cap-shadow) 100%);
+  box-shadow: var(
+    --echo-shadow-toast,
+    inset 0 1.5px 0 rgb(255 255 255 / calc(0.28 * var(--echo-gloss, 1))),
+    inset 0 0 0 1px color-mix(in oklab, var(--echo-seam) 70%, transparent),
+    0 18px 36px -14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.75 * var(--echo-shade, 1) * 100%), transparent),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 calc(5px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+  );
+}
+
+.echo-toast__led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--echo-text) 40%, transparent);
+}
+
+/* Active: the library's one lit accent, light kept inside the LED. */
+/*
+ * `active` lights the LED. Everything else (`info`) leaves it dark — the
+ * value used to be spelled `"default"`.
+ */
+.echo-toast[data-tone="active"] .echo-toast__led {
+  background: linear-gradient(
+    180deg,
+    var(--echo-primary-cap-top) 0%,
+    var(--echo-primary-cap-mid) 45%,
+    var(--echo-primary-cap-base) 100%
+  );
+  box-shadow: var(--echo-shadow-edge, inset 0 1px 0 rgb(255 255 255 / calc(0.4 * var(--echo-gloss, 1))));
+}
+
+.echo-toast__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.echo-toast__title {
+  /* In the toaster these are Base UI's h2 and p: no browser margins. */
+  margin: 0;
+  /* Long content wraps rather than pushing its container open. */
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-sm);
+  font-weight: var(--echo-weight-semibold, 600);
+  color: var(--echo-text);
+}
+
+.echo-toast__body {
+  margin: 0;
+  /* Long content wraps rather than pushing the slab open. */
+  overflow-wrap: anywhere;
+  font-size: var(--echo-text-xs);
+  color: var(--echo-text-dim);
+}
+
+/* --- the toaster ---------------------------------------------------------- */
+
+/*
+ * One stack in the bottom corner at the inline end, above dialogs (the toast
+ * layer). The viewport is on the page from the start, so what arrives in it
+ * is announced.
+ *
+ * The toasts pile like ThrowStack's cards: the newest in front (last in the
+ * DOM, so it paints on top), each one
+ * behind 12px up and 5% smaller, showing only its edge. Pointer or focus on
+ * the pile fans it into a column (Base UI's `data-expanded`, which also
+ * pauses the timers), so every toast can be read and reached.
+ */
+.echo-toaster {
+  --toast-gap: var(--echo-space-4);
+  --toast-peek: 12px;
+  position: fixed;
+  inset-inline-end: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  z-index: var(--echo-z-toast, 400);
+  width: min(360px, calc(100vw - 2rem));
+  outline: none;
+}
+
+/* A toast pops up into place on a spring — solid quickly, overshooting a
+   touch and settling — and leaves quickly and plainly. */
+.echo-toaster .echo-toast {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--toast-index, 0) * -1 * var(--toast-peek)))
+    scale(calc(1 - var(--toast-index, 0) * 0.05));
+  transition:
+    opacity var(--echo-duration-swap) ease,
+    transform var(--echo-duration-pop) var(--echo-ease-pop),
+    rotate var(--echo-duration-pop) var(--echo-ease-pop),
+    height var(--echo-duration-pop) var(--echo-ease-pop);
+}
+/* Behind the front one, only the slab's edge shows. */
+.echo-toaster .echo-toast[data-behind]:not([data-expanded]) {
+  height: var(--toast-frontmost-height, auto);
+}
+.echo-toaster .echo-toast > * {
+  transition: opacity var(--echo-duration-swap) ease;
+}
+.echo-toaster .echo-toast[data-behind]:not([data-expanded]) > * {
+  opacity: 0;
+}
+/* Fanned: a column, newest at the bottom. */
+.echo-toaster .echo-toast[data-expanded] {
+  overflow: visible;
+  transform: translateY(calc(-1 * var(--toast-offset-y, 0px) - var(--toast-index, 0) * var(--toast-gap)));
+}
+/* Bridges the gap below each one, so moving between toasts keeps it fanned. */
+.echo-toaster .echo-toast[data-expanded]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: calc(var(--toast-gap) + 1px);
+}
+.echo-toaster .echo-toast[data-starting-style] {
+  opacity: 0;
+  transform: translateY(18px) scale(0.92);
+}
+.echo-toaster .echo-toast[data-ending-style] {
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transition-duration: var(--echo-duration-swap);
+  transition-timing-function: ease-in;
+}
+/*
+ * Flicked away: it carries on from where the finger let go, at the speed it
+ * was thrown (--fling-ms), turning as it goes (--fling-turn), like a card
+ * off ThrowStack. Both are set as the finger lifts (toast.tsx).
+ */
+.echo-toaster .echo-toast[data-ending-style][data-swipe-direction] {
+  rotate: var(--fling-turn, 0deg);
+  transition-duration: var(--fling-ms, var(--echo-duration-pop));
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+}
+.echo-toaster .echo-toast[data-ending-style][data-swipe-direction="right"] {
+  transform: translateX(calc(var(--toast-swipe-movement-x, 0px) + 110%))
+    translateY(var(--toast-swipe-movement-y, 0px));
+}
+.echo-toaster .echo-toast[data-ending-style][data-swipe-direction="left"] {
+  transform: translateX(calc(var(--toast-swipe-movement-x, 0px) - 110%))
+    translateY(var(--toast-swipe-movement-y, 0px));
+}
+.echo-toaster .echo-toast[data-ending-style][data-swipe-direction="down"] {
+  transform: translateY(calc(var(--toast-swipe-movement-y, 0px) + 150%));
+}
+
+.echo-toast__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.echo-toast__close {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--echo-radius-full);
+  background: transparent;
+  color: var(--echo-text-dim);
+  cursor: pointer;
+}
+/* A 24px target around the 20px mark. */
+.echo-toast__close::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+}
+@media (hover: hover) {
+  .echo-toast__close:hover {
+    color: var(--echo-text);
+  }
+}
+.echo-toast__close:focus-visible {
+  outline: var(--echo-border-thick, 2px) solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 2px;
+}
+.echo-toast__close svg {
+  width: var(--echo-icon-xs, 12px);
+  height: var(--echo-icon-xs, 12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-toaster .echo-toast {
+    transition: opacity var(--echo-duration-sweep) linear;
+  }
+  /* It still piles and fans, but jumps there; a flicked one fades where it is. */
+  .echo-toaster .echo-toast[data-starting-style],
+  .echo-toaster .echo-toast[data-ending-style] {
+    transform: none;
+    rotate: none;
+    transition-duration: var(--echo-duration-sweep);
+  }
+  .echo-toaster .echo-toast[data-ending-style][data-swipe-direction] {
+    transform: translate(var(--toast-swipe-movement-x, 0px), var(--toast-swipe-movement-y, 0px));
+  }
+}

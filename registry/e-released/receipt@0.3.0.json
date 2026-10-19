@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "name": "receipt",
+  "version": "0.3.0",
+  "kind": "component",
+  "title": "Receipt",
+  "description": "The device prints: a summary feeds out of a slot in the chassis a line at a time, each with a small tick, in dark ink on the paper colour, and waits to be torn off. For order confirmations, payments, invoices, weekly recaps and the summary of what an automated run did. It prints when it arrives after the page has loaded; one that's there from the start is simply there.",
+  "core": ">=0.3.0 <0.4.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.3.0 <0.4.0"
+  },
+  "items": [
+    "hardware-button"
+  ],
+  "files": [
+    {
+      "path": "receipt/receipt.tsx",
+      "sha256": "d7d713c2a8ba56b7f4c779370ea10228a619a54ef34811149b113a8be40e5e7c",
+      "content": "\"use client\";\n\n/**\n * Receipt. The device prints: a summary feeds out of a slot in the chassis a\n * line at a time, each with a small tick, and waits there to be torn off.\n * For an order confirmation, a payment, an invoice, a weekly recap, or the\n * summary of what an automated run did.\n *\n * It prints when it arrives, after the page has loaded (a confirmation that\n * appears when payment goes through); one that's on the page from the start\n * is simply there. Change `printKey` to print it again.\n *\n * Everything on it is text in the page from the start (a heading, a list of\n * lines, a total), so a screen reader never waits for the paper; the feed is\n * only drawing. Tearing it off has a button.\n */\nimport { useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from \"react\";\nimport { useReducedMotionRef } from \"echo-ui-core/tactile\";\nimport { useSoundOptional, type SoundRecipe } from \"echo-ui-core/sound\";\nimport { HardwareButton } from \"../hardware-button\";\nimport { barcode } from \"./barcode\";\nimport \"./receipt.css\";\n\nexport interface ReceiptLine {\n  label: ReactNode;\n  value: ReactNode;\n}\n\nexport interface ReceiptProps {\n  /** Printed at the top, and the receipt's heading. */\n  title: string;\n  /** A line under the title: a number, a date, a place. */\n  meta?: string;\n  /** What it lists, each with its value across a dotted leader. */\n  lines: readonly ReceiptLine[];\n  /** The bottom line, printed bold under a rule. */\n  total?: ReceiptLine;\n  /** Printed at the very bottom: how it was paid, a thank-you, what to do next. */\n  footer?: string;\n  /** A reference printed as a barcode, with the code in text beneath it. */\n  code?: string;\n  /** Shows a Tear off key; called once the paper has dropped away. */\n  onTear?: () => void;\n  /** Print it again whenever this changes. */\n  printKey?: string | number;\n  /** The heading's level. Default 3. */\n  headingLevel?: 2 | 3 | 4;\n}\n\n/** A thermal printer's step: quieter and shorter than a key. */\nconst FEED: SoundRecipe = { wave: \"square\", freq: 2600, decay: 0.01, gain: 0.03 };\nconst STEP_MS = 90;\n\nconst never = () => () => {};\n\nexport function Receipt({ title, meta, lines, total, footer, code, onTear, printKey, headingLevel = 3 }: ReceiptProps) {\n  const Heading = `h${headingLevel}` as const;\n  const id = useId();\n  const sound = useSoundOptional();\n  const reduced = useReducedMotionRef();\n  const feed = useRef<HTMLDivElement>(null);\n  const paper = useRef<HTMLDivElement>(null);\n  const [torn, setTorn] = useState(false);\n  const printing = useRef(false);\n  // False while the page hydrates (it was already there), true for a receipt\n  // that mounts afterwards: the one that has just arrived and should print.\n  const onClient = useSyncExternalStore(never, () => true, () => false);\n  const arrivedLate = useRef(onClient);\n  const lastKey = useRef(printKey);\n  /** The pending step of the print under way: one print at a time, and none after unmounting. */\n  const step = useRef<number | undefined>(undefined);\n\n  /** Ends the print under way where it stands: the paper rests whole in the window. */\n  const settle = () => {\n    window.clearTimeout(step.current);\n    feed.current?.removeAttribute(\"data-printing\");\n    feed.current?.style.removeProperty(\"--receipt-shown\");\n    printing.current = false;\n  };\n\n  const print = () => {\n    const window_ = feed.current;\n    const sheet = paper.current;\n    // Printing again mid-print starts over, rather than feeding twice at once.\n    window.clearTimeout(step.current);\n    if (!window_ || !sheet || reduced.current) {\n      settle();\n      return;\n    }\n    const full = sheet.offsetHeight;\n    // The paper leaves the slot bottom edge first, a line per step.\n    const rows = [...sheet.querySelectorAll<HTMLElement>(\"[data-line]\")].reverse();\n    const stops = [...rows.map((row) => full - row.offsetTop), full];\n    printing.current = true;\n    window_.setAttribute(\"data-printing\", \"\");\n    window_.style.setProperty(\"--receipt-shown\", \"0px\");\n    let i = 0;\n    const next = () => {\n      const stop = stops[i++];\n      if (stop === undefined) {\n        settle();\n        return;\n      }\n      window_.style.setProperty(\"--receipt-shown\", `${stop}px`);\n      sound?.play(FEED);\n      step.current = window.setTimeout(next, STEP_MS);\n    };\n    step.current = window.setTimeout(next, STEP_MS);\n  };\n\n  // Arriving after the page has settled, it prints; so does a new printKey.\n  // Whatever stops this effect (unmounting, a new printKey, or its effects\n  // running again, as StrictMode and <Activity> do) settles the paper whole:\n  // a print cut off mid-feed would otherwise leave it in the slot (BUG-118).\n  useLayoutEffect(() => {\n    const again = printKey !== lastKey.current;\n    lastKey.current = printKey;\n    if (!arrivedLate.current && !again) return;\n    arrivedLate.current = false;\n    setTorn(false);\n    print();\n    return settle;\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [printKey]);\n\n  const tear = () => {\n    if (printing.current) return;\n    sound?.play(\"release\");\n    setTorn(true);\n    window.setTimeout(() => onTear?.(), reduced.current ? 0 : 420);\n  };\n\n  return (\n    <section className=\"echo-receipt\" aria-labelledby={`${id}-title`} data-torn={torn || undefined}>\n      <div className=\"echo-receipt__slot\" aria-hidden=\"true\" />\n      <div ref={feed} className=\"echo-receipt__feed\">\n        <div ref={paper} className=\"echo-receipt__paper\">\n          <Heading id={`${id}-title`} className=\"echo-receipt__title\" data-line=\"\">\n            {title}\n          </Heading>\n          {meta ? (\n            <p className=\"echo-receipt__meta\" data-line=\"\">\n              {meta}\n            </p>\n          ) : null}\n          <dl className=\"echo-receipt__lines\">\n            {lines.map((line, i) => (\n              <div key={i} className=\"echo-receipt__line\" data-line=\"\">\n                <dt>{line.label}</dt>\n                <span className=\"echo-receipt__leader\" aria-hidden=\"true\" />\n                <dd>{line.value}</dd>\n              </div>\n            ))}\n            {total ? (\n              <div className=\"echo-receipt__line\" data-total=\"\" data-line=\"\">\n                <dt>{total.label}</dt>\n                <span className=\"echo-receipt__leader\" aria-hidden=\"true\" />\n                <dd>{total.value}</dd>\n              </div>\n            ) : null}\n          </dl>\n          {code ? (\n            <div className=\"echo-receipt__code\" data-line=\"\">\n              <svg viewBox=\"0 0 200 36\" preserveAspectRatio=\"none\" aria-hidden=\"true\" focusable=\"false\">\n                {barcode(code).map((bar, i) => (\n                  <rect key={i} x={bar.x} y={0} width={bar.w} height={36} />\n                ))}\n              </svg>\n              <span>{code}</span>\n            </div>\n          ) : null}\n          {footer ? (\n            <p className=\"echo-receipt__footer\" data-line=\"\">\n              {footer}\n            </p>\n          ) : null}\n        </div>\n      </div>\n      {onTear ? (\n        <div className=\"echo-receipt__tear\">\n          <HardwareButton size=\"sm\" disabled={torn} onClick={tear}>\n            Tear off\n          </HardwareButton>\n        </div>\n      ) : null}\n    </section>\n  );\n}\n"
+    },
+    {
+      "path": "receipt/receipt.css",
+      "sha256": "13caa8ff398a943f596130908d7c2b656bd8bca0e9ebd78ac8a3d0e0f4ab24ab",
+      "content": "/**\n * Receipt. A slot recessed into the chassis, and paper hanging from it: dark\n * ink (the chassis colour) on the paper colour, torn at both ends. While it\n * prints, the paper leaves the slot a line at a time. Composes var(--echo-*)\n * — no hex literals; the only fixed values are the single-key-light model.\n */\n.echo-receipt {\n  display: grid;\n  justify-items: center;\n  /* Slot, paper, key: stacked at the top, however tall the space it's in. */\n  align-content: start;\n  align-self: start;\n  inline-size: min(100%, 320px);\n  max-inline-size: 100%;\n  min-inline-size: 0;\n}\n\n/* The slot: a narrow recess the paper comes out of. */\n.echo-receipt__slot {\n  position: relative;\n  z-index: var(--echo-z-raised, 1);\n  box-sizing: border-box;\n  inline-size: 100%;\n  block-size: 14px;\n  border-radius: var(--echo-radius-full);\n  background: var(--echo-well);\n  box-shadow:\n    inset 0 3px 5px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.95 * var(--echo-shade, 1) * 100%), transparent),\n    inset 0 -1px 0 rgb(255 255 255 / calc(0.06 * var(--echo-gloss, 1))),\n    0 1px 0 rgb(255 255 255 / calc(0.04 * var(--echo-gloss, 1))),\n    inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);\n}\n\n.echo-receipt__feed {\n  position: relative;\n  inline-size: calc(100% - 2 * var(--echo-space-8));\n  margin-block-start: -7px;\n}\n/* Printing: only what has left the slot shows, bottom edge first. */\n.echo-receipt__feed[data-printing] {\n  block-size: var(--receipt-shown, 0px);\n  overflow: hidden;\n}\n.echo-receipt__feed[data-printing] .echo-receipt__paper {\n  position: absolute;\n  inset-inline: 0;\n  inset-block-end: 0;\n}\n\n.echo-receipt__paper {\n  box-sizing: border-box;\n  display: grid;\n  gap: var(--echo-space-2);\n  padding: var(--echo-space-10) var(--echo-space-8) var(--echo-space-10);\n  color: var(--echo-paper-ink, var(--echo-surface));\n  /* The shadow the slot throws on the paper, then the paper itself. */\n  background:\n    linear-gradient(180deg, color-mix(in oklab, var(--echo-cast-ink, black) calc(0.22 * var(--echo-shade, 1) * 100%), transparent), transparent var(--echo-space-10)),\n    var(--echo-paper-stock, var(--echo-text));\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-xs);\n  line-height: var(--echo-leading-snug, 1.4);\n  font-variant-numeric: tabular-nums;\n  /* Torn at both ends: a row of small teeth (a mask: only its shape counts). */\n  -webkit-mask:\n    conic-gradient(from 135deg at top, transparent, var(--echo-seam) 1deg 89deg, transparent 90deg) top / 12px 51% repeat-x,\n    conic-gradient(from -45deg at bottom, transparent, var(--echo-seam) 1deg 89deg, transparent 90deg) bottom / 12px 51% repeat-x;\n  mask:\n    conic-gradient(from 135deg at top, transparent, var(--echo-seam) 1deg 89deg, transparent 90deg) top / 12px 51% repeat-x,\n    conic-gradient(from -45deg at bottom, transparent, var(--echo-seam) 1deg 89deg, transparent 90deg) bottom / 12px 51% repeat-x;\n  transition:\n    translate var(--echo-duration-flood) var(--echo-ease-glide),\n    rotate var(--echo-duration-flood) var(--echo-ease-glide),\n    opacity var(--echo-duration-pop) ease;\n}\n\n.echo-receipt__title {\n  margin: 0;\n  text-align: center;\n  font-family: inherit;\n  font-size: var(--echo-text-sm);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-wider, 0.12em);\n  text-transform: uppercase;\n}\n.echo-receipt__meta,\n.echo-receipt__footer {\n  margin: 0;\n  text-align: center;\n  font-size: var(--echo-text-2xs);\n  letter-spacing: var(--echo-tracking-wide, 0.06em);\n  text-transform: uppercase;\n}\n.echo-receipt__meta {\n  padding-block-end: var(--echo-space-4);\n  border-block-end: var(--echo-border-fine, 1.5px) dashed color-mix(in oklab, var(--echo-surface) 45%, transparent);\n}\n\n.echo-receipt__lines {\n  display: grid;\n  gap: var(--echo-space-1);\n  margin: var(--echo-space-3) 0 0;\n}\n.echo-receipt__line {\n  display: flex;\n  align-items: baseline;\n  gap: var(--echo-space-3);\n  min-inline-size: 0;\n}\n.echo-receipt__line dt,\n.echo-receipt__line dd {\n  margin: 0;\n  min-inline-size: 0;\n  overflow-wrap: anywhere;\n}\n.echo-receipt__line dd {\n  flex: none;\n  text-align: end;\n}\n.echo-receipt__leader {\n  flex: 1 1 var(--echo-space-6);\n  min-inline-size: var(--echo-space-6);\n  border-block-end: var(--echo-border-fine, 1.5px) dotted color-mix(in oklab, var(--echo-surface) 50%, transparent);\n  translate: 0 -0.3em;\n}\n.echo-receipt__line[data-total] {\n  margin-block-start: var(--echo-space-4);\n  padding-block-start: var(--echo-space-4);\n  border-block-start: var(--echo-border-fine, 1.5px) dashed color-mix(in oklab, var(--echo-surface) 45%, transparent);\n  font-size: var(--echo-text-sm);\n  font-weight: var(--echo-weight-bold, 700);\n}\n\n.echo-receipt__code {\n  display: grid;\n  justify-items: center;\n  gap: var(--echo-space-1);\n  margin-block: var(--echo-space-5) var(--echo-space-2);\n  font-size: var(--echo-text-2xs);\n  letter-spacing: var(--echo-tracking-wider, 0.12em);\n}\n.echo-receipt__code svg {\n  display: block;\n  inline-size: 100%;\n  block-size: 36px;\n  fill: var(--echo-surface);\n}\n\n.echo-receipt__tear {\n  margin-block-start: var(--echo-space-6);\n}\n\n/* Torn off: the paper drops away. */\n.echo-receipt[data-torn] .echo-receipt__paper {\n  translate: 0 48px;\n  rotate: -4deg;\n  opacity: 0;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .echo-receipt__paper {\n    transition: opacity var(--echo-duration-swap) linear;\n  }\n  .echo-receipt[data-torn] .echo-receipt__paper {\n    translate: none;\n    rotate: none;\n  }\n}\n@media (forced-colors: active) {\n  .echo-receipt__paper {\n    border: var(--echo-border-hairline, 1px) solid CanvasText;\n    -webkit-mask: none;\n    mask: none;\n  }\n  .echo-receipt__code svg {\n    fill: CanvasText;\n  }\n}\n"
+    },
+    {
+      "path": "receipt/barcode.ts",
+      "sha256": "e48eaea7ad2752ee68c8302cdb69cba99f5ed66092a7c49e201280c407682e50",
+      "content": "/**\n * A barcode drawn from a reference: the same code always prints the same\n * bars. It's a picture of a barcode, not a scannable one; the code itself is\n * printed in text beneath it.\n */\nexport interface Bar {\n  x: number;\n  w: number;\n}\n\n/** Bars across a 200-unit strip, with quiet zones at both ends. */\nexport function barcode(code: string, width = 200): Bar[] {\n  let seed = 2166136261;\n  for (const ch of code) {\n    seed ^= ch.charCodeAt(0);\n    seed = Math.imul(seed, 16777619) >>> 0;\n  }\n  const next = () => {\n    seed ^= seed << 13;\n    seed ^= seed >>> 17;\n    seed ^= seed << 5;\n    seed >>>= 0;\n    return seed;\n  };\n  const bars: Bar[] = [];\n  let x = 8;\n  while (x < width - 10) {\n    const w = 1 + (next() % 3);\n    const gap = 1 + (next() % 3);\n    if (x + w > width - 8) break;\n    bars.push({ x, w });\n    x += w + gap;\n  }\n  return bars;\n}\n"
+    },
+    {
+      "path": "receipt/index.ts",
+      "sha256": "76ce60148b5f969603aefdd0542b535500535fc8503acd6a8949b99fcf655123",
+      "content": "export { Receipt } from \"./receipt\";\nexport type { ReceiptProps, ReceiptLine } from \"./receipt\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary",
+    "sound-provider"
+  ],
+  "motion": [
+    "flood",
+    "pop"
+  ],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.3.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The drawn device** (`echo-ui-core`, `echo-ui-cli`, every component that draws its own material). A seed's new `render` setting is `molded` (Echo as it has always been: plastic lit by one key light) or `drawn`: the same parts drawn in the ink, the way a spec sheet draws a key. Every part is outlined at one weight (`--echo-line`, `--echo-line-width`), hollow on the body; a raised part stands on a hard ink edge as deep as it rises and travels down it when pressed; a recess is an outline drawn inside; something floating stands on a deeper edge. There's no light, so no gloss, no soft shadow and no glow: what a molded device lights (an LED, the rail, a readout, the focus ring, a fader's knob, a radio's pip) is solid ink, and a low-emphasis action is its label underlined. In black and white (the accent the ink) \"on\" is solid ink and what's drawn on it inverts: a switch's thumb turns paper, a fader's knob is knocked out with a paper ring. The primary key is the paper key that stands highest, on an ink edge twice as deep as a neutral one's, the way a spec sheet draws its CTA. The accent stays the seed's own colour as a flat fill for what's on (a chosen segment, a checked box, a slider's travel, a switch that's on), so an acid highlighter is acid, not the olive a molded device holds it to; what's drawn on it is the ink, or the body when the accent is too deep for the ink. Pressing, travel, sound, what each material is for and every contrast guarantee are unchanged. `npx echo-ui-cli style set render drawn` turns it on; a style sets it in its seed; the published style and config schemas describe it, and `DESIGN.md` says how a drawn device builds. A molded device renders exactly as before: every line is 0px wide there, and each drawn value a component reads (`--echo-drawn-fill`, `-on-fill`, `-ink`, `-rule`, `-glass`, `-hollow`, `-decoration`) is `initial`, so it falls back to what the component always drew. HardwareButton's bed is the one new hand-tuned shadow: a drawn key stands on its own edge instead of being drawn in a recess."
+    },
+    {
+      "version": "0.3.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Every item needs `echo-ui-core` 0.3.0** (all components). The drawn device, readability past AA and the design tests live in core, and the components that use them are built against it, so each item now declares `echo-ui-core >=0.3.0 <0.4.0`. Update core with the items: `npm install echo-ui-core@^0.3.0` (or your package manager's), then `npx echo-ui-cli update`. An item whose files didn't change is the same code under a new version; the 0.2.0 files stay published."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**`Receipt`: the device prints.** A summary feeds out of a slot in the chassis a line at a time, each with a small tick, in dark ink on the paper colour (held to AA under every theme), and waits to be torn off. Lines with dotted leaders, a total, a reference as a barcode, a footer. It prints when it arrives after the page has loaded, or again when `printKey` changes; everything on it is text in the page from the start, so a screen reader never waits for the paper."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A `Receipt` always comes out whole** (BUG-118). When its effects ran a second time while it was printing (every effect does in development under StrictMode, and `<Activity>` does it when a hidden part is shown), the print stopped with the paper still in the slot, so a Receipt in a dev build arrived blank. A print that's interrupted now ends with the paper resting whole."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    }
+  ]
+}

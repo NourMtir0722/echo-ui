@@ -1,0 +1,175 @@
+/*
+ * The tool pages (theme generator, sound audition) — one page language with
+ * the brand pages: an eyebrow, a heavy grotesk title, a dim lede, mono
+ * section labels, and ruled rows instead of grey cards. Every control on
+ * these pages is a registry component; this file only lays them out.
+ *
+ * Every value is an --echo-* role. The generator relights the page it is on,
+ * so a hardcoded colour here would be a patch that refuses to follow the seed.
+ */
+
+.tool-page {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 4vw, 2.5rem) 6rem;
+}
+
+.tool-head {
+  display: grid;
+  gap: var(--echo-space-5);
+}
+
+.tool-eyebrow,
+.tool-label {
+  margin: 0;
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-3xs);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+
+.tool-title {
+  margin: 0;
+  font-family: var(--site-font-display), var(--echo-font-sans);
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--echo-text);
+}
+
+.tool-lede {
+  margin: 0;
+  max-width: 60ch;
+  font-size: var(--echo-text-lg);
+  line-height: 1.6;
+  color: var(--echo-text-dim);
+}
+
+.tool-lede code {
+  font-family: var(--echo-font-mono);
+  font-size: 0.9em;
+  color: var(--echo-text);
+}
+
+/* Status text for copy actions: announced, never a toast. */
+.tool-status {
+  min-height: 1.2em;
+  margin: 0;
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-2xs);
+  color: var(--echo-text-dim);
+}
+
+/* A mono readout beside a control — the value, right-aligned, tabular. */
+.tool-value {
+  font-family: var(--echo-font-mono);
+  font-size: var(--echo-text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--echo-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/*
+ * A colour chip that is also a colour picker: the native input sits invisibly
+ * over a molded swatch, so the picker is the platform's but the object is
+ * Echo's. The chip's own colour is its content, so the name travels on the
+ * input's aria-label.
+ */
+.tool-swatch {
+  position: relative;
+  flex: none;
+  width: var(--echo-control-default);
+  height: var(--echo-control-default);
+  border-radius: var(--echo-radius-md);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    0 2px 0 var(--echo-cap-shadow),
+    0 5px 10px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.35 * var(--echo-shade, 1) * 100%), transparent);
+  cursor: pointer;
+}
+
+.tool-swatch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tool-swatch:has(input:focus-visible) {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+}
+
+/* Preset caps: the seed's own accent, molded, the chosen one ringed. */
+.tool-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--echo-space-6);
+}
+
+.tool-preset {
+  display: grid;
+  justify-items: center;
+  gap: var(--echo-space-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--echo-text-dim);
+  font-family: var(--echo-font-machine);
+  font-size: var(--echo-text-3xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tool-preset__chip {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--echo-radius-md);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 3px color-mix(in oklab, var(--echo-cast-ink, var(--echo-shade-ink, black)) calc(0.3 * var(--echo-shade, 1) * 100%), transparent),
+    0 2px 0 var(--echo-cap-shadow);
+  transition: transform var(--echo-duration-press) var(--echo-ease-tick);
+}
+
+.tool-preset:active .tool-preset__chip {
+  transform: translateY(2px);
+}
+
+.tool-preset[aria-pressed="true"] {
+  color: var(--echo-text);
+}
+
+.tool-preset[aria-pressed="true"] .tool-preset__chip {
+  outline: 2px solid var(--echo-text);
+  outline-offset: 3px;
+}
+
+.tool-preset:focus-visible {
+  outline: none;
+}
+
+.tool-preset:focus-visible .tool-preset__chip {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-preset__chip {
+    transition: none;
+  }
+  .tool-preset:active .tool-preset__chip {
+    transform: none;
+  }
+}

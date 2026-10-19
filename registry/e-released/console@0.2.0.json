@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "name": "console",
+  "version": "0.2.0",
+  "kind": "block",
+  "title": "Console screen",
+  "description": "A device dashboard as a front panel: AppShell, six StatTile readouts, an LED level matrix in a Panel, status lights, a takes Table and Pagination. Proves density and data at scale — whether the material language still holds when nothing on the screen has room.",
+  "core": ">=0.2.0 <0.3.0",
+  "dependencies": {
+    "echo-ui-core": ">=0.2.0 <0.3.0"
+  },
+  "items": [
+    "app-shell",
+    "panel",
+    "table",
+    "stat-tile",
+    "lcd-chip",
+    "status-dot",
+    "chart",
+    "badge",
+    "menu",
+    "segmented",
+    "engraved-plate",
+    "pagination"
+  ],
+  "files": [
+    {
+      "path": "console/console.css",
+      "sha256": "618ebdd4200c051eaf1bc3b54f1540febe48f489a6fb9a68bc23462bde71fd73",
+      "content": "/*\n * The device console. Density is the subject, so the spacing\n * scale here is tighter than anywhere else in the library — and every value is\n * still an --echo-* role, because a dashboard that stops relighting is a\n * dashboard that has stopped being made of this material.\n */\n.echo-console__body {\n  display: grid;\n  gap: clamp(16px, 2.2vw, 24px);\n  padding: clamp(18px, 2.6vw, 30px);\n}\n\n.echo-console__head {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  gap: var(--echo-space-9);\n  flex-wrap: wrap;\n}\n\n.echo-console__title {\n  margin: 0 0 var(--echo-space-2);\n  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);\n  font-size: clamp(1.4rem, 2.6vw, 1.8rem);\n  font-weight: var(--echo-weight-heavy, 800);\n  letter-spacing: var(--echo-tracking-tighter, -0.02em);\n  color: var(--echo-text);\n}\n\n.echo-console__lede {\n  margin: 0;\n  font-size: var(--echo-text-sm);\n  color: var(--echo-text-dim);\n}\n\n.echo-console__brand {\n  display: inline-flex;\n  align-items: center;\n  gap: var(--echo-space-5);\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  color: var(--echo-text);\n}\n\n.echo-console__more {\n  width: 40px;\n  height: calc(32px * var(--echo-density, 1));\n  padding: 0;\n  justify-content: center;\n  border-radius: var(--echo-radius-md);\n}\n\n/* --- the sidebar's channel list ----------------------------------------- */\n\n.echo-console__sidelabel {\n  display: block;\n  padding: 0 var(--echo-space-5) var(--echo-space-4);\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n.echo-console__channel {\n  display: flex;\n  align-items: center;\n  gap: var(--echo-space-5);\n  width: 100%;\n  padding: var(--echo-space-4) var(--echo-space-5);\n  border: 0;\n  border-radius: var(--echo-radius-md);\n  cursor: pointer;\n  background: none;\n  color: var(--echo-text-dim);\n  font-family: inherit;\n  font-size: var(--echo-text-sm);\n  text-align: start;\n}\n\n@media (hover: hover) {\n  .echo-console__channel:hover {\n    color: var(--echo-text);\n    background: color-mix(in oklab, var(--echo-cap) 30%, transparent);\n  }\n}\n\n/* The current channel carries a rail, not accent text: accent on the chassis\n   is 3.70:1, under AA. */\n.echo-console__channel[aria-current] {\n  position: relative;\n  color: var(--echo-text);\n  background: color-mix(in oklab, var(--echo-cap) 38%, transparent);\n}\n\n.echo-console__channel[aria-current]::before {\n  content: \"\";\n  position: absolute;\n  inset-inline-start: 0;\n  top: 7px;\n  bottom: 7px;\n  width: 2px;\n  border-radius: var(--echo-radius-xs);\n  background: var(--echo-accent-glow);\n  box-shadow: var(--echo-shadow-glow, 0 0 7px color-mix(in oklch, var(--echo-accent-glow) 70%, transparent));\n}\n\n.echo-console__channel:focus-visible {\n  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));\n  outline-offset: -2px;\n}\n\n/* --- readouts ------------------------------------------------------------ */\n\n/*\n * Explicit counts, not auto-fit. There are exactly six readouts, and auto-fit\n * happily produced five-and-one — a full row plus one orphan tile beside a gap,\n * which reads as a missing tile rather than as a layout. Factors of six only.\n */\n.echo-console__tiles {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: var(--echo-space-5);\n}\n\n@media (min-width: 640px) {\n  .echo-console__tiles {\n    grid-template-columns: repeat(3, minmax(0, 1fr));\n  }\n}\n\n@media (min-width: 1100px) {\n  .echo-console__tiles {\n    grid-template-columns: repeat(6, minmax(0, 1fr));\n  }\n}\n\n.echo-console__panelhead {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--echo-space-7);\n  flex-wrap: wrap;\n  margin-bottom: var(--echo-space-7);\n}\n\n.echo-console__panetitle {\n  margin: 0;\n  font-family: var(--echo-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);\n  font-size: var(--echo-text-3xs);\n  font-weight: var(--echo-weight-bold, 700);\n  letter-spacing: var(--echo-tracking-label, 0.2em);\n  text-transform: uppercase;\n  color: var(--echo-text-dim);\n}\n\n.echo-console__panelcontrols {\n  display: flex;\n  /* Shrinks with the head; the controls inside it wrap or scroll. */\n  min-width: 0;\n  align-items: center;\n  gap: var(--echo-space-6);\n  flex-wrap: wrap;\n}\n\n/* The matrix takes the panel's full width; it is the panel's subject. */\n.echo-console__chart {\n  display: grid;\n}\n\n.echo-console__takes {\n  display: grid;\n  gap: var(--echo-space-5);\n}\n"
+    },
+    {
+      "path": "console/console.tsx",
+      "sha256": "312239039f1c1b85f286c18e71b9f3f3cc671b8f65239c26a89f29da4b700562",
+      "content": "\"use client\";\n\n/**\n * The device console. A dashboard as a front panel: readouts\n * across the top, a level matrix, and the takes table underneath.\n *\n * WHAT THIS PROVES. Density and data at scale. Every other screen in the\n * library shows a handful of components with room around them; this one puts\n * a rail, a sidebar, six readouts, a chart, status lights and a twelve-row\n * table on one viewport and asks whether the material language still holds\n * when nothing has room. That is the question a screenshot answers, and it is\n * the reason this is the screenshot worth sharing.\n *\n * Every part is a shipped registry item — including the Chart, which wave 15\n * left conditional on a template demanding it. This is that demand: a device\n * dashboard with nothing read over time is a table with badges on it.\n */\nimport { useState } from \"react\";\nimport { AppShell } from \"../app-shell\";\nimport { Panel } from \"../panel\";\nimport { Table } from \"../table\";\nimport { StatTile } from \"../stat-tile\";\nimport { LcdChip } from \"../lcd-chip\";\nimport { StatusDot } from \"../status-dot\";\nimport { Chart } from \"../chart\";\nimport { Badge } from \"../badge\";\nimport { Menu } from \"../menu\";\nimport { Segmented } from \"../segmented\";\nimport { EngravedPlate } from \"../engraved-plate\";\nimport { Pagination } from \"../pagination\";\nimport \"./console.css\";\n\nexport interface ConsoleTake {\n  id: string;\n  name: string;\n  length: string;\n  peak: string;\n  state: \"kept\" | \"review\" | \"muted\";\n}\n\nexport interface ConsoleScreenProps {\n  /**\n   * This screen is rendered INSIDE another page — a docs preview, a marketing\n   * route. It gives up the page's `<h1>` (the title drops to `<h2>`) and is\n   * passed to AppShell, which drops the landmarks and the skip link, because a\n   * page gets one first-level heading and one `<main>`.\n   *\n   * Never set it on the screen that owns the page.\n   */\n  embedded?: boolean;\n  product?: string;\n  takes?: ConsoleTake[];\n  /** Level history, oldest first. Fixed 0..100 scale. */\n  levels?: number[];\n  /** Channels down the left rail. */\n  channels?: string[];\n}\n\nconst DEFAULT_TAKES: ConsoleTake[] = [\n  { id: \"t12\", name: \"Take 12 — verse\", length: \"01:58\", peak: \"-3.1 dB\", state: \"kept\" },\n  { id: \"t11\", name: \"Take 11 — verse\", length: \"02:04\", peak: \"-2.8 dB\", state: \"review\" },\n  { id: \"t10\", name: \"Take 10 — chorus\", length: \"01:12\", peak: \"-1.4 dB\", state: \"kept\" },\n  { id: \"t09\", name: \"Take 9 — chorus\", length: \"01:09\", peak: \"-0.9 dB\", state: \"muted\" },\n  { id: \"t08\", name: \"Take 8 — bridge\", length: \"00:47\", peak: \"-5.2 dB\", state: \"kept\" },\n  { id: \"t07\", name: \"Take 7 — bridge\", length: \"00:51\", peak: \"-4.7 dB\", state: \"review\" },\n];\n\nconst DEFAULT_LEVELS = [\n  38, 44, 41, 52, 61, 58, 66, 71, 64, 59, 68, 74, 81, 77, 69, 62, 58, 63, 70, 76, 84, 79, 72, 66,\n  61, 57, 64, 69, 73, 68,\n];\n\nconst STATE_LABEL: Record<ConsoleTake[\"state\"], string> = {\n  kept: \"Kept\",\n  review: \"Review\",\n  muted: \"Muted\",\n};\n\nexport function ConsoleScreen({\n  embedded,\n  product = \"ECHO ONE\",\n  takes = DEFAULT_TAKES,\n  levels = DEFAULT_LEVELS,\n  channels = [\"Channel 1\", \"Channel 2\", \"Channel 3\", \"Master\", \"Cue\"],\n}: ConsoleScreenProps) {\n  const [channel, setChannel] = useState(\"Channel 1\");\n  const [range, setRange] = useState(0);\n  const [page, setPage] = useState(1);\n  const Title = embedded ? \"h2\" : \"h1\";\n  const Subheading = embedded ? \"h3\" : \"h2\";\n\n  return (\n    <AppShell className=\"echo-console\" embedded={embedded}>\n      <AppShell.Rail\n        label=\"Console\"\n        brand={\n          <span className=\"echo-console__brand\">\n            <StatusDot on label=\"Armed\" />\n            {product}\n          </span>\n        }\n      >\n        <Menu>\n          <Menu.Trigger className=\"echo-console__more\" aria-label=\"Session actions\">\n            <span aria-hidden=\"true\">···</span>\n          </Menu.Trigger>\n          <Menu.Content align=\"end\">\n            <Menu.Item>Export session</Menu.Item>\n            <Menu.Item>Bounce master</Menu.Item>\n            <Menu.Separator />\n            <Menu.Item>Session settings</Menu.Item>\n          </Menu.Content>\n        </Menu>\n      </AppShell.Rail>\n\n      <AppShell.Sidebar label=\"Channels\">\n        <span className=\"echo-console__sidelabel\">Channels</span>\n        {channels.map((c) => (\n          <button\n            key={c}\n            type=\"button\"\n            className=\"echo-console__channel\"\n            aria-current={c === channel ? \"true\" : undefined}\n            onClick={() => setChannel(c)}\n          >\n            {/*\n              The label used to fall to `undefined` on every row but\n              the current one, so the dot was aria-hidden AND had no adjacent\n              text saying what it meant — the state was available to nobody.\n              `aria-current` on the button carries \"where you are\"; this says\n              what the dot itself is showing.\n            */}\n            <StatusDot on={c === channel} label={c === channel ? \"Monitoring\" : \"Not monitoring\"} />\n            {c}\n          </button>\n        ))}\n      </AppShell.Sidebar>\n\n      <AppShell.Content>\n        <div className=\"echo-console__body\">\n          <header className=\"echo-console__head\">\n            <div>\n              <Title className=\"echo-console__title\">{channel}</Title>\n              <p className=\"echo-console__lede\">Live input, session 004.</p>\n            </div>\n            <EngravedPlate tilt={-0.5}>{product}</EngravedPlate>\n          </header>\n\n          {/* Readouts. Six numbers, no room between them — the density test. */}\n          {/*\n            Only Peak glows. Six lit readouts side by side made the accent mean\n            \"a number\" rather than \"this one\" — Echo reserves it for the single\n            thing that is on, and the density is exactly where that stops being\n            a nicety. StatTile grew `glow` for this.\n          */}\n          <div className=\"echo-console__tiles\">\n            <StatTile glow={false} value=\"42\" unit=\"ms\" label=\"Latency\" />\n            <StatTile glow={false} value=\"48\" unit=\"kHz\" label=\"Rate\" />\n            <StatTile glow={false} value=\"24\" unit=\"bit\" label=\"Depth\" />\n            <StatTile glow={false} value=\"98\" unit=\"%\" label=\"Uptime\" />\n            <StatTile glow={false} value=\"12\" label=\"Takes\" />\n            <StatTile value=\"-3.1\" unit=\"dB\" label=\"Peak\" />\n          </div>\n\n          <Panel>\n            <div className=\"echo-console__panelhead\">\n              <span className=\"echo-console__panetitle\">Input level</span>\n              <div className=\"echo-console__panelcontrols\">\n                <LcdChip value=\"-3.1\" label=\"Peak\" />\n                <Segmented\n                  options={[\"60s\", \"5m\", \"1h\"]}\n                  value={range}\n                  onValueChange={setRange}\n                  aria-label=\"Level history range\"\n                />\n              </div>\n            </div>\n            {/*\n              A fixed 0..100 max: without it the matrix rescales the moment a\n              new peak lands and the history appears to shrink.\n            */}\n            <Chart\n              className=\"echo-console__chart\"\n              data={levels}\n              min={0}\n              max={100}\n              rows={9}\n              label={`${channel} input level, last ${[\"60 seconds\", \"5 minutes\", \"1 hour\"][range]}`}\n              caption=\"input\"\n            />\n          </Panel>\n\n          <section className=\"echo-console__takes\" aria-labelledby=\"console-takes\">\n            <Subheading className=\"echo-console__panetitle\" id=\"console-takes\">\n              Takes\n            </Subheading>\n            <Table caption=\"Recorded takes\" hideCaption>\n              <Table.Head>\n                <Table.Row>\n                  <Table.HeaderCell>Take</Table.HeaderCell>\n                  <Table.HeaderCell>Length</Table.HeaderCell>\n                  <Table.HeaderCell>Peak</Table.HeaderCell>\n                  <Table.HeaderCell align=\"end\">State</Table.HeaderCell>\n                </Table.Row>\n              </Table.Head>\n              <Table.Body>\n                {takes.map((take) => (\n                  <Table.Row key={take.id}>\n                    <Table.HeaderCell scope=\"row\">{take.name}</Table.HeaderCell>\n                    <Table.Cell numeric>{take.length}</Table.Cell>\n                    <Table.Cell numeric>{take.peak}</Table.Cell>\n                    <Table.Cell align=\"end\">\n                      {/*\n                        The badge carries the word, not just a colour — severity\n                        is never colour alone.\n                      */}\n                      <Badge variant={take.state === \"kept\" ? \"accent\" : \"outline\"}>\n                        {STATE_LABEL[take.state]}\n                      </Badge>\n                    </Table.Cell>\n                  </Table.Row>\n                ))}\n              </Table.Body>\n            </Table>\n            <Pagination page={page} count={4} onPageChange={setPage} label=\"Takes pages\" />\n          </section>\n        </div>\n      </AppShell.Content>\n    </AppShell>\n  );\n}\n"
+    },
+    {
+      "path": "console/index.ts",
+      "sha256": "2f4d82831a54c0698d205fa4ef3e6a8ab1a0f4c48d1c11e3fe56d97ce8cb6484",
+      "content": "export { ConsoleScreen } from \"./console\";\nexport type { ConsoleScreenProps, ConsoleTake } from \"./console\";\n"
+    }
+  ],
+  "setup": [
+    "theme-css",
+    "client-boundary"
+  ],
+  "motion": [],
+  "sound": [],
+  "a11y": {
+    "standard": "WCAG 2.2 AA",
+    "tested": [
+      "axe",
+      "keyboard",
+      "focus-visible",
+      "forced-colors",
+      "target-size",
+      "reflow"
+    ],
+    "limits": [
+      "screen-reader: not yet verified by a person"
+    ]
+  },
+  "changes": [
+    {
+      "version": "0.2.0",
+      "flags": [
+        "added",
+        "a11y"
+      ],
+      "summary": "**The light device** (`echo-ui-core`, `echo-ui-cli`). Echo can be light: a pale chassis makes a device molded in light plastic, like a white calculator or a cream radio, and a dark one makes the device Echo has always been. There's no setting and no mode to switch; the chassis decides (`devicePolarity`, and `values.polarity` on the theme). On a light device the page is light: its ground, the well, is the body barely set in. Caps get their own ladder, a step lighter than the body with a lit rim that stops short of white, so they keep their bevel; undersides and seams are shaded darker; dim text moves toward the ground by the same step as on a dark device, and reads about 6:1 on it. Screens are paper glass printed in ink, because a glow on a pale body is a smudge. What's lit (an LED, the current rail) is still the accent, held to 3:1 on every ground, so on is brighter than off; the text it prints (a readout, a count, a current tab) and the focus ring are the accent's ink, a step deeper and held to AA, in the new `accent-ink` role. The primary cap is the same cap as a dark device's, the accent with a light label: its label is the new `primary-cap-ink` role, and progress cells, loader dots and a meter's fill, the same plastic, read 3:1 on the page. A neutral cap or a slider that fills with it under its own dark label fills with the new `pour-*` roles, the accent's pale stops. Shadows are drawn at half their weight, in a deep colour of the body's own hue (`--echo-cast-ink`) instead of black. Every guarantee holds as it does on a dark device, and the contrast sweep now runs on light bodies too. A dark seed makes exactly the theme it did before, and the new roles equal the ones they stand for there. The components that mixed a recess toward black, painted paper in the text colour or lit a pillow of light with it read the theme's new `--echo-shade-ink`, `--echo-paper-stock` and `--echo-paper-ink` instead, with the old value as the fallback, and a reflective screen reads `--echo-screen-*`; the components that print a lit label read `--echo-primary-cap-ink` and `--echo-accent-ink` the same way; every rail is drawn in the glow, and every focus ring, the `ring` recipes included, in the ink. `style use` wears a light style now, and `style check` says which device a style makes. A dark screen tint on a light body is still refused: one text colour can't serve both, and the theme says so."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed",
+        "a11y"
+      ],
+      "summary": "**Components whose shadow is a recipe read it by name.** 71 shadows in 54 items now say `var(--echo-shadow-<name>, <the same shadow>)`, so they look exactly as they did (every docs page was compared before and after) and follow a theme's recipes. Scope declares the recipes that read the accent again, so a Scope's own colour still reaches its focus rings and glows, and reflective screens do the same for theirs. Shadows that move with their part (a cap's drop as it's pressed) stay in the component."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Comments only, no behaviour change.** Comments in the component source used to cite documents, milestones and ticket numbers from Echo's own planning, none of which exist in your project. The citations are gone and the sentences around them stay. Where a comment was only a citation, it now says what it meant. Three development warnings (`HardwareButton`'s `engraved`/`caption` checks and `StatusDot`'s missing-label check) also dropped the ticket code at the end of the message. `echo-ui diff` will show changes in most items; none of them are to code."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**An item's version is now a function of declared data, not of how the changelog is formatted.** The version an item ships under is published once and never rewritten, and it used to be inferred from prose: a regex for a bolded \"Breaking\" run across the whole unreleased section, and attribution by \"does a bullet mention this name in backticks\". One breaking entry therefore moved every item that changed that cycle, and an entry explaining that *\"`Menu` and `Sheet` are unchanged here\"* filed itself as a change to Menu and Sheet — which it really had."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**The agent brief says Echo has not shipped.** `llms.txt` and the MCP server's instructions led with `npx echo-ui-cli init`, and that name on npm is a reserved stub with no executable — so a model following the brief wrote an install step that fails with npx's own error. The brief now opens with the caveat, and the docs carry it on every surface that shows a command. One switch (`CLI_RELEASED`) silences all of them at launch, and a test refuses to let one move without the others. Affects `all components` only in what the brief says about installing them; no item's props, CSS or rendered semantics change."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Echo's home is `echo-ui.com`.** The registry, the docs and the packages all move to it from `echo.nawwara.studio`. Nothing was published under the old host, so no `echo.json` anywhere points at it and there is nothing to migrate — this is the last release where that is true."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "changed"
+      ],
+      "summary": "**Weights, line heights, letter-spacing, z-index, border widths and icon sizes come from the theme scales** in `all components`, with the old value as a fallback, so components keep working with `echo-ui-core@0.0.1`. Strays moved to the nearest step: most by under a pixel; HardwareButton icons are 14/16/20px (were 15/17/19)."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed"
+      ],
+      "summary": "**A light device's recesses keep the body's hue in Chromium** (`echo-ui-core`, BUG-166). Chromium drops the hue of a colour under 0.02 chroma when it mixes in oklch, and draws the mix at hue 0, a rose. A light device's plastic is that grey, so on a lilac body every field, track and rail was pink. A mix made only of greys is made in oklab now, which has no hue to lose; a mix with an accent in it stays in oklch. On a dark device nothing you can see changes."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**On a phone, a tapped part no longer stays lit** (BUG-143). A phone leaves what you tapped under `:hover` until the next tap, so a table row stayed shaded and a trigger stayed lit after the finger lifted. Hover styles now apply only where there's a pointer that can hover (`@media (hover: hover)`), in all 23 components that had one. Checked, active and focus styles that shared a rule with them still apply everywhere."
+    },
+    {
+      "version": "0.2.0",
+      "flags": [
+        "fixed",
+        "a11y"
+      ],
+      "summary": "**Content now reflows into a 320px screen (400% zoom) and survives a doubled browser text size** (WCAG 1.4.10, 1.4.4), across `all components`. `Select`'s 180px floor, `NumberField`'s readout, `Segmented` and `Steps` as flex items, `EmptyState`'s grid columns, and `Avatar`'s fixed-pixel disc all gave way; `Panel` counts its padding inside a width you set (`box-sizing: border-box`), so a `<Panel style={{ width: 220 }}>` is now 220px wide overall rather than 260px."
+    },
+    {
+      "version": "0.1.0",
+      "flags": [
+        "added"
+      ],
+      "summary": "**Templates** as installable blocks — `echo-console`."
+    }
+  ]
+}

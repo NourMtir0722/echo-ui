@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "name": "echo",
+  "title": "Echo",
+  "essence": "A device molded in one plastic and lit by one key light: caps that travel when pressed, screens that glow, one lit accent.",
+  "fingerprint": {
+    "warmth": 4,
+    "volume": 3,
+    "density": 3,
+    "formality": 2,
+    "era": 3,
+    "craft": 5,
+    "ornament": 3
+  },
+  "seed": {
+    "accent": "#8B6FE8",
+    "chassis": "#232130",
+    "paper": "#EFEBFA",
+    "finish": 0.5,
+    "radius": 0.5,
+    "density": "default"
+  },
+  "rules": [
+    "The primary action is the one lit cap; everything else is the body's plastic.",
+    "Screens are dark glass with lit readouts, and numbers on them are in the screen face.",
+    "A label over a control is a machine label: small, spaced capitals.",
+    "Parts are set apart by seams and wells, not boxes and borders."
+  ],
+  "motion": {
+    "character": "Springs with weight: caps travel, panels bloom out of what opened them, readouts roll.",
+    "inferred": false
+  },
+  "sound": {
+    "voice": "Dry clicks and soft taps, muted until the person turns sound on.",
+    "inferred": false
+  }
+}

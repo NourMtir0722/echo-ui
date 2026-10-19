@@ -1,0 +1,157 @@
+/**
+ * ChoiceCards. Panels as options: a pip (or a tick) in a hole at the start,
+ * the words beside it. The chosen card lights a rail along its start edge and
+ * its mark; the card itself stays plastic.
+ */
+.echo-choice-cards {
+  display: grid;
+  gap: var(--echo-space-5);
+  min-width: 0;
+}
+.echo-choice-cards__name {
+  font-family: var(--echo-font-machine, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--echo-text-3xs);
+  font-weight: var(--echo-weight-bold, 700);
+  letter-spacing: var(--echo-tracking-widest, 0.25em);
+  text-transform: uppercase;
+  color: var(--echo-text-dim);
+}
+.echo-choice-cards__grid {
+  display: grid;
+  gap: var(--echo-space-6);
+}
+.echo-choice-cards__card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--echo-space-6);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--echo-space-8);
+  border: 0;
+  cursor: pointer;
+  text-align: start;
+  color: var(--echo-text);
+  font: inherit;
+  transition:
+    transform var(--echo-duration-tick) ease,
+    box-shadow var(--echo-duration-swap) ease;
+}
+@media (hover: hover) {
+  .echo-choice-cards__card:hover {
+    box-shadow: var(
+      --echo-shadow-lifted,
+      0 1px 0 rgb(255 255 255 / calc(0.07 * var(--echo-gloss, 1))),
+      0 10px 22px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.45 * var(--echo-shade, 1) * 100%), transparent),
+      0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+      0 calc(4px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent)
+    );
+  }
+}
+.echo-choice-cards__card:active {
+  transform: translateY(1px);
+}
+/* Chosen: the lit rail along the start edge (an inset, inside the radius). Drawn,
+   there's no light for a rail: the chosen card is outlined and stands on its ink edge. */
+.echo-choice-cards__card:is([data-checked]) {
+  box-shadow:
+    inset calc(var(--echo-border-heavy, 4px) * (1 - var(--echo-drawn, 0))) 0 0 var(--echo-accent-glow),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 calc(4px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-choice-cards__card:is([data-checked]):dir(rtl) {
+  box-shadow:
+    inset calc(-1 * var(--echo-border-heavy, 4px) * (1 - var(--echo-drawn, 0))) 0 0 var(--echo-accent-glow),
+    0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 calc(4px * var(--echo-drawn, 0)) 0 var(--echo-line-width, 0px) var(--echo-line, transparent),
+    0 6px 14px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.4 * var(--echo-shade, 1) * 100%), transparent);
+}
+.echo-choice-cards__card:focus-visible {
+  outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));
+  outline-offset: 3px;
+}
+.echo-choice-cards__card[data-disabled] {
+  cursor: default;
+  opacity: 0.45;
+}
+/* The mark: a hole, with a pip or a tick when chosen. */
+.echo-choice-cards__mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--echo-radius-full);
+  background: var(--echo-well);
+  box-shadow: inset 0 2px 3px color-mix(in oklab, var(--echo-cast-ink, black) calc(0.6 * var(--echo-shade, 1) * 100%), transparent), inset 0 0 0 var(--echo-line-width, 0px) var(--echo-line, transparent);
+}
+.echo-choice-cards__pip {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--echo-radius-full);
+  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));
+  animation: echo-choice-pip var(--echo-duration-pop) var(--echo-ease-pop);
+}
+.echo-choice-cards__tick {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--echo-radius-sm);
+  color: var(--echo-primary-cap-ink, var(--echo-text));
+  background: linear-gradient(180deg, var(--echo-primary-cap-top), var(--echo-primary-cap-base));
+}
+.echo-choice-cards__tick svg {
+  width: var(--echo-icon-sm, 14px);
+  height: var(--echo-icon-sm, 14px);
+}
+.echo-choice-cards__card:has(.echo-choice-cards__tick) .echo-choice-cards__mark {
+  border-radius: var(--echo-radius-sm);
+}
+/* The pip rolls into its hole: it drops in and settles. */
+@keyframes echo-choice-pip {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+.echo-choice-cards__text {
+  display: grid;
+  gap: var(--echo-space-2);
+  min-width: 0;
+}
+.echo-choice-cards__title {
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold, 600);
+}
+.echo-choice-cards__description {
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-dim);
+}
+.echo-choice-cards__extra {
+  margin-top: var(--echo-space-3);
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .echo-choice-cards__card,
+  .echo-choice-cards__pip {
+    transition: none;
+    animation: none;
+  }
+  .echo-choice-cards__card:active {
+    transform: none;
+  }
+}
+@media (forced-colors: active) {
+  .echo-choice-cards__card {
+    border: var(--echo-border-hairline, 1px) solid ButtonText;
+  }
+  .echo-choice-cards__card[data-checked] {
+    border: var(--echo-border-heavy, 4px) solid Highlight;
+  }
+  .echo-choice-cards__pip,
+  .echo-choice-cards__tick {
+    background: Highlight;
+  }
+}
