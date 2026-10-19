@@ -1425,6 +1425,8 @@ test("the sheet draws as it's pushed even when the browser holds back its inters
   await page.addInitScript(() => {
     // An observer whose notices never arrive: the far end of a starved one.
     window.IntersectionObserver = class {
+      // Takes what the real one takes, and never calls back.
+      constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
       readonly root = null;
       readonly rootMargin = "0px";
       readonly thresholds = [0];
