@@ -1389,6 +1389,9 @@ test("landing on the close, the paper shows its blue face without another scroll
 });
 
 test("scrolling on past the close, the sheet stays drawn", async ({ page }) => {
+  // On a busy runner the homepage draws a few frames a second, and the push (two frames a step) takes
+  // most of the default 30s by itself.
+  test.setTimeout(60_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
@@ -1406,6 +1409,42 @@ test("scrolling on past the close, the sheet stays drawn", async ({ page }) => {
   // Still on screen, so still drawn: the last of its words is there.
   expect(await board.evaluate((el) => el.getBoundingClientRect().bottom > 0)).toBe(true);
   expect(await board.evaluate((el) => getComputedStyle(el).getPropertyValue("--p").trim())).toBe("1.0000");
+});
+
+/**
+ * Under a heavy load a browser can hold an IntersectionObserver's notices back for seconds: on a busy CI
+ * runner the sheet sat on its stop closed and undrawn, the push went by, and it never drew. Its drawing
+ * starts from the scroll itself, so it doesn't wait on a notice that may not come.
+ */
+test("the sheet draws as it's pushed even when the browser holds back its intersection notices", async ({ page }) => {
+  // As above: the push alone can take most of 30s on a busy runner.
+  test.setTimeout(60_000);
+  await page.addInitScript(() => {
+    // An observer whose notices never arrive: the far end of a starved one.
+    window.IntersectionObserver = class {
+      readonly root = null;
+      readonly rootMargin = "0px";
+      readonly thresholds = [0];
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof IntersectionObserver;
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  const board = page.locator(".bp__board");
+  await board.evaluate((el) => window.scrollBy({ top: el.getBoundingClientRect().top - 90, behavior: "instant" }));
+  await board.evaluate(async (el) => {
+    for (let i = 0; i < 400 && el.getBoundingClientRect().bottom > window.innerHeight * 0.55; i++) {
+      window.scrollBy({ top: 40, behavior: "instant" });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }
+  });
+  await expect.poll(() => board.evaluate((el) => getComputedStyle(el).getPropertyValue("--p").trim()), { timeout: 15_000 }).toBe("1.0000");
 });
 
 test("on a phone, every way in on the close is written on the paper, none off its edge", async ({ page }) => {

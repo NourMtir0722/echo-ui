@@ -453,28 +453,40 @@ export function Blueprint() {
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     window.addEventListener("resize", measure);
-    // Runs only while the sheet is near the screen.
+    /*
+     * Runs only while the sheet is within half a window of the screen. Measured from the scroll, not
+     * with an IntersectionObserver: under a heavy load a browser can hold an observer's notices back for
+     * seconds, and the sheet sat closed on its stop while the push went by undrawn.
+     */
     let stop: (() => void) | null = null;
-    const near = new IntersectionObserver(
-      ([e]) => {
-        // Back near after a while away, the opening is simply where the scroll has it.
-        if (e!.isIntersecting && !stop) {
-          way = null;
-          last = 0;
-          stop = onFrame(tick);
-        }
-        else if (!e!.isIntersecting && stop) {
-          stop();
-          stop = null;
-        }
-      },
-      { rootMargin: "50% 0px" },
-    );
-    near.observe(tr);
+    let checking = 0;
+    const near = () => {
+      checking = 0;
+      const r = tr.getBoundingClientRect();
+      const margin = window.innerHeight / 2;
+      const isNear = r.top < window.innerHeight + margin && r.bottom > -margin;
+      // Back near after a while away, the opening is simply where the scroll has it.
+      if (isNear && !stop) {
+        way = null;
+        last = 0;
+        stop = onFrame(tick);
+      } else if (!isNear && stop) {
+        stop();
+        stop = null;
+      }
+    };
+    const schedule = () => {
+      if (!checking) checking = requestAnimationFrame(near);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    near();
     tick();
     return () => {
       stop?.();
-      near.disconnect();
+      cancelAnimationFrame(checking);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
