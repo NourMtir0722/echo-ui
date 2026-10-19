@@ -1395,22 +1395,68 @@ test("scrolling on past the close, the sheet stays drawn", async ({ page }) => {
   // On a busy runner the homepage draws a few frames a second, and the push (two frames a step) takes
   // most of the default 30s by itself.
   test.setTimeout(60_000);
+  /*
+   * Now and then on CI's runner, never here, the page went on past the sheet in the second after the push,
+   * so a miss says what moved it: every scroll the page made itself (the test's own are marked and left
+   * out), and each frame's scroll position, the sheet's foot and the hold's height.
+   */
+  await page.addInitScript(() => {
+    const w = window as unknown as { __trail: string[]; __mine: boolean; __watch: boolean };
+    w.__trail = [];
+    w.__mine = false;
+    w.__watch = false;
+    const t0 = performance.now();
+    const at = () => `${Math.round(performance.now() - t0)}ms`;
+    const wrap = (proto: object, name: string) => {
+      const own = proto as Record<string, (...a: unknown[]) => unknown>;
+      const real = own[name]!;
+      own[name] = function (this: unknown, ...args: unknown[]) {
+        const who = this === window ? "window" : `${(this as Element).tagName.toLowerCase()}.${String((this as Element).className).split(" ")[0]}`;
+        if (!w.__mine) w.__trail.push(`${at()} ${who}.${name}(${JSON.stringify(args).slice(0, 80)}) from ${(new Error().stack ?? "").split("\n").slice(2, 5).map((l) => l.trim()).join(" < ")}`);
+        return real.apply(this, args);
+      };
+    };
+    wrap(Window.prototype, "scrollTo");
+    wrap(Window.prototype, "scrollBy");
+    wrap(Element.prototype, "scrollIntoView");
+    wrap(Element.prototype, "scrollTo");
+    const frame = () => {
+      if (w.__watch && w.__trail.length < 400) {
+        const b = document.querySelector(".bp__board")?.getBoundingClientRect();
+        const hold = document.querySelector<HTMLElement>(".bp__hold");
+        w.__trail.push(`${at()} y ${Math.round(scrollY)} foot ${b ? Math.round(b.bottom) : "-"} hold ${hold?.offsetHeight ?? "-"} held ${hold?.hasAttribute("data-held") ? 1 : 0} ${document.documentElement.className.match(/lenis[\w-]*/g)?.join(",") ?? ""}`);
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
   const board = page.locator(".bp__board");
   // To the sheet, a moment there, then on through it until its lower half is all that's left in the window.
-  await board.evaluate((el) => window.scrollBy({ top: el.getBoundingClientRect().top - 90, behavior: "instant" }));
+  await board.evaluate((el) => {
+    (window as unknown as { __mine: boolean }).__mine = true;
+    window.scrollBy({ top: el.getBoundingClientRect().top - 90, behavior: "instant" });
+    (window as unknown as { __mine: boolean }).__mine = false;
+  });
   await page.waitForTimeout(5_000);
   await board.evaluate(async (el) => {
+    const w = window as unknown as { __mine: boolean; __watch: boolean };
+    w.__watch = true;
     for (let i = 0; i < 400 && el.getBoundingClientRect().bottom > window.innerHeight * 0.55; i++) {
+      w.__mine = true;
       window.scrollBy({ top: 40, behavior: "instant" });
+      w.__mine = false;
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     }
   });
   await page.waitForTimeout(1_000);
   // Still on screen, so still drawn: the last of its words is there.
-  expect(await board.evaluate((el) => el.getBoundingClientRect().bottom > 0)).toBe(true);
+  const trail = () => page.evaluate(() => (window as unknown as { __trail: string[] }).__trail.slice(-120).join("\n"));
+  if (!(await board.evaluate((el) => el.getBoundingClientRect().bottom > 0))) {
+    expect(false, `the sheet went off the screen after the push; what the page did:\n${await trail()}`).toBe(true);
+  }
   expect(await board.evaluate((el) => getComputedStyle(el).getPropertyValue("--p").trim())).toBe("1.0000");
 });
 
