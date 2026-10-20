@@ -161,10 +161,13 @@ test.describe("ScrollArea", () => {
 
   test("the end still to see is shaded; at the bottom, it isn't", async ({ page }) => {
     const region = preview(page).getByRole("region", { name: "Session log" });
-    const shade = () => region.evaluate((el) => getComputedStyle(el).getPropertyValue("--scroll-area-overflow-y-end").trim());
-    expect(parseFloat(await shade())).toBeGreaterThan(0);
+    const shade = async () =>
+      parseFloat(await region.evaluate((el) => getComputedStyle(el).getPropertyValue("--scroll-area-overflow-y-end"))) || 0;
+    // Base UI measures the box once the page's scripts run, and on a slow machine that's after the page has
+    // loaded: read at once, the shade wasn't there yet.
+    await expect.poll(shade).toBeGreaterThan(0);
     await region.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
-    await expect.poll(async () => parseFloat(await shade()) || 0).toBeLessThan(1);
+    await expect.poll(shade).toBeLessThan(1);
   });
 });
 
