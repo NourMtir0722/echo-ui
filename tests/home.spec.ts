@@ -484,7 +484,24 @@ test("a press of your own while a demo plays is yours: the demo stops where you 
   await hydrated(toggle);
   const mine = (await toggle.getAttribute("aria-checked")) === "true" ? "false" : "true";
   await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-checked", mine);
+  // Now and then, under a heavy load only, the switch was gone right after the press: a miss says where the page was.
+  const pressed = await expect(toggle).toHaveAttribute("aria-checked", mine).then(
+    () => true,
+    () => false,
+  );
+  if (!pressed) {
+    const where = await page.evaluate(() => {
+      const pick = document.getElementById("pick")!;
+      return {
+        scrollY: Math.round(scrollY),
+        pickTop: Math.round(pick.getBoundingClientRect().top),
+        phase: pick.getAttribute("data-phase"),
+        switches: pick.querySelectorAll("[role=switch]").length,
+        worn: document.documentElement.hasAttribute("data-journey-wear"),
+      };
+    });
+    expect(pressed, `the switch didn't take the press: ${JSON.stringify(where)}`).toBe(true);
+  }
   await expect.poll(() => phase(page, "pick")).toBe("paused");
   // Longer than the whole demo: one still writing would have flipped it by now.
   await page.waitForTimeout(6000);
