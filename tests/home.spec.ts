@@ -279,6 +279,16 @@ const STOPS = [
 ] as const;
 
 /**
+ * The homepage hydrated and laid out as it stays: the Puzzle enhanced, its sheets folded away. Before
+ * the fold every stop under it is about 2,000px lower, so a jump measured then lands that far past
+ * where it meant to once the fold comes (on CI's runner, Chromium's scroll anchoring didn't make it up).
+ */
+async function folded(page: Page) {
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await expect(page.locator(".pz[data-enhanced]")).toBeAttached({ timeout: 15_000 });
+}
+
+/**
  * Frames stop `id` in the room under the site's bar, as the wheel's step leaves
  * it (snap.ts `frameFor`). First the page has to be hydrated and still: before
  * it is, the Puzzle's three sheets stand one under another (as without
@@ -288,8 +298,7 @@ const STOPS = [
  * still for a moment before it, and Pick was framed, then left 2,000px away.
  */
 async function frame(page: Page, id: string) {
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
-  await expect(page.locator(".pz[data-enhanced]")).toBeAttached({ timeout: 15_000 });
+  await folded(page);
   let last = -1;
   await expect
     .poll(
@@ -844,7 +853,7 @@ test("the framed Console keeps its bar inside its frame", async ({ page }) => {
 test("a demo's place keeps its size while its code loads, so the page never jumps", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 860 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   // Every frame from the jump until the demos are in: the least the sheet and the frame ever measured.
   await page.evaluate(() => {
     const w = window as unknown as { least: { grid: number; screen: number } };
@@ -906,7 +915,7 @@ test("on a phone the homepage never scrolls sideways, every demo in", { tag: "@m
   // It also holds Check's leader, a 1.5px hairline on a phone, hung its 7px dot out of both sides.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   // Down the whole page, so every demo that waits to be near has mounted.
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
   for (let y = 0; y < height; y += 600) {
@@ -928,7 +937,7 @@ test("on a phone the homepage never scrolls sideways, every demo in", { tag: "@m
 test("on a phone, the road has no cable and its cards take the column's whole width; a wide window has the cable", { tag: "@mobile" }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   await page.locator(".hiw__way").evaluate((el) => window.scrollBy({ top: el.getBoundingClientRect().top - 100, behavior: "instant" }));
   await expect(page.locator(".hiw__card .demo[data-live]").first()).toBeAttached();
   await page.waitForTimeout(800);
@@ -974,7 +983,7 @@ test("on a phone, the bar is the wordmark and Menu's three lines, and Menu opens
 
 test("under a finger, a road card's name is there before the card plays", { tag: "@touch" }, async ({ page }) => {
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const card = page.locator(".hiw__card .demo").nth(1);
   await expect(card).toHaveAttribute("data-live", "");
   // Its head in the middle of the window: on the way to it, not yet framed.
@@ -987,7 +996,7 @@ test("under a finger, a road card's name is there before the card plays", { tag:
 test("on a phone, the whole screens are laid out at their frame's width, not drawn small, and both are one height", { tag: "@mobile" }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const show = page.locator(".objects__show");
   await show.evaluate((el) => window.scrollBy({ top: el.getBoundingClientRect().top - 70, behavior: "instant" }));
   await expect(page.locator(".objects__fit .echo-console__body")).toBeAttached({ timeout: 15_000 });
@@ -1018,7 +1027,7 @@ test("on a phone, the close's sheet fits the window, so the scroll writes it whi
   ] as const) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
-    await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+    await folded(page);
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator(".bp__hold[data-held]"), `${width} × ${height}`).toBeAttached();
     const room = await page.evaluate(() => window.innerHeight - document.querySelector<HTMLElement>(".echo-shell__rail")!.offsetHeight);
@@ -1140,7 +1149,7 @@ test("every link in the foot of the page opens a page", async ({ page, request }
 test("on a desktop the homepage never pans sideways, the paper flying from Make to Pick included", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 860 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const pans = () => page.evaluate(() => [document.documentElement, document.body].map((e) => e.scrollWidth - e.clientWidth));
   // Down the page and through the road, where the paper lands on Try it on and merges into it.
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -1194,7 +1203,7 @@ test("Echo pulled into ChatGPT: a real heading, the lines as text, and the key t
 test("the moment's four stops: Echo caught in the storm, the lines, ChatGPT, the key; its words play at their stop", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   test.skip(!webgl, "no WebGL here, so the moment is its last stop, still");
   const pull = page.locator("section.pull");
@@ -1232,7 +1241,7 @@ test("the moment's four stops: Echo caught in the storm, the lines, ChatGPT, the
 test("the white goes on through the close, and the page is dark again by the letter's title", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   test.skip(!webgl, "no WebGL here, so the moment is still and the close paints its own white");
   const run = page.locator(".white-run");
@@ -1250,7 +1259,7 @@ test("the white goes on through the close, and the page is dark again by the let
 test("under reduced motion the moment is its last stop, still: the lines, the lockup and the key on the white", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const pull = page.locator("section.pull");
   await expect(pull).not.toHaveAttribute("data-live", "");
   await expect(pull.locator(".pull__stop")).toHaveCount(0);
@@ -1297,7 +1306,7 @@ test("the close: Echo's anatomy on a blueprint, the six ways in, and the CLI's k
 test("the scroll draws the close: Echo's scribble as the paper opens, every word on the push after", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const board = page.locator(".bp__board");
   const progress = () => board.evaluate((el) => Number(el.style.getPropertyValue("--p")));
   // Far below, nothing drawn yet.
@@ -1330,7 +1339,7 @@ test("the scroll draws the close: Echo's scribble as the paper opens, every word
 test("the close's title is a stop: read whole over the closed scroll, which opens on the way to the sheet and closes on the way back", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const hold = page.locator(".bp__hold");
   const open = () => hold.evaluate((el) => Number(getComputedStyle(el).getPropertyValue("--open") || 0));
   /** Scrolls so a stop of the close is framed, as the page's wheel frames it (snap.ts `frameFor`). */
@@ -1365,7 +1374,7 @@ test("the close's title is a stop: read whole over the closed scroll, which open
 test("landing on the close, the paper shows its blue face without another scroll", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   test.skip(!webgl, "no WebGL here, so there's no paper: the sheet is the page's own blue");
   const board = page.locator(".bp__board");
@@ -1432,7 +1441,7 @@ test("scrolling on past the close, the sheet stays drawn", async ({ page }) => {
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const board = page.locator(".bp__board");
   // To the sheet, a moment there, then on through it until its lower half is all that's left in the window.
   await board.evaluate((el) => {
@@ -1486,7 +1495,7 @@ test("the sheet draws as it's pushed even when the browser holds back its inters
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const board = page.locator(".bp__board");
   await board.evaluate((el) => window.scrollBy({ top: el.getBoundingClientRect().top - 90, behavior: "instant" }));
   await board.evaluate(async (el) => {
@@ -1501,7 +1510,7 @@ test("the sheet draws as it's pushed even when the browser holds back its inters
 test("on a phone, every way in on the close is written on the paper, none off its edge", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   test.skip(!webgl, "no WebGL here, so there's no paper: the sheet is the page's own blue");
   const board = page.locator(".bp__board");
@@ -1543,7 +1552,7 @@ test("on a phone, every way in on the close is written on the paper, none off it
 test("on a tablet, every label on the close lies on the paper's flat face, none over its rolls", async ({ page }) => {
   await page.setViewportSize({ width: 820, height: 1180 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   test.skip(!webgl, "no WebGL here, so there's no paper: the sheet is the page's own blue");
   await page.locator(".bp__board").evaluate((el) => window.scrollBy({ top: el.getBoundingClientRect().top - 200, behavior: "instant" }));
@@ -1595,7 +1604,7 @@ const toDrawnClose = async (page: Page) => {
 test("the close's drawing is centred on its sheet, its ways in mirrored about Echo", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   await page.evaluate(() => document.fonts.ready);
   await toDrawnClose(page);
   const m = await page.locator(".bp__board").evaluate((board) => {
@@ -1652,7 +1661,7 @@ test("on a laptop, the close's paper and Echo perched on it are whole under the 
   ] as const) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
-    await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+    await folded(page);
     await toDrawnClose(page);
     const fit = await page.locator(".bp__frame").evaluate((frame) => {
       // The room the sheet is laid out for: under the bar, shown or slid away.
@@ -1670,7 +1679,7 @@ test("on a laptop, the close's paper and Echo perched on it are whole under the 
 test("when the window is resized, the open paper stays open under the drawing", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   test.skip(!webgl, "no WebGL here, so there's no paper: the sheet is a flat blue");
   const board = page.locator(".bp__board");
@@ -1713,7 +1722,7 @@ test("when the window is resized, the open paper stays open under the drawing", 
 test("under reduced motion the close is the finished sheet at once", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await folded(page);
   const board = page.locator(".bp__board");
   expect(await board.evaluate((el) => getComputedStyle(el).getPropertyValue("--p").trim())).toBe("1");
   expect(await board.locator(".bp__ch").first().evaluate((c) => getComputedStyle(c).opacity)).toBe("1");
