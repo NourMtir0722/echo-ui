@@ -100,17 +100,31 @@ export function HomeHero({
 }) {
   const card = useRef<HTMLElement>(null);
 
-  // The site's own top bar comes back once the card (and its nav) has scrolled away.
+  /*
+   * The site's own top bar comes back once the card (and its nav) has scrolled away: its foot above the
+   * top 72px, or its top below the window. Measured from the scroll, not with an IntersectionObserver:
+   * under a heavy load a browser can hold an observer's notices back for seconds, and the bar stayed away.
+   */
   useEffect(() => {
     const el = card.current;
     if (!el) return;
     const root = document.documentElement;
-    const io = new IntersectionObserver(([e]) => root.toggleAttribute("data-hero-passed", !e!.isIntersecting), {
-      rootMargin: "-72px 0px 0px 0px",
-    });
-    io.observe(el);
+    let checking = 0;
+    const check = () => {
+      checking = 0;
+      const r = el.getBoundingClientRect();
+      root.toggleAttribute("data-hero-passed", !(r.bottom > 72 && r.top < window.innerHeight));
+    };
+    const schedule = () => {
+      if (!checking) checking = requestAnimationFrame(check);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    check();
     return () => {
-      io.disconnect();
+      cancelAnimationFrame(checking);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
       root.removeAttribute("data-hero-passed");
     };
   }, []);

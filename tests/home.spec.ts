@@ -175,13 +175,10 @@ test("on a desktop, the site's own bar stands down while the hero's card (with i
 });
 
 /**
- * Known to fail now and then: under load, the bar above has stayed hidden after the script's
- * scroll, once for 15s. Not reproduced alone, at 12× CPU (it shows
- * in 1s), or in a run of the Chromium project alone; the page is full height and keeps the scroll
- * when it works. This scrolls past the card and back ten times on one page and fails with a
- * timeline of scrolls, the bar's attribute and Lenis starting: what a fix needs.
+ * Past the card and back ten times on one page, the bar comes and goes every time. A miss says when:
+ * the timeline of scrolls, the bar's attribute and Lenis starting.
  */
-test.fixme("on a desktop, the site's bar comes back every time the card scrolls away", async ({ page }) => {
+test("on a desktop, the site's bar comes back every time the card scrolls away", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await page.evaluate(() => {
@@ -207,6 +204,20 @@ test.fixme("on a desktop, the site's bar comes back every time the card scrolls 
       expect(shown, timeline.join("\n")).toBe(true);
     }
   }
+});
+
+/** The bar's notice comes from the scroll too, so a browser holding its observer's notices back can't keep it away. */
+test("on a desktop, the site's bar comes back past the card even when the browser holds back its intersection notices", async ({ page }) => {
+  await silenceObservers(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await folded(page);
+  const rail = page.locator(".home-shell > .echo-shell__rail");
+  await expect(rail).toBeHidden();
+  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 2));
+  await expect(rail).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(rail).toBeHidden();
 });
 
 test("on a phone, the site's bar navigates and the card's own nav steps aside", { tag: "@mobile" }, async ({ page }) => {
@@ -277,6 +288,29 @@ const STOPS = [
   ["build", "Build with Echo"],
   ["check", "On-brand and WCAG 2.2 AA, checked"],
 ] as const;
+
+/**
+ * Under a heavy load a browser can hold an IntersectionObserver's notices back for seconds (on CI's
+ * runner they never came while a test waited). This replaces the observer with one whose notices never
+ * arrive, the far end of a starved one: what the homepage does on its own has to hold without them.
+ */
+async function silenceObservers(page: Page) {
+  await page.addInitScript(() => {
+    window.IntersectionObserver = class {
+      // Takes what the real one takes, and never calls back.
+      constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
+      readonly root = null;
+      readonly rootMargin = "0px";
+      readonly thresholds = [0];
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof IntersectionObserver;
+  });
+}
 
 /**
  * The homepage hydrated and laid out as it stays: the Puzzle enhanced, its sheets folded away. Before
@@ -1477,22 +1511,7 @@ test("scrolling on past the close, the sheet stays drawn", async ({ page }) => {
 test("the sheet draws as it's pushed even when the browser holds back its intersection notices", async ({ page }) => {
   // As above: the push alone can take most of 30s on a busy runner.
   test.setTimeout(60_000);
-  await page.addInitScript(() => {
-    // An observer whose notices never arrive: the far end of a starved one.
-    window.IntersectionObserver = class {
-      // Takes what the real one takes, and never calls back.
-      constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
-      readonly root = null;
-      readonly rootMargin = "0px";
-      readonly thresholds = [0];
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-      takeRecords() {
-        return [];
-      }
-    } as unknown as typeof IntersectionObserver;
-  });
+  await silenceObservers(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await folded(page);
