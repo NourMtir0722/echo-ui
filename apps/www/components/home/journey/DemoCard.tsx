@@ -297,9 +297,13 @@ export function DemoCard({
     let lastProgress = "";
     let perch: HTMLElement | null = el.querySelector<HTMLElement>(".demo__marker");
     let buttons: HTMLElement[] = [...st.querySelectorAll<HTMLElement>("[data-press]")];
+    // The pause key, whose ring fills as the demo plays: the progress is written on it, not on the card, so
+    // only the ring is styled again each frame, never the whole demo under the card.
+    let key: HTMLElement | null = el.querySelector<HTMLElement>(".demo__key");
     const mo = new MutationObserver(() => {
       buttons = [...st.querySelectorAll<HTMLElement>("[data-press]")];
       perch = el.querySelector<HTMLElement>(".demo__marker");
+      key = el.querySelector<HTMLElement>(".demo__key");
     });
     mo.observe(el, { childList: true, subtree: true });
     const off = onFrame((now) => {
@@ -328,9 +332,6 @@ export function DemoCard({
           el.setAttribute("data-seen", "");
         }
       }
-      // How far it has played, for the ring round the pause key: the page holds while it fills (snap.ts).
-      const pv = progress.current.toFixed(3);
-      if (pv !== lastProgress) el.style.setProperty("--demo-p", (lastProgress = pv));
       const t = progress.current * duration;
       const s = st.getBoundingClientRect();
       const found: (Target | undefined)[] = Array.from({ length: presses }, () => undefined);
@@ -351,6 +352,10 @@ export function DemoCard({
       }
       const size = perch?.offsetWidth || 56;
       const pose = poseAt(t, fillGaps(found), size, at, duration);
+      // Everything is measured; now the writes, so none of the reads above waited on a style the frame had just changed.
+      // How far it has played, for the ring round the pause key: the page holds while it fills (snap.ts).
+      const pv = progress.current.toFixed(3);
+      if (pv !== lastProgress && key) key.style.setProperty("--demo-p", (lastProgress = pv));
       if (perch) {
         const transform = `translate(${(pose.x - size / 2).toFixed(1)}px, ${(pose.y - size).toFixed(1)}px)`;
         const lean = pose.lean.toFixed(3);

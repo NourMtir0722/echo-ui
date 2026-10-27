@@ -433,7 +433,7 @@ test("what moves on its own can be stopped without a mouse, and started again", 
   await pause.focus();
   await page.keyboard.press("Enter");
   await expect.poll(() => phase(page, "make")).toBe("paused");
-  const ring = () => page.locator("#make").evaluate((el) => getComputedStyle(el).getPropertyValue("--demo-p").trim());
+  const ring = () => page.locator("#make .demo__key").evaluate((el) => getComputedStyle(el).getPropertyValue("--demo-p").trim());
   const stopped = await ring();
   await page.waitForTimeout(1200);
   expect(await ring()).toBe(stopped);
@@ -2340,5 +2340,29 @@ test("the road's paper is made while the page rests, before the road comes near"
   // At rest there, it's made, with the road still out of reach of the cable's loading.
   await expect(paper).toHaveCount(1, { timeout: 10_000 });
   expect(await road.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThan(vh + 700);
+});
+
+test("a playing card styles only its pause key's ring as it fills, not the whole demo under the card", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "counts the elements styled through Chrome's own trace");
+  await page.setViewportSize({ width: 1512, height: 860 });
+  await page.goto("/");
+  await frame(page, "make");
+  await expect.poll(() => phase(page, "make"), { timeout: 10_000 }).toBe("playing");
+  await page.waitForTimeout(300);
+  // Every element the browser styles again in a second and a half of Make playing.
+  const cdp = await page.context().newCDPSession(page);
+  const counts: number[] = [];
+  cdp.on("Tracing.dataCollected", (d) => {
+    for (const e of d.value as { name: string; ph: string; args?: { elementCount?: number } }[])
+      if (e.name === "UpdateLayoutTree" && e.ph === "X") counts.push(e.args?.elementCount ?? 0);
+  });
+  const done = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+  await cdp.send("Tracing.start", { traceConfig: { includedCategories: ["devtools.timeline"] }, transferMode: "ReportEvents" });
+  await page.waitForTimeout(1500);
+  await cdp.send("Tracing.end");
+  await done;
+  expect(await phase(page, "make")).toBe("playing");
+  // The demo under the card is some 270 elements: styled again every frame, that was over 25,000 (now some 2,300).
+  expect(counts.reduce((a, b) => a + b, 0)).toBeLessThan(8000);
 });
 
