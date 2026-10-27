@@ -30,3 +30,47 @@ export function whenNear(el: Element, margin: number, onNear: () => void): () =>
   schedule();
   return stop;
 }
+
+/** How long the page has to go without scrolling to count as resting, ms: longer than a frame of a glide. */
+const QUIET = 200;
+
+/**
+ * Calls `onStill` once, the first time the page rests (no scroll for a moment) and the browser has time to
+ * spare: for building something heavy (a WebGL canvas, its shaders) between pushes of the scroll, never in
+ * the middle of one, where it would hold the page still for as long as it takes. Returns the function that
+ * stops waiting.
+ */
+export function whenStill(onStill: () => void): () => void {
+  let timer = 0;
+  let idle = 0;
+  const ric = (window as { requestIdleCallback?: typeof requestIdleCallback }).requestIdleCallback;
+  const stop = () => {
+    window.removeEventListener("scroll", restart);
+    window.clearTimeout(timer);
+    if (idle) window.cancelIdleCallback?.(idle);
+  };
+  const rested = () => {
+    // Safari before 18 has no idle callback: the rest stands in for it.
+    if (!ric) {
+      stop();
+      onStill();
+      return;
+    }
+    idle = ric(
+      () => {
+        stop();
+        onStill();
+      },
+      { timeout: 500 },
+    );
+  };
+  function restart() {
+    window.clearTimeout(timer);
+    if (idle) window.cancelIdleCallback?.(idle);
+    idle = 0;
+    timer = window.setTimeout(rested, QUIET);
+  }
+  window.addEventListener("scroll", restart, { passive: true });
+  restart();
+  return stop;
+}

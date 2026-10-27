@@ -25,7 +25,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BigTitle } from "@/components/home/BigTitle";
 import { GuideStop } from "@/components/home/Guide";
-import { whenNear } from "@/components/home/near";
+import { whenNear, whenStill } from "@/components/home/near";
 import {
   alongFor,
   layOut,
@@ -50,10 +50,8 @@ const RoadCable = dynamic(
 );
 
 // The paper road (Make's sheets drifting into Try it on) loads as the road comes near, where it can run.
-const PaperRoad = dynamic(
-  () => import("@/components/home/journey/paper/PaperRoad").then((m) => m.PaperRoad),
-  { ssr: false },
-);
+const loadPaperRoad = () => import("@/components/home/journey/paper/PaperRoad");
+const PaperRoad = dynamic(() => loadPaperRoad().then((m) => m.PaperRoad), { ssr: false });
 
 /** The paper road needs a window wide enough for one card a screen (DemoCard's fitting). */
 const PAPER_FROM = "(min-width: 900px)";
@@ -99,6 +97,7 @@ export function Workflow() {
   const list = useRef<HTMLOListElement>(null);
   const [lay, setLay] = useState<Layout | null>(null);
   const [near, setNear] = useState(false);
+  const [paper, setPaper] = useState(false);
   const [reached, setReached] = useState(0);
   const [reduced, setReduced] = useState(false);
   const [wide, setWide] = useState(false);
@@ -125,6 +124,38 @@ export function Workflow() {
   useEffect(() => {
     const el = box.current;
     if (el) return whenNear(el, 700, () => setNear(true));
+  }, []);
+
+  /*
+   * The paper road's chunk and its WebGL canvas each hold the page for a moment (a few frames on a slow
+   * machine), so they're made while the page rests, from a window and a half off (Who it's for): one rest to
+   * load it and another to make it. Come on without resting, it's made as the road comes near, as the cable is.
+   */
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    let resting = () => {};
+    let gone = false;
+    const make = () => {
+      resting();
+      setPaper(true);
+    };
+    const far = whenNear(el, window.innerHeight * 1.5, () => {
+      // Only where it will run: a window wide enough, motion allowed.
+      if (!window.matchMedia(PAPER_FROM).matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      resting = whenStill(() => {
+        void loadPaperRoad().then(() => {
+          if (!gone) resting = whenStill(make);
+        });
+      });
+    });
+    const close = whenNear(el, 700, make);
+    return () => {
+      gone = true;
+      far();
+      close();
+      resting();
+    };
   }, []);
 
   /*
@@ -330,7 +361,7 @@ export function Workflow() {
           </div>
         )}
         {lay && near && road && <RoadCable lay={lay} reached={reached} />}
-        {near && wide && !reduced && <PaperRoad />}
+        {paper && wide && !reduced && <PaperRoad />}
         <ol ref={list} className="hiw__cards">
           {CARDS.map((Card, i) => (
             <li key={i} className="hiw__card">

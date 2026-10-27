@@ -43,7 +43,7 @@ import { ECHO_CLI } from "@registry/agent/guidance";
 import { BigTitle } from "@/components/home/BigTitle";
 import { CopyCommand } from "@/components/home/CopyCommand";
 import { GuideStop } from "@/components/home/Guide";
-import { whenNear } from "@/components/home/near";
+import { whenNear, whenStill } from "@/components/home/near";
 import { onFrame } from "@/components/home/frame";
 import { follow, following, type Follow } from "@/components/home/follow";
 import { barHeight, topInset } from "@/components/home/snap";
@@ -317,8 +317,11 @@ export function Blueprint() {
         h: note.offsetTop + note.offsetHeight - list.offsetTop + 2 * LEGEND_PAD.y,
       };
     };
+    /** The paper has been made once (a resize or the fonts arriving make it again). */
+    let made = false;
     const paint = () => {
       if (!Scroll || gone) return;
+      made = true;
       const width = el.clientWidth - 2 * (phone.matches ? PHONE_SIDE : EXTRA);
       const height = b.clientHeight + 2 * EXTRA;
       const faces = paperFaces({
@@ -330,16 +333,42 @@ export function Blueprint() {
       });
       setPaper({ Scroll, width, height, face: Math.round(width * (1 - 2 * ends)), ...faces });
     };
-    const stop = whenNear(el, window.innerHeight, () => {
+    /*
+     * The paper's chunk and its WebGL canvas each hold the page for a moment (a few frames on a slow machine),
+     * so they're made while the page rests: from three windows off, a stop of the ChatGPT moment before it,
+     * one rest to load it and another to make it. Come on without resting, it's made as the close comes within
+     * a window, all at once, as it always was.
+     */
+    let asked = false;
+    let close = false;
+    let resting = () => {};
+    const load = () => {
+      if (asked) return;
+      asked = true;
       import("./ScrollPaper")
         .then((m) => {
           if (gone || !m.canUnroll()) return;
           Scroll = m.ScrollPaper;
           ends = m.ENDS;
-          paint();
+          if (close) paint();
+          else resting = whenStill(() => made || paint());
         })
         .catch((e) => console.warn("blueprint: no paper", e));
+    };
+    const far = whenNear(el, window.innerHeight * 3, () => {
+      resting = whenStill(load);
     });
+    const near = whenNear(el, window.innerHeight, () => {
+      close = true;
+      resting();
+      load();
+      if (!made) paint();
+    });
+    const stop = () => {
+      far();
+      near();
+      resting();
+    };
     const ro = new ResizeObserver(() => {
       clearTimeout(timer);
       timer = window.setTimeout(paint, 200);

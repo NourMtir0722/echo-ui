@@ -2289,3 +2289,56 @@ test("the ChatGPT moment draws only while its stage is in the window", async ({ 
   await page.waitForTimeout(1000);
   expect(await draws()).toBe(before);
 });
+
+/** Scrolls the page to `to` a little every frame, never resting on the way (a long, steady glide). */
+const glideTo = (page: Page, to: number) =>
+  page.evaluate(
+    (to) =>
+      new Promise<void>((done) => {
+        const from = window.scrollY;
+        const start = performance.now();
+        const step = (t: number) => {
+          const u = Math.min(1, (t - start) / 1500);
+          window.scrollTo(0, from + (to - from) * u);
+          if (u < 1) requestAnimationFrame(step);
+          else done();
+        };
+        requestAnimationFrame(step);
+      }),
+    to,
+  );
+
+test("the close's paper is made while the page rests, before the close comes near, never in the middle of a scroll", async ({ page }) => {
+  await page.goto("/");
+  const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  test.skip(!webgl, "no WebGL here, so there's no paper to make");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  const paper = page.locator("section.bp .bp__paper canvas");
+  const close = await page.locator("section.bp").evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  const vh = await page.evaluate(() => window.innerHeight);
+  // Through the ChatGPT moment without a rest, to a window and a half short of the close: nothing made yet.
+  await page.evaluate((y) => window.scrollTo(0, y), close - 4 * vh);
+  await glideTo(page, close - 2.5 * vh);
+  await expect(paper).toHaveCount(0);
+  // At rest there, it's made, with the close still more than a window off.
+  await expect(paper).toHaveCount(1, { timeout: 10_000 });
+  expect(await page.locator("section.bp").evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThan(vh);
+});
+
+test("the road's paper is made while the page rests, before the road comes near", async ({ page }) => {
+  await page.goto("/");
+  const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  test.skip(!webgl, "no WebGL here, so there's no paper to make");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  const paper = page.locator(".jy-flight canvas");
+  const road = page.locator("section.hiw .hiw__way");
+  const top = await road.evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  const vh = await page.evaluate(() => window.innerHeight);
+  // Through Who it's for without a rest, to just short of where the road loads its cable (700px off): nothing made yet.
+  await glideTo(page, top - vh - 850);
+  await expect(paper).toHaveCount(0);
+  // At rest there, it's made, with the road still out of reach of the cable's loading.
+  await expect(paper).toHaveCount(1, { timeout: 10_000 });
+  expect(await road.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThan(vh + 700);
+});
+
