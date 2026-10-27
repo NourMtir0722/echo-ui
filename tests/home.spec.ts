@@ -1915,7 +1915,7 @@ test("at the foot of the page Echo drops into a heap with its crowd, and the dra
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(canvas).toHaveAttribute("data-in-pile", "true", { timeout: 6000 });
   await expect(canvas).not.toHaveAttribute("data-pile", "waiting");
-  expect(await page.locator(".foot__flat").evaluate((el) => getComputedStyle(el).visibility)).toBe("hidden");
+  await expect(page.locator(".foot__flat")).toBeHidden();
 });
 
 test("without WebGL, the drawing makes the journey instead", async ({ page }) => {
@@ -2134,6 +2134,22 @@ const toFoot = async (page: Page) => {
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
 };
 
+/** Every change made under `selector` in `ms`, as "attribute name" or the kind of change. */
+const changesUnder = (page: Page, selector: string, ms: number) =>
+  page.evaluate(
+    ([selector, ms]) =>
+      new Promise<string[]>((done) => {
+        const seen: string[] = [];
+        const mo = new MutationObserver((list) => list.forEach((m) => seen.push(m.attributeName ?? m.type)));
+        for (const el of document.querySelectorAll(selector)) mo.observe(el, { attributes: true, childList: true, subtree: true, characterData: true });
+        setTimeout(() => {
+          mo.disconnect();
+          done(seen);
+        }, ms);
+      }),
+    [selector, ms] as const,
+  );
+
 test("the light Echo carries reads each of the page's colours once, not again on every look at its text", async ({ page }) => {
   // A colour is read through a canvas (light/contrast.ts): count the reads.
   await page.addInitScript(() => {
@@ -2156,5 +2172,14 @@ test("the light Echo carries reads each of the page's colours once, not again on
   const before = await reads();
   await page.waitForTimeout(3500);
   expect(await reads()).toBeLessThan(before + 50);
+});
+
+test("at the foot, the drawing of the crowd stands still behind the 3D heap", async ({ page }) => {
+  await page.goto("/");
+  const canvas = await stage(page);
+  await toFoot(page);
+  await expect(canvas).toHaveAttribute("data-in-pile", "true", { timeout: 6000 });
+  await page.waitForTimeout(500);
+  expect(await changesUnder(page, ".foot__flat", 1000)).toEqual([]);
 });
 

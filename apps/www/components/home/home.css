@@ -919,9 +919,13 @@
     display: none;
   }
 }
-/* Once the 3D crowd is on the page, the drawing of it makes way. */
+/*
+ * Once the 3D crowd is on the page, the drawing of it makes way, and stands still: a creature only stops
+ * breathing once it has no box (its rig watches it with an IntersectionObserver), so hidden, all seven would
+ * go on moving every frame, unseen. It's out of the flow, so nothing round it moves.
+ */
 :root[data-echo3d] .foot__flat {
-  visibility: hidden;
+  display: none;
 }
 /* Forced colours: the light is decoration, and steps aside. */
 @media (forced-colors: active) {
