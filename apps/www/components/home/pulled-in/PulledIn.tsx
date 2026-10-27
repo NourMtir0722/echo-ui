@@ -329,6 +329,9 @@ export function PulledIn() {
       speed += (v - speed) * Math.min(1, dt * 10);
       if (speed < 0.002) speed = 0;
       last = p;
+      // Its stage out of the window (sliding in from below, or scrolled on past): nothing to draw, nothing to place.
+      const seen = st.getBoundingClientRect();
+      if (seen.bottom <= 0 || seen.top >= window.innerHeight) return;
       // At rest the storm still turns and the white still breathes: every other frame is enough for that.
       frame++;
       if (p === drawn.current && scrolled === drawnAt && speed === 0 && frame % 2) return;

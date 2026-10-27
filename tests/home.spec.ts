@@ -2261,3 +2261,31 @@ test("nothing decorative keeps moving where it can't be seen: the keychain waits
   }
 });
 
+test("the ChatGPT moment draws only while its stage is in the window", async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __pullDraws: number };
+    w.__pullDraws = 0;
+    for (const proto of [WebGL2RenderingContext.prototype, WebGLRenderingContext.prototype]) {
+      for (const name of ["drawElements", "drawArrays"] as const) {
+        const real = (proto as unknown as Record<string, (...a: unknown[]) => unknown>)[name]!;
+        (proto as unknown as Record<string, unknown>)[name] = function (this: WebGLRenderingContext, ...a: unknown[]) {
+          if (this.canvas instanceof HTMLCanvasElement && this.canvas.classList.contains("pull__world")) w.__pullDraws += 1;
+          return real.apply(this, a);
+        };
+      }
+    }
+  });
+  await page.goto("/");
+  const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  test.skip(!webgl, "no WebGL here, so the moment is its last stop, still");
+  const draws = () => page.evaluate(() => (window as unknown as { __pullDraws: number }).__pullDraws);
+  // In the window, it draws: the storm turns even at rest.
+  await page.locator("section.pull").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY));
+  await expect.poll(draws, { timeout: 15_000 }).toBeGreaterThan(0);
+  // Just past it, the stage gone off the top of the window: nothing more is drawn.
+  await page.locator("section.pull .pull__track").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().bottom + window.scrollY + 200));
+  await page.waitForTimeout(500);
+  const before = await draws();
+  await page.waitForTimeout(1000);
+  expect(await draws()).toBe(before);
+});
