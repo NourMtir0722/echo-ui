@@ -21,7 +21,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { HardwareButton } from "@registry/echo/hardware-button";
 import { RadioGroup } from "@registry/echo/radio-group";
-import { DemoCard, pressProps, useDemo } from "./DemoCard";
+import { DemoCard, pressProps, useDemo, useHeld } from "./DemoCard";
 import { DECK, StyleSheets, TURN_LAG } from "./StyleSheets";
 import { Chat, Composer, Files, Mention, Mine, Theirs } from "./Thread";
 import { BOARD, INK, MAKE, PIGMENT, boardSrc } from "./run";
@@ -245,7 +245,8 @@ function Mosaic() {
  * size as the pages turn.
  */
 function Questions({ shown }: { shown: boolean }) {
-  const { step, held, live, setStep } = useDemo();
+  const { step, live, setStep } = useDemo();
+  const held = useHeld();
   const qs = MAKE.questions;
   const [picked, setPicked] = useState<Record<number, string>>({});
   const answered = (i: number) => (live ? step >= i + 2 : true);

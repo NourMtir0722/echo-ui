@@ -2422,3 +2422,50 @@ test("a graphics chip that can't keep up gets Echo drawn with fewer pixels, a st
   await context.close();
 });
 
+test("while a road card plays, the road's other cards aren't drawn again", async ({ page }) => {
+  // React's own report of each commit (the hook React DevTools uses): what ran in it, by the card it's in.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __drawn: Record<string, number>; __REACT_DEVTOOLS_GLOBAL_HOOK__: unknown };
+    w.__drawn = {};
+    type Fiber = { child: Fiber | null; sibling: Fiber | null; alternate: Fiber | null; flags: number; tag: number; stateNode: unknown };
+    const card = (f: Fiber): string => {
+      for (let c: Fiber | null = f; c; c = c.child) if (c.tag === 5 && c.stateNode instanceof Element) return c.stateNode.closest("article.demo")?.id ?? "";
+      return "";
+    };
+    // Only where a commit rebuilt a fiber's children, as DevTools walks it: what it skipped keeps its old flags.
+    const walk = (parent: Fiber) => {
+      if (!parent.child || parent.child === parent.alternate?.child) return;
+      for (let c: Fiber | null = parent.child; c; c = c.sibling) {
+        // A component that ran again (React's PerformedWork flag), not one put on the page for the first time.
+        if (c.alternate && (c.flags & 1) === 1 && [0, 1, 11, 15].includes(c.tag)) {
+          const id = card(c);
+          if (id) w.__drawn[id] = (w.__drawn[id] ?? 0) + 1;
+        }
+        walk(c);
+      }
+    };
+    w.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
+      supportsFiber: true,
+      renderers: new Map(),
+      inject: () => 1,
+      onScheduleFiberRoot() {},
+      onCommitFiberRoot(_id: number, root: { current: Fiber }) {
+        walk(root.current);
+      },
+      onCommitFiberUnmount() {},
+      onPostCommitFiberRoot() {},
+      checkDCE() {},
+    };
+  });
+  await page.setViewportSize({ width: 1512, height: 860 });
+  await page.goto("/");
+  await frame(page, "make");
+  await expect.poll(() => phase(page, "make"), { timeout: 10_000 }).toBe("playing");
+  await page.evaluate(() => ((window as unknown as { __drawn: Record<string, number> }).__drawn = {}));
+  await page.waitForTimeout(4000);
+  const drawn = await page.evaluate(() => (window as unknown as { __drawn: Record<string, number> }).__drawn);
+  expect(await phase(page, "make")).toBe("playing");
+  // Make is drawn again as it plays; Pick, Build and Check, waiting their turn, never are.
+  expect(drawn.make ?? 0).toBeGreaterThan(0);
+  expect({ pick: drawn.pick ?? 0, build: drawn.build ?? 0, check: drawn.check ?? 0 }).toEqual({ pick: 0, build: 0, check: 0 });
+});

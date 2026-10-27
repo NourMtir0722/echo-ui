@@ -22,7 +22,7 @@ import type { ReactNode } from "react";
 import { HardwareButton } from "@registry/echo/hardware-button";
 import { Flower } from "@/components/brand/Logo";
 import "@registry/echo/chat/chat.css";
-import { pressProps, useDemo } from "./DemoCard";
+import { pressProps, useHeld } from "./DemoCard";
 
 /**
  * Who you're talking to: the AI, by name, and what's plugged into it. The
@@ -163,7 +163,7 @@ export function Files({ files }: { files: readonly RunFile[] }) {
  * number `press` lands on it. After the press the well is empty again.
  */
 export function Composer({ prompt, press, sent, onSend }: { prompt: ReactNode; press: number; sent: boolean; onSend: () => void }) {
-  const { held } = useDemo();
+  const held = useHeld();
   return (
     <div className="echo-chat__composer jy-chat__composer">
       <p className="jy-chat__draft" data-empty={sent ? "" : undefined}>

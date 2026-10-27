@@ -22,7 +22,7 @@
  * and Echo stands on the play key of the card being read.
  */
 import dynamic from "next/dynamic";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BigTitle } from "@/components/home/BigTitle";
 import { GuideStop } from "@/components/home/Guide";
 import { whenNear, whenStill } from "@/components/home/near";
@@ -103,6 +103,17 @@ export function Workflow() {
   const [wide, setWide] = useState(false);
   const [road, setRoad] = useState(true);
   const plugRef = useRef<HTMLDivElement>(null);
+  // The cards, made once: the road's own state changes as Echo travels it (the jacks it has reached), and
+  // made again with it, every card and the whole demo in it was drawn again each time, for nothing it reads.
+  const cards = useMemo(
+    () =>
+      CARDS.map((Card, i) => (
+        <li key={i} className="hiw__card">
+          <Card />
+        </li>
+      )),
+    [],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -363,11 +374,7 @@ export function Workflow() {
         {lay && near && road && <RoadCable lay={lay} reached={reached} />}
         {paper && wide && !reduced && <PaperRoad />}
         <ol ref={list} className="hiw__cards">
-          {CARDS.map((Card, i) => (
-            <li key={i} className="hiw__card">
-              <Card />
-            </li>
-          ))}
+          {cards}
         </ol>
       </div>
     </section>

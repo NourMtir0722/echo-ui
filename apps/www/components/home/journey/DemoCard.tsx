@@ -31,7 +31,7 @@
  * cards sit on (Workflow.tsx) stands Echo there while the card plays, and says
  * which phase it's in through `data-phase`.
  */
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HardwareButton } from "@registry/echo/hardware-button";
 import { onFrame } from "@/components/home/frame";
 import { barHeight, HURRY_EVENT, hurryRate, IN_VIEW, isFramed, topInset } from "@/components/home/snap";
@@ -41,10 +41,6 @@ import { evenBeats, poseAt, type Target } from "./press";
 export interface DemoState {
   /** How many presses are done: what the card shows. */
   step: number;
-  /** The press whose cap is held down right now. */
-  held: number | null;
-  /** Echo is on its way to the next button. */
-  travelling: boolean;
   presses: number;
   /** The demo runs (false: under reduced motion, or before JavaScript; the card shows its end). */
   live: boolean;
@@ -68,8 +64,6 @@ export interface DemoState {
 
 const DemoContext = createContext<DemoState>({
   step: 99,
-  held: null,
-  travelling: false,
   presses: 0,
   live: false,
   setStep: () => {},
@@ -79,6 +73,13 @@ const DemoContext = createContext<DemoState>({
 });
 
 export const useDemo = () => useContext(DemoContext);
+
+/**
+ * The press whose cap is held down right now. A context of its own: Echo holds a cap and lets it go a few
+ * times a second, and only what draws a held cap should be drawn again for it, not the whole demo.
+ */
+const HeldContext = createContext<number | null>(null);
+export const useHeld = () => useContext(HeldContext);
 
 /** Makes an element one of Echo's presses: number `k` lands on it. */
 export const pressProps = (k: number, opts: { mode?: "press" | "point"; at?: number; side?: "left" | "right" } = {}) => ({
@@ -149,7 +150,6 @@ export function DemoCard({
   const [phase, setPhase] = useState<Phase>("waiting");
   const [step, setStepState] = useState(0);
   const [held, setHeld] = useState<number | null>(null);
-  const [travelling, setTravelling] = useState(false);
   const [own, setOwn] = useState<number | null>(null);
   const [rate, setRate] = useState(1);
   const progress = useRef(0);
@@ -290,7 +290,6 @@ export function DemoCard({
     let last = performance.now();
     let lastStep = -1;
     let lastHeld: number | null | undefined;
-    let lastTravel: boolean | undefined;
     let lastTransform = "";
     let lastLean = "";
     let lastPress = "";
@@ -372,10 +371,6 @@ export function DemoCard({
         lastHeld = pose.held;
         setHeld(pose.held);
       }
-      if (pose.travelling !== lastTravel) {
-        lastTravel = pose.travelling;
-        setTravelling(pose.travelling);
-      }
     });
     return () => {
       off();
@@ -384,10 +379,10 @@ export function DemoCard({
   }, [live, presses, length, beatsKey]);
 
   // A press of the visitor's own stops the demo where they've taken it.
-  const setStep = (n: number) => {
+  const setStep = useCallback((n: number) => {
     setOwn(n);
     if (phaseRef.current === "playing") setPhase("paused");
-  };
+  }, []);
 
   const toggle = () => {
     if (phase === "playing") setPhase("paused");
@@ -405,7 +400,9 @@ export function DemoCard({
   };
 
   const shown = live ? (own ?? step) : presses;
-  const value: DemoState = { step: shown, held: live && own === null ? held : null, travelling: live && travelling, presses, live, setStep, clock, length, rate };
+  // The same value until something in it changes: a card's phase or its key's label changing doesn't draw its demo again.
+  const value = useMemo<DemoState>(() => ({ step: shown, presses, live, setStep, clock, length, rate }), [shown, presses, live, setStep, clock, length, rate]);
+  const heldNow = live && own === null ? held : null;
   const label = phase === "playing" ? "Pause the demo" : phase === "done" ? "Play the demo again" : "Play the demo";
 
   return (
@@ -434,7 +431,9 @@ export function DemoCard({
       </header>
       <div ref={body} className="demo__body">
         <div ref={fit} className="demo__fit">
-          <DemoContext.Provider value={value}>{children}</DemoContext.Provider>
+          <DemoContext.Provider value={value}>
+            <HeldContext.Provider value={heldNow}>{children}</HeldContext.Provider>
+          </DemoContext.Provider>
         </div>
         <span className="guide-stop demo__marker" aria-hidden="true" />
       </div>
