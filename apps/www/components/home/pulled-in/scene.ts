@@ -196,7 +196,9 @@ void main() {
 `;
 
 export function createPullScene(canvas: HTMLCanvasElement, colours: Colours, opts: { light: boolean }): PullScene {
-  const renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+  // No multisampling: the passes below draw into targets without it, and the last is a quad over the whole
+  // canvas, so the canvas's own samples smoothed nothing and cost a resolve of every pixel, every frame.
+  const renderer = new WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
   // No tone mapping: the sky's dark has to be the page's own, exactly, where they meet.
   renderer.toneMapping = NoToneMapping;
   renderer.outputColorSpace = SRGBColorSpace;
