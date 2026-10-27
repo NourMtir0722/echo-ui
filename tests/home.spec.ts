@@ -2183,3 +2183,16 @@ test("at the foot, the drawing of the crowd stands still behind the 3D heap", as
   expect(await changesUnder(page, ".foot__flat", 1000)).toEqual([]);
 });
 
+test("a demo scrolled out of the window stops: the export below the fold doesn't run on while the page is elsewhere", async ({ page }) => {
+  await page.goto("/");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  const cell = page.locator('[data-object="status-island"]');
+  await cell.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await expect(cell.locator(".echo-status-island button[aria-expanded]").first()).toHaveAttribute("aria-expanded", "true", { timeout: 15_000 });
+  // Running while it's in the window...
+  expect((await changesUnder(page, '[data-object="status-island"]', 1000)).length).toBeGreaterThan(0);
+  // ...and still once the page is elsewhere, as soon as it has shut (a ticking export is never still for a second).
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => changesUnder(page, '[data-object="status-island"]', 1000), { timeout: 8000 }).toEqual([]);
+});
+

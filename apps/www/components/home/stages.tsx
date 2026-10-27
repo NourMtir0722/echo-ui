@@ -115,14 +115,26 @@ function Pad() {
  * cell), and shuts again scrolled back down below
  * it; a press of the visitor's own opens or shuts it too. Under reduced
  * motion it's simply open.
+ *
+ * It runs only while it's in the window: anywhere else on the page it would
+ * go on drawing itself every 300ms for no one.
  */
 function Export() {
   const [p, setP] = useState(0.12);
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!shown) return;
     const id = window.setInterval(() => setP((x) => (x >= 1 ? 0 : Math.min(1, +(x + 0.02).toFixed(2)))), 300);
     return () => window.clearInterval(id);
+  }, [shown]);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const seen = new IntersectionObserver(([e]) => setShown(!!e?.isIntersecting));
+    seen.observe(el);
+    return () => seen.disconnect();
   }, []);
   useEffect(() => {
     const el = box.current;
