@@ -42,7 +42,6 @@
  * the lines over it, Echo (or its drawing) on the key.
  */
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { Vector3 } from "three";
 import { HardwareButton } from "@registry/echo/hardware-button";
 import { useSoundOptional, type SoundRecipe } from "echo-ui-core/sound";
 import { GuideStop } from "@/components/home/Guide";
@@ -57,7 +56,7 @@ import { CHATGPT_LISTING_URL } from "../../../../../mcp/src/plugin-downloads";
 import { useSiteSeed } from "@/components/site/theme-store";
 import { LANDING_SEED } from "@/components/home/landing-seed";
 import { CALL, camZ, cue, echoPose, end, ENTER, glideAt, HOLD, LANDS, LENGTH, LINES, mix, paceAt, STOPS, WORDS, type Pose } from "./timeline";
-import type { Colours, PullScene } from "./scene";
+import type { Colours, Point, PullScene } from "./scene";
 import "./pulled-in.css";
 
 const ARRIVE: SoundRecipe = { wave: "sine", freq: [659.25, 987.77, 1318.51], decay: 0.22, gain: 0.04 };
@@ -165,7 +164,7 @@ export function PulledIn() {
 
   // Sizes: the stage, the lines' places in the world (each set to sit at its place at the lines' stop), Echo's
   // seat, and the lockup: where the light's point is from the mark's place, and how far the mark steps aside.
-  const anchors = useRef<Vector3[]>([]);
+  const anchors = useRef<Point[]>([]);
   const seat = useRef<{ x: number; y: number; size: number } | null>(null);
   const fromLight = useRef({ x: 0, y: 0 });
   const centred = useRef({ x: 0, y: 0 });
@@ -185,7 +184,7 @@ export function PulledIn() {
     anchors.current = LINES.map((l) => {
       const nx = l.at.x * 2 - 1;
       const ny = 1 - l.at.y * 2;
-      return new Vector3(nx * l.depth * tan * (w / h), ny * l.depth * tan, z1 - l.depth);
+      return { x: nx * l.depth * tan * (w / h), y: ny * l.depth * tan, z: z1 - l.depth };
     });
     // Echo's seat: on the key's cap, in the middle, sunk a little into it.
     const cap = keyEl.current?.querySelector<HTMLElement>(".echo-hw");

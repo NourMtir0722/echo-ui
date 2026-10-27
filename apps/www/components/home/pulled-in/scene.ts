@@ -44,6 +44,16 @@ export interface Colours {
   paper: string;
 }
 
+/**
+ * A point in the world. Plain, so the page can hold one without loading three.js: the scene is a chunk of its
+ * own, and the page's first load stays without it.
+ */
+export interface Point {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface PullScene {
   resize(w: number, h: number): void;
   /**
@@ -52,7 +62,7 @@ export interface PullScene {
    */
   draw(u: number, speed: number, t: number, scrolled?: number): void;
   /** A world point on the stage, px, and how far in front of the camera it is (≤ 0: behind). */
-  project(v: Vector3): { x: number; y: number; depth: number };
+  project(v: Point): { x: number; y: number; depth: number };
   /** The size of a world unit at `depth` in front of the camera, px. */
   unitAt(depth: number): number;
   destroy(): void;
@@ -259,7 +269,7 @@ export function createPullScene(canvas: HTMLCanvasElement, colours: Colours, opt
     },
     project(v) {
       const depth = camera.position.z - v.z;
-      tmp.copy(v).project(camera);
+      tmp.set(v.x, v.y, v.z).project(camera);
       return { x: ((tmp.x + 1) / 2) * w, y: ((1 - tmp.y) / 2) * h, depth };
     },
     unitAt,
