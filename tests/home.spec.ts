@@ -2366,3 +2366,59 @@ test("a playing card styles only its pause key's ring as it fills, not the whole
   expect(counts.reduce((a, b) => a + b, 0)).toBeLessThan(8000);
 });
 
+test("Echo's canvas covers only the box round Echo as it travels, not the whole window", async ({ page }) => {
+  await page.goto("/");
+  const canvas = await stage(page);
+  await page.locator("#who-h").scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 300);
+  await expect.poll(async () => (await drawn(page)).size).toBeGreaterThan(0);
+  await page.waitForTimeout(800);
+  const echo = await drawn(page);
+  const box = (await canvas.boundingBox())!;
+  const win = page.viewportSize()!;
+  // Echo, whole, inside it...
+  expect(box.x).toBeLessThanOrEqual(echo.left);
+  expect(box.x + box.width).toBeGreaterThanOrEqual(echo.right);
+  expect(box.y).toBeLessThanOrEqual(echo.y - echo.size / 2);
+  expect(box.y + box.height).toBeGreaterThanOrEqual(echo.y + echo.size / 2);
+  // ...and it a small part of the window.
+  expect(box.width * box.height).toBeLessThan(0.15 * win.width * win.height);
+});
+
+test("a graphics chip that can't keep up gets Echo drawn with fewer pixels, a step at a time", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
+  const page = await context.newPage();
+  // The chip's own timing of each frame Echo is drawn in, as a slow one would report it: 20ms.
+  await page.addInitScript(() => {
+    const real = WebGL2RenderingContext.prototype.getQueryParameter;
+    WebGL2RenderingContext.prototype.getQueryParameter = function (this: WebGL2RenderingContext, query: WebGLQuery, pname: number) {
+      if (pname === this.QUERY_RESULT_AVAILABLE) return true;
+      if (pname === this.QUERY_RESULT) return 20e6;
+      return real.call(this, query, pname);
+    };
+  });
+  await page.goto(`${baseURL}/`);
+  const canvas = await stage(page);
+  const timed = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2")?.getExtension("EXT_disjoint_timer_query_webgl2"));
+  test.skip(!timed, "this browser can't time the graphics chip, so it never steps down");
+  await expect(canvas).toHaveAttribute("data-ratio", "1.75");
+  // And frames that take 30ms: the page is missing them (from now, so the stage has loaded at its own pace).
+  await page.evaluate(() => {
+    const busy = () => {
+      const t = performance.now();
+      while (performance.now() - t < 30);
+      requestAnimationFrame(busy);
+    };
+    requestAnimationFrame(busy);
+  });
+  // Out on the page, drawn every frame: down a step every second or two, to one pixel a CSS px.
+  await page.locator("#who-h").scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 300);
+  await expect(canvas).toHaveAttribute("data-ratio", "1.5", { timeout: 15_000 });
+  await expect(canvas).toHaveAttribute("data-ratio", "1", { timeout: 15_000 });
+  // Its pixels are the new ratio's.
+  const { width, css } = await canvas.evaluate((c: HTMLCanvasElement) => ({ width: c.width, css: c.getBoundingClientRect().width }));
+  expect(width).toBe(Math.floor(css));
+  await context.close();
+});
+

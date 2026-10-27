@@ -1,12 +1,15 @@
 /**
- * The stage: one WebGL canvas over the whole homepage, where Echo travels
- * down the page and its crowd piles up at the foot of it.
+ * The stage: one WebGL canvas on the homepage, where Echo travels down the
+ * page and its crowd piles up at the foot of it.
  *
  * The camera is set so that a pixel on the page is a unit in the scene: at
  * depth 0 a creature placed at the page coordinates of a perch is drawn
  * exactly on it, and anything nearer or further gets a little perspective.
- * The canvas is fixed to the window and redrawn every frame after the page
- * has scrolled (frame.ts), so what's drawn stays glued to what's on the page.
+ * Its view is the whole window, but the canvas covers only the box round
+ * what's on the stage (Echo, or the heap), and draws that part of the view
+ * (`aim`): the same picture, a fraction of the pixels. It's redrawn every
+ * frame after the page has scrolled (frame.ts), so what's drawn stays glued
+ * to what's on the page.
  *
  * Echo follows journey.ts: perch to perch, riding the margin in between,
  * with the scroll. In the accessibility section it stands beside whatever
@@ -21,10 +24,12 @@
 import {
   DirectionalLight,
   HemisphereLight,
+  Mesh,
   NeutralToneMapping,
   PMREMGenerator,
   PerspectiveCamera,
   Scene,
+  Sphere,
   WebGLRenderer,
 } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -134,19 +139,209 @@ export async function createStage(opts: StageOptions): Promise<Stage> {
   scene.add(sky, key, rim);
 
   const camera = new PerspectiveCamera(FOV, 1, 1, 10000);
+  /** The window, CSS px: the camera's whole view. */
   let vw = 0;
   let vh = 0;
+  /** How far the camera is from the page. */
+  let dist = 1;
+  const windowSize = () => [document.documentElement.clientWidth, document.documentElement.clientHeight] as const;
   const resize = () => {
-    vw = canvas.clientWidth;
-    vh = canvas.clientHeight;
-    renderer.setSize(vw, vh, false);
-    const dist = vh / 2 / Math.tan((FOV * Math.PI) / 360);
+    [vw, vh] = windowSize();
+    dist = vh / 2 / Math.tan((FOV * Math.PI) / 360);
     camera.aspect = vw / vh;
     camera.near = Math.max(1, dist - 2000);
     camera.far = dist + 2000;
     camera.position.set(vw / 2, -vh / 2, dist);
     camera.lookAt(vw / 2, -vh / 2, 0);
     camera.updateProjectionMatrix();
+    // A new window may have rows to pair the other way: the canvas is sized again.
+    cw = ch = 0;
+    aimed = "";
+  };
+
+  // --- the part of the window that's drawn -------------------------------------
+
+  /*
+   * The canvas covers the box round what's on the stage, not the whole window: Echo is some 60px across, and a
+   * window-sized canvas, cleared and drawn every frame, cost a weak graphics chip most of its frame. The camera
+   * draws only that part of its view (setViewOffset), so the picture is the one the whole window would show
+   * there, pixel for pixel. For that its pixels have to fall where the whole window's would, in the same pairs:
+   * a graphics chip shades in 2x2 blocks, and the vinyl's pebbling is worked out per block, so a canvas one
+   * pixel off would pebble a little differently. So it moves in steps of an even number of its pixels, and is
+   * as many rows tall, odd or even, as the window is (its rows are counted from the foot).
+   */
+  /** The canvas's pixels a CSS px: the window's, up to 1.75; fewer on a graphics chip that can't keep up (below). */
+  let ratio = 1;
+  /** The smallest step, CSS px, that's a whole number of the canvas's pixels (4 at 1.75, 2 at 1.5). */
+  let unit = 4;
+  /** Where the canvas is, and how wide: steps of an even number of its pixels. */
+  let grid = 8;
+  let oddUnit = true;
+  /** Room round the box, CSS px, so a box that breathes, leans or hops fits the canvas it has. */
+  const SLACK = 48;
+  /** How long the box has to stay much smaller than the canvas before the canvas is made smaller, ms. */
+  const SHRINK_AFTER = 1000;
+  /** The canvas, CSS px, and where it is in the window. */
+  let cw = 0;
+  let ch = 0;
+  let aimed = "";
+  let smallSince = 0;
+  const sphere = new Sphere();
+  /** The box round everything drawn, in the window (empty when x1 <= x0). */
+  const area = { x0: 0, y0: 0, x1: 0, y1: 0 };
+  const onGrid = (v: number) => Math.ceil(v / grid) * grid;
+  /** A height from `v` up, in whole pixels, as many of them, odd or even, as the window has, so the rows pair up alike. */
+  const tall = (v: number) => {
+    let n = Math.ceil(v / unit);
+    if (oddUnit && n % 2 !== Math.floor(vh * ratio) % 2) n++;
+    return n * unit;
+  };
+
+  /** Where everything drawn this frame is in the window: each mesh's bounding sphere, as the camera sees it. */
+  const measureArea = (drawn: Creature3D[]) => {
+    area.x0 = area.y0 = Infinity;
+    area.x1 = area.y1 = -Infinity;
+    scene.updateMatrixWorld();
+    for (const c of drawn) {
+      c.root.traverseVisible((o) => {
+        if (!(o instanceof Mesh)) return;
+        const g = o.geometry;
+        if (!g.boundingSphere) g.computeBoundingSphere();
+        sphere.copy(g.boundingSphere!).applyMatrix4(o.matrixWorld);
+        const depth = dist - sphere.center.z;
+        // Up against the camera (it never is): the whole window.
+        if (depth - sphere.radius < 1) {
+          area.x0 = area.y0 = 0;
+          area.x1 = vw;
+          area.y1 = vh;
+          return;
+        }
+        const k = dist / depth;
+        const x = vw / 2 + (sphere.center.x - vw / 2) * k;
+        const y = vh / 2 + (-sphere.center.y - vh / 2) * k;
+        // The nearest side of the sphere, drawn largest, and a pixel for the edges' smoothing.
+        const r = (sphere.radius * dist) / (depth - sphere.radius) + 1;
+        area.x0 = Math.min(area.x0, x - r);
+        area.y0 = Math.min(area.y0, y - r);
+        area.x1 = Math.max(area.x1, x + r);
+        area.y1 = Math.max(area.y1, y + r);
+      });
+    }
+    area.x0 = Math.max(0, area.x0);
+    area.y0 = Math.max(0, area.y0);
+    area.x1 = Math.min(vw, area.x1);
+    area.y1 = Math.min(vh, area.y1);
+    return area.x1 > area.x0 && area.y1 > area.y0;
+  };
+
+  /** Size and move the canvas to cover the area, and aim the camera's view at it. */
+  const aim = (now: number) => {
+    const maxW = onGrid(vw);
+    const maxH = tall(vh);
+    const needW = Math.min(maxW, onGrid(area.x1 - area.x0 + 2 * grid));
+    const needH = Math.min(maxH, tall(area.y1 - area.y0 + 2 * grid));
+    let w = cw;
+    let h = ch;
+    // Bigger at once when it's needed; smaller only once the box has stayed much smaller for a while.
+    if (needW > cw || needH > ch) {
+      w = needW > cw ? Math.min(maxW, onGrid(needW + SLACK)) : cw;
+      h = needH > ch ? Math.min(maxH, tall(needH + SLACK)) : ch;
+      smallSince = 0;
+    } else if ((needW + SLACK) * 2 < cw || (needH + SLACK) * 2 < ch) {
+      if (!smallSince) smallSince = now;
+      else if (now - smallSince > SHRINK_AFTER) {
+        w = Math.min(maxW, onGrid(needW + SLACK));
+        h = Math.min(maxH, tall(needH + SLACK));
+        smallSince = 0;
+      }
+    } else smallSince = 0;
+    if (w !== cw || h !== ch) {
+      cw = w;
+      ch = h;
+      renderer.setSize(cw, ch, false);
+      canvas.style.width = `${cw}px`;
+      canvas.style.height = `${ch}px`;
+    }
+    // Centred on the box, inside the window, on the grid.
+    const clampTo = (v: number, hi: number) => Math.min(Math.max(0, v), Math.max(0, hi));
+    const left = clampTo(Math.floor(((area.x0 + area.x1) / 2 - cw / 2) / grid) * grid, maxW - cw);
+    const top = clampTo(Math.floor(((area.y0 + area.y1) / 2 - ch / 2) / grid) * grid, onGrid(vh) - ch);
+    const at = `${left},${top},${cw},${ch}`;
+    if (at === aimed) return;
+    aimed = at;
+    canvas.style.transform = `translate(${left}px, ${top}px)`;
+    camera.setViewOffset(vw, vh, left, top, cw, ch);
+  };
+
+  /** Draw at `r` canvas pixels a CSS px: its steps are worked out again, and the canvas sized again for it. */
+  const drawAtRatio = (r: number) => {
+    ratio = r;
+    renderer.setPixelRatio(r);
+    unit = 4;
+    for (let u = 1; u <= 8; u++) {
+      if (Math.abs(u * r - Math.round(u * r)) < 1e-6) {
+        unit = u;
+        break;
+      }
+    }
+    grid = 2 * unit;
+    oddUnit = Math.round(unit * r) % 2 === 1;
+    cw = ch = 0;
+    aimed = "";
+    canvas.dataset.ratio = String(r);
+  };
+  drawAtRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+
+  // --- a graphics chip that can't keep up --------------------------------------
+
+  /*
+   * Where the browser can time the graphics chip's work (Chrome's EXT_disjoint_timer_query_webgl2), the stage
+   * times its own drawing. If over a second's worth of frames the page is missing frames (the middle one
+   * longer than SLOW_FRAME) and Echo's drawing is a real share of each (the middle one over HEAVY_MS of the
+   * chip's time), Echo is drawn with fewer pixels from then on, a step at a time: a little softer, on the
+   * machines that need it. A machine that keeps up never steps down, whatever its chip reports (on a Mac the
+   * timing counts the chip's other work too), and a page slow for some other reason doesn't make Echo softer
+   * for nothing. It never steps back up in a visit.
+   */
+  const SLOW_FRAME = 20;
+  const HEAVY_MS = 4;
+  const STEPS = [1.5, 1.25, 1];
+  const gl = renderer.getContext() as WebGL2RenderingContext;
+  const timer = gl.getExtension("EXT_disjoint_timer_query_webgl2") as { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null;
+  /** Timings asked for and not back yet, oldest first; and the ones back, ms. */
+  const pending: WebGLQuery[] = [];
+  let timings: number[] = [];
+  /** How long each of those frames was, ms, from the one before. */
+  let frames: number[] = [];
+  let lastTimed = 0;
+  const timed = (now: number, draw: () => void) => {
+    if (timer && lastTimed) frames.push(now - lastTimed);
+    lastTimed = now;
+    const q = timer && pending.length < 4 ? gl.createQuery() : null;
+    if (!q) return draw();
+    gl.beginQuery(timer!.TIME_ELAPSED_EXT, q);
+    draw();
+    gl.endQuery(timer!.TIME_ELAPSED_EXT);
+    pending.push(q);
+  };
+  const readTimings = () => {
+    if (!timer) return;
+    while (pending.length && gl.getQueryParameter(pending[0]!, gl.QUERY_RESULT_AVAILABLE)) {
+      const q = pending.shift()!;
+      const ns = gl.getQueryParameter(q, gl.QUERY_RESULT) as number;
+      gl.deleteQuery(q);
+      // The chip was interrupted (a reset, the power changing): what it timed then is meaningless.
+      if (gl.getParameter(timer.GPU_DISJOINT_EXT)) timings = [];
+      else timings.push(ns / 1e6);
+    }
+    if (timings.length < 60) return;
+    const middle = (all: number[]) => [...all].sort((a, b) => a - b)[all.length >> 1] ?? 0;
+    const heavy = middle(timings) > HEAVY_MS;
+    const slow = middle(frames) > SLOW_FRAME;
+    timings = [];
+    frames = [];
+    const next = STEPS.find((r) => r < ratio);
+    if (heavy && slow && next) drawAtRatio(next);
   };
   resize();
 
@@ -361,7 +556,8 @@ export async function createStage(opts: StageOptions): Promise<Stage> {
   const frame = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (canvas.clientWidth !== vw || canvas.clientHeight !== vh) resize();
+    const [ww, wh] = windowSize();
+    if (ww !== vw || wh !== vh) resize();
     collect();
     if (stops.length === 0) return;
 
@@ -538,11 +734,19 @@ export async function createStage(opts: StageOptions): Promise<Stage> {
 
     opts.onPose?.({ x: shown.x, y: shown.y, size: shown.size, visible: guide.visible && started });
 
-    // Nothing on the stage (Echo at home or in the keychain, the heap far off): once the canvas
-    // has been cleared, leave it alone. A canvas that changes every frame makes the browser hand the
-    // whole page to the compositor every frame, which cost a quarter of the main thread.
-    const showing = guide.visible || crowd.some((c) => c.visible);
-    if (showing || drewSomething || !started) renderer.render(scene, camera);
+    // Nothing on the stage, or nothing of it in the window (Echo at home or in the keychain, the heap far
+    // off): once the canvas has been cleared, leave it alone. A canvas that changes every frame makes the
+    // browser hand the whole page to the compositor every frame, which cost a quarter of the main thread.
+    const onStage = [guide, ...crowd].filter((c) => c.visible);
+    const showing = onStage.length > 0 && measureArea(onStage);
+    readTimings();
+    if (showing) aim(now);
+    // Only a frame with something on it is timed: a cleared canvas says nothing about the chip.
+    if (showing) timed(now, () => renderer.render(scene, camera));
+    else {
+      lastTimed = 0;
+      if (drewSomething || !started) renderer.render(scene, camera);
+    }
     drewSomething = showing;
 
     // Drawn once: now the drawing at home can make way for it.
@@ -620,6 +824,7 @@ export async function createStage(opts: StageOptions): Promise<Stage> {
       window.removeEventListener("resize", restale);
       watch.disconnect();
       tag.remove();
+      for (const q of pending) gl.deleteQuery(q);
       for (const c of [guide, ...crowd]) c.dispose();
       mask.dispose();
       shadow.dispose();
