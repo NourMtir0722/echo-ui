@@ -2196,3 +2196,36 @@ test("a demo scrolled out of the window stops: the export below the fold doesn't
   await expect.poll(() => changesUnder(page, '[data-object="status-island"]', 1000), { timeout: 8000 }).toEqual([]);
 });
 
+test("the road never rewrites Echo's perch with what it already says", async ({ page }) => {
+  await page.goto("/");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  const road = page.locator("section.hiw");
+  await road.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + window.innerHeight * 0.5));
+  // The road is placing Echo: its perch has been moved onto the cable.
+  await expect(road.locator(".hiw__perch")).toHaveAttribute("style", /transform/);
+  await page.waitForTimeout(1000);
+  // Each write of an attribute, against what it said before it: the same is a write for nothing.
+  const same = await page.evaluate(
+    () =>
+      new Promise<string[]>((done) => {
+        const perch = document.querySelector<HTMLElement>("section.hiw .hiw__perch")!;
+        const out: string[] = [];
+        const mo = new MutationObserver((list) => {
+          const byName = new Map<string, (string | null)[]>();
+          for (const m of list) byName.set(m.attributeName!, [...(byName.get(m.attributeName!) ?? []), m.oldValue]);
+          for (const [name, olds] of byName)
+            olds.forEach((old, i) => {
+              const now = i + 1 < olds.length ? olds[i + 1] : perch.getAttribute(name);
+              if (old === now) out.push(name);
+            });
+        });
+        mo.observe(perch, { attributes: true, attributeOldValue: true });
+        setTimeout(() => {
+          mo.disconnect();
+          done(out);
+        }, 1000);
+      }),
+  );
+  expect(same).toEqual([]);
+});
+

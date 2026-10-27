@@ -169,6 +169,10 @@ export function Workflow() {
     let lastTransform = "";
     let lastPlug = "";
     let raf = 0;
+    /** How Echo sits on the perch, written only when it changes: every write, even of the same, is a change for the page to look at. */
+    const pose = (key: "guideRoll" | "guideLean" | "guidePress", value: string) => {
+      if (perch.dataset[key] !== value) perch.dataset[key] = value;
+    };
 
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
@@ -234,9 +238,9 @@ export function Workflow() {
         const x = m.left + m.width / 2 - r.left;
         const y = m.bottom - r.top;
         transform = `translate(${(x - size / 2).toFixed(1)}px, ${(y - size).toFixed(1)}px)`;
-        perch.dataset.guideRoll = "0";
-        perch.dataset.guideLean = marker.dataset.guideLean ?? "0";
-        perch.dataset.guidePress = marker.dataset.guidePress ?? "0";
+        pose("guideRoll", "0");
+        pose("guideLean", marker.dataset.guideLean ?? "0");
+        pose("guidePress", marker.dataset.guidePress ?? "0");
       } else if (!road) {
         // No cable: on the card being read (the last whose top has passed the reading line), standing on its play key.
         let li = cards[0]!;
@@ -246,16 +250,16 @@ export function Workflow() {
         const x = k.left + k.width / 2 - r.left;
         const y = k.top - r.top;
         transform = `translate(${(x - size / 2).toFixed(1)}px, ${(y - size + FEET).toFixed(1)}px)`;
-        perch.dataset.guideRoll = "0";
-        perch.dataset.guideLean = "0";
-        perch.dataset.guidePress = "0";
+        pose("guideRoll", "0");
+        pose("guideLean", "0");
+        pose("guidePress", "0");
       } else {
         const p = lay.road.at(s);
         transform = `translate(${(p.x - size / 2).toFixed(1)}px, ${(p.y - size + FEET - lift).toFixed(1)}px)`;
         // How Echo is turning on the perch: the stage and the drawing read these (radians).
-        perch.dataset.guideRoll = roll ? roll.toFixed(3) : "0";
-        perch.dataset.guideLean = lean ? lean.toFixed(3) : "0";
-        perch.dataset.guidePress = "0";
+        pose("guideRoll", roll ? roll.toFixed(3) : "0");
+        pose("guideLean", lean ? lean.toFixed(3) : "0");
+        pose("guidePress", "0");
       }
       if (transform !== lastTransform)
         perch.style.transform = lastTransform = transform;
