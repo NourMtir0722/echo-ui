@@ -32,7 +32,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { hexToOklch } from "echo-ui-core/theme";
-import { MARGIN, needed, rgb, rgba, type Rgb } from "./contrast";
+import { MARGIN, moreContrast, needed, rgb, rgba, type Rgb } from "./contrast";
 import { pool } from "./lights";
 import { frozen } from "./LightPool";
 import { onFrame } from "@/components/home/frame";
@@ -326,6 +326,7 @@ const none = (): Guarded => ({ boxes: new Float32Array(MAX_BOXES * 4), fgs: new 
 function measure(canvas: HTMLCanvasElement, selector: string): Guarded {
   const c = canvas.getBoundingClientRect();
   const lines: { x0: number; y0: number; x1: number; y1: number; fg: Rgb; need: number }[] = [];
+  const more = moreContrast();
   for (const root of document.querySelectorAll(selector)) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -335,7 +336,7 @@ function measure(canvas: HTMLCanvasElement, selector: string): Guarded {
       if (s.display === "none" || s.visibility === "hidden") continue;
       const fg = rgb(s.color);
       // Twice the margin the light around Echo keeps: the field is grained, and laid under a screened light.
-      const need = needed(el) + 2 * MARGIN;
+      const need = needed(el, s, more) + 2 * MARGIN;
       const range = document.createRange();
       range.selectNodeContents(n);
       for (const r of range.getClientRects()) {

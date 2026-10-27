@@ -2124,3 +2124,37 @@ test("every screen shown whole fills its box", async ({ page }) => {
     expect(short, `at ${width}×${height}`).toEqual([]);
   }
 });
+
+/* --- at rest, the page rests -------------------------------------------------------------------- */
+
+/** Scrolled to the very foot: twice, since the page grows as the sections below the fold load. */
+const toFoot = async (page: Page) => {
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(500);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+};
+
+test("the light Echo carries reads each of the page's colours once, not again on every look at its text", async ({ page }) => {
+  // A colour is read through a canvas (light/contrast.ts): count the reads.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __reads: number };
+    w.__reads = 0;
+    const real = CanvasRenderingContext2D.prototype.getImageData;
+    CanvasRenderingContext2D.prototype.getImageData = function (this: CanvasRenderingContext2D, ...a: Parameters<typeof real>) {
+      w.__reads += 1;
+      return real.apply(this, a);
+    };
+  });
+  await page.goto("/");
+  const canvas = await stage(page);
+  // At the foot Echo is in its heap, carrying its light over the footer's text.
+  await toFoot(page);
+  await expect(canvas).toHaveAttribute("data-in-pile", "true", { timeout: 6000 });
+  // Long enough for the light to have read the page's text since, and to read it again.
+  await page.waitForTimeout(3500);
+  const reads = () => page.evaluate(() => (window as unknown as { __reads: number }).__reads);
+  const before = await reads();
+  await page.waitForTimeout(3500);
+  expect(await reads()).toBeLessThan(before + 50);
+});
+

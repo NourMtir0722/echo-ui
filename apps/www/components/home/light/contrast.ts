@@ -16,27 +16,32 @@
 
 export type Rgb = [number, number, number];
 
-const cache = new Map<string, Rgb>();
+/**
+ * Colours already read, by what the browser resolved them to. A page has a few dozen; the lights look at
+ * its text every second or so, and read through the canvas every time, the page stuttered while they did.
+ */
+const cache = new Map<string, [Rgb, number]>();
 let ctx: CanvasRenderingContext2D | null = null;
 
 /** A resolved CSS colour as sRGB 0..1, and its alpha. */
 export function rgba(css: string): [Rgb, number] {
+  let c = cache.get(css);
+  if (c) return c;
   if (!ctx) ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
   ctx.clearRect(0, 0, 1, 1);
   // A colour the canvas can't read would leave the last one standing: black, said once.
   ctx.fillStyle = CSS.supports("color", css) ? css : "#000";
   ctx.fillRect(0, 0, 1, 1);
   const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
-  return [[r! / 255, g! / 255, b! / 255], a! / 255];
+  c = [[r! / 255, g! / 255, b! / 255], a! / 255];
+  // A colour that keeps changing (one mid-transition) would fill it for good: start again past a few hundred.
+  if (cache.size > 500) cache.clear();
+  cache.set(css, c);
+  return c;
 }
 
 export function rgb(css: string): Rgb {
-  let c = cache.get(css);
-  if (!c) {
-    c = rgba(css)[0];
-    cache.set(css, c);
-  }
-  return c;
+  return rgba(css)[0];
 }
 
 const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -55,12 +60,13 @@ export function ratio(a: Rgb, b: Rgb): number {
 /** Asked for more contrast: AAA instead of AA. */
 export const moreContrast = () => typeof window !== "undefined" && window.matchMedia("(prefers-contrast: more)").matches;
 
-/** The contrast an element's text needs, from its size and weight. */
-export function needed(el: Element): number {
-  const s = getComputedStyle(el);
+/**
+ * The contrast an element's text needs, from its size and weight. Reading a page's worth, pass its style and
+ * whether more contrast is asked for, so neither is looked up again for every element.
+ */
+export function needed(el: Element, s: CSSStyleDeclaration = getComputedStyle(el), more = moreContrast()): number {
   const size = parseFloat(s.fontSize);
   const large = size >= 24 || (size >= 18.66 && Number(s.fontWeight) >= 700);
-  const more = moreContrast();
   return large ? (more ? 4.5 : 3) : more ? 7 : 4.5;
 }
 
@@ -121,6 +127,18 @@ export function runs(root: ParentNode, ground: Rgb): Run[] {
     acceptNode: (n) => (n.nodeValue && n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
   });
   const seen = new Set<Element>();
+  const more = moreContrast();
+  // What paints behind each element, from it outward, worked out once: the page's text shares its ancestors.
+  const under = new Map<Element, Rgb[] | null>();
+  const behind = (a: Element | null): Rgb[] | null => {
+    if (!a) return null;
+    let found = under.get(a);
+    if (found !== undefined) return found;
+    const colours = paints(getComputedStyle(a));
+    found = colours.length ? colours : a.classList.contains("home-lit") ? null : behind(a.parentElement);
+    under.set(a, found);
+    return found;
+  };
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const el = n.parentElement;
     if (!el || seen.has(el)) continue;
@@ -130,18 +148,9 @@ export function runs(root: ParentNode, ground: Rgb): Run[] {
     const [fg, fa] = rgba(s.color);
     if (fa < 0.05) continue;
     // Behind it: the first ancestor that paints. Of a gradient, whichever colour reads worst.
-    let bg = ground;
-    let onGround = true;
-    for (let a: Element | null = el; a; a = a.parentElement) {
-      const colours = paints(getComputedStyle(a));
-      if (colours.length) {
-        bg = colours.reduce((w, c) => (ratio(fg, c) < ratio(fg, w) ? c : w));
-        onGround = false;
-        break;
-      }
-      if (a.classList.contains("home-lit")) break;
-    }
-    out.push({ el, fg, need: needed(el), bg, onGround });
+    const colours = behind(el);
+    const bg = colours ? colours.reduce((w, c) => (ratio(fg, c) < ratio(fg, w) ? c : w)) : ground;
+    out.push({ el, fg, need: needed(el, s, more), bg, onGround: !colours });
   }
   return out;
 }
