@@ -772,7 +772,15 @@ button.pz__piece .pz__body {
   cursor: pointer;
   transform-origin: 50% -6px;
   animation: keychain-swing 4.5s ease-in-out infinite;
+  /*
+   * It swings only while it hangs there. Hidden, its swing can't be handed to the compositor, and the
+   * browser would lay out the whole page's layers again every frame, for a swing no one sees.
+   */
+  animation-play-state: paused;
   -webkit-tap-highlight-color: transparent;
+}
+:root[data-hero-passed][data-echo3d] .keychain:not([data-away]) .keychain__button {
+  animation-play-state: running;
 }
 .keychain__button:focus-visible {
   outline: 2px solid var(--echo-accent-ink, var(--echo-accent-glow));

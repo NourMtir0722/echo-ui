@@ -721,6 +721,16 @@
     animation: none;
   }
 }
+/*
+ * Once the hero has scrolled away, its device rests until it's back: off the top of the window, its float
+ * and its BRB would go on costing the page a frame's work every frame (the whole page's layers, for the
+ * float), for no one.
+ */
+:root[data-hero-passed] .hero4 .spin__lift[data-float],
+:root[data-hero-passed] .hero4 .spin__shadow[data-float],
+:root[data-hero-passed] .hero4 .brand-device__brb {
+  animation-play-state: paused;
+}
 .spin__obj {
   position: relative;
   /* A definite width: the device sizes itself as a share of it, so it can't shrink-wrap the device back. */

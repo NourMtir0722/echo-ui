@@ -2229,3 +2229,35 @@ test("the road never rewrites Echo's perch with what it already says", async ({ 
   expect(same).toEqual([]);
 });
 
+test("nothing decorative keeps moving where it can't be seen: the keychain waits while it's hidden, the hero's device once it's scrolled away", async ({ page }) => {
+  await page.goto("/");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  /** How each of these loops stands: "running" or "paused". */
+  const loops = () =>
+    page.evaluate(() =>
+      Object.fromEntries(
+        (document.getAnimations() as CSSAnimation[])
+          .filter((a) => ["keychain-swing", "spin-float", "spin-shadow", "brand-brb"].includes(a.animationName))
+          .map((a) => [a.animationName, a.playState]),
+      ),
+    );
+  // At the top the keychain is out of sight (Echo is home on the hero's device), so it doesn't swing.
+  expect((await loops())["keychain-swing"]).toBe("paused");
+  expect((await loops())["spin-float"]).toBe("running");
+
+  // Far down, the hero's device has floated off the top of the window: it stops, and so does its BRB.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
+  await expect(page.locator("html")).toHaveAttribute("data-hero-passed", "");
+  await expect.poll(loops).toMatchObject({ "spin-float": "paused", "spin-shadow": "paused" });
+  const brb = (await loops())["brand-brb"];
+  if (brb) expect(brb).toBe("paused");
+
+  // Where the keychain hangs in the corner (the 3D Echo out on the page), it swings.
+  const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  if (webgl) {
+    await expect(page.locator("canvas.echo3d")).toHaveAttribute("data-echo", "ready", { timeout: 20_000 });
+    await expect(page.locator(".keychain")).toBeVisible();
+    await expect.poll(async () => (await loops())["keychain-swing"]).toBe("running");
+  }
+});
+
