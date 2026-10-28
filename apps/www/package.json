@@ -18,8 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-reporter=spec \"components/**/*.test.ts\"",
     "build:static": "ECHO_STATIC_EXPORT=1 next build --webpack && node scripts/prune-fixtures.mjs && node scripts/sitemap.mjs",
-    "preview": "pnpm build:static && wrangler dev",
-    "deploy:site": "node scripts/repo-public.mjs && pnpm --filter @echo-ui/registry build && pnpm build:static && node scripts/released-only.mjs && wrangler deploy"
+    "preview": "NEXT_DIST_DIR=out pnpm build:static && wrangler dev",
+    "deploy:site": "node scripts/repo-public.mjs && pnpm --filter @echo-ui/registry build && NEXT_DIST_DIR=out pnpm build:static && node scripts/released-only.mjs out && wrangler deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

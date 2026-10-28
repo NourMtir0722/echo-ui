@@ -41,7 +41,7 @@ test("the site deploys only through the guard, after the export is built", () =>
   // Then the registry, from this commit, the export, the guard, and the deploy.
   assert.match(
     scripts["deploy:site"],
-    /^node scripts\/repo-public\.mjs && pnpm --filter @echo-ui\/registry build && pnpm build:static && node scripts\/released-only\.mjs && wrangler deploy$/,
+    /^node scripts\/repo-public\.mjs && pnpm --filter @echo-ui\/registry build && NEXT_DIST_DIR=out pnpm build:static && node scripts\/released-only\.mjs out && wrangler deploy$/,
   );
 });
 
@@ -57,7 +57,24 @@ test("deploy:site builds the registry from the commit it deploys, before the exp
   const scripts = JSON.parse(readFileSync(join(repoRoot, "apps/www/package.json"), "utf8")).scripts;
   const steps = scripts["deploy:site"].split("&&").map((s) => s.trim());
   const registry = steps.findIndex((s) => /@echo-ui\/registry build$/.test(s));
-  const exported = steps.indexOf("pnpm build:static");
+  const exported = steps.findIndex((s) => s.endsWith("pnpm build:static"));
   assert.ok(registry >= 0, `deploy:site doesn't build the registry: ${scripts["deploy:site"]}`);
   assert.ok(registry < exported, "the registry is built before the export that copies it");
+});
+
+/**
+ * A static export goes where the build's NEXT_DIST_DIR points. With it set in the shell, as for a
+ * verification build, the deploy exported into that folder while `wrangler` sent `out`, and stopped
+ * with nothing to send. The deploy and the preview name the folder themselves: the one wrangler serves.
+ */
+test("deploy:site and preview build the export into the folder wrangler serves, whatever NEXT_DIST_DIR the shell holds", () => {
+  const scripts = JSON.parse(readFileSync(join(repoRoot, "apps/www/package.json"), "utf8")).scripts;
+  const served = /"directory":\s*"\.\/([^"]+)"/.exec(readFileSync(join(repoRoot, "apps/www/wrangler.jsonc"), "utf8"))?.[1];
+  assert.ok(served, "wrangler.jsonc names no assets directory");
+  for (const name of ["deploy:site", "preview"]) {
+    const steps = scripts[name].split("&&").map((s) => s.trim());
+    assert.ok(steps.includes(`NEXT_DIST_DIR=${served} pnpm build:static`), `${name} builds the export wherever the shell says: ${scripts[name]}`);
+  }
+  // The guard reads the same folder, not the shell's.
+  assert.ok(scripts["deploy:site"].includes(`node scripts/released-only.mjs ${served} && wrangler deploy`), scripts["deploy:site"]);
 });
