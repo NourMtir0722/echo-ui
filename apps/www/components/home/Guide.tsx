@@ -196,7 +196,7 @@ export function Guide({ onAwayChange }: { onAwayChange?: (away: boolean) => void
         if (!home) {
           atHome = false;
           setAway(true);
-          box.style.visibility = "visible";
+          box.style.display = "block";
         }
       }
 
@@ -219,7 +219,8 @@ export function Guide({ onAwayChange }: { onAwayChange?: (away: boolean) => void
         const turn = (Number(at.stop.dataset.guideRoll) || 0) + (Number(at.stop.dataset.guideLean) || 0);
         if (turn && at.el === at.stop) tilt = (turn * 180) / Math.PI;
       }
-      draw(pose, tilt);
+      // At home it's out of sight, and the floating device would have it moved every frame for nothing.
+      if (!atHome) draw(pose, tilt);
 
       // The perch it's sitting on says so, for anything that makes room for it.
       const landed = flight ? null : at.stop;
@@ -233,7 +234,7 @@ export function Guide({ onAwayChange }: { onAwayChange?: (away: boolean) => void
       if (home && !flight && !atHome) {
         atHome = true;
         setAway(false);
-        box.style.visibility = "hidden";
+        box.style.display = "";
       }
     };
     raf = requestAnimationFrame(frame);

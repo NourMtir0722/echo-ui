@@ -23,7 +23,8 @@ const guide = (page: Page) =>
   page.evaluate(() => {
     const g = document.querySelector<HTMLElement>(".guide")!;
     const r = g.querySelector(".echo-creature")!.getBoundingClientRect();
-    return { visible: getComputedStyle(g).visibility === "visible", x: r.left + r.width / 2, y: r.top + r.height / 2, left: r.left, right: r.right };
+    const shown = getComputedStyle(g).display !== "none" && getComputedStyle(g).visibility === "visible";
+    return { visible: shown, x: r.left + r.width / 2, y: r.top + r.height / 2, left: r.left, right: r.right };
   });
 
 /**
@@ -1936,6 +1937,39 @@ test("without WebGL, the drawing makes the journey instead", async ({ page }) =>
   // No 3D Echo to fly home, so no keychain; and the heap is the flat one.
   await expect(page.getByRole("button", { name: "Call Echo home" })).toBeHidden();
   expect(await page.locator(".foot__flat").evaluate((el) => getComputedStyle(el).visibility)).toBe("visible");
+});
+
+test("without WebGL, the drawing waiting out of sight while Echo is home keeps still: nothing in it changes", async ({ page }) => {
+  await page.addInitScript(withoutWebGL);
+  await page.goto("/");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  await expect(page.locator(".guide")).toBeAttached();
+  /** Every change made to the drawing in a second: moved while hidden, it still had the page's layers rebuilt, every frame. */
+  const changes = () =>
+    page.locator(".guide").evaluate(
+      (el) =>
+        new Promise<number>((done) => {
+          let n = 0;
+          const watch = new MutationObserver((list) => (n += list.length));
+          watch.observe(el, { attributes: true, subtree: true });
+          setTimeout(() => {
+            watch.disconnect();
+            done(n);
+          }, 1000);
+        }),
+    );
+  await expect(device(page)).not.toHaveAttribute("data-away", "");
+  await page.waitForTimeout(300);
+  expect(await changes()).toBe(0);
+
+  // Out on the page and home again: still again.
+  await page.locator("#who-h").scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 300);
+  await expect.poll(async () => (await guide(page)).visible).toBe(true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(async () => (await guide(page)).visible, { timeout: 4000 }).toBe(false);
+  await page.waitForTimeout(300);
+  expect(await changes()).toBe(0);
 });
 
 /* --- scrolling and motion -------------------------------------------------------------------------- */

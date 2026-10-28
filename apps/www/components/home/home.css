@@ -105,7 +105,8 @@
   height: 188px;
   transform-origin: 50% 92.1%;
   pointer-events: none;
-  visibility: hidden;
+  /* Out of the page's layout while Echo is home, not just unseen: its creature stops moving (the rig's observer sees it gone). */
+  display: none;
   will-change: transform;
 }
 .guide__lean {
