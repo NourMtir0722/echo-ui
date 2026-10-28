@@ -2081,6 +2081,8 @@ test("the page renders with JavaScript disabled, Echo at home and nothing hidden
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Echo: The design system your AI agent builds with");
   await expect(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true })).toBeVisible();
   await expect(page.locator(".hero4 .brand-device__home")).toBeVisible();
+  // Echo is its drawing: the canvas it's painted on once the script runs is empty.
+  await expect(page.locator(".hero4 .brand-device__home svg")).toBeVisible();
   await expect(page.locator("canvas.echo3d")).not.toHaveAttribute("data-echo", "ready");
   await expect(page.locator('[data-reveal="out"]')).toHaveCount(0);
   // Every sheet of the puzzle, one under the other; every card on the road shows its end.
@@ -2502,4 +2504,115 @@ test("while a road card plays, the road's other cards aren't drawn again", async
   // Make is drawn again as it plays; Pick, Build and Check, waiting their turn, never are.
   expect(drawn.make ?? 0).toBeGreaterThan(0);
   expect({ pick: drawn.pick ?? 0, build: drawn.build ?? 0, check: drawn.check ?? 0 }).toEqual({ pick: 0, build: 0, check: 0 });
+});
+
+/** The hero's Echo, at home on the device's screen: its drawing (an SVG) and the canvas it's painted on. */
+const homeEcho = (page: Page) => page.locator(".hero4 .brand-device__home");
+
+test("Echo breathing on the hero's screen is painted on a canvas: the page's layers aren't rebuilt for it", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "counts the layer rebuilds through Chrome's own trace");
+  await page.goto("/");
+  await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
+  // Painted: the drawing it's painted from is out of sight, and moving.
+  await expect(homeEcho(page).locator("canvas")).toBeVisible();
+  await expect(homeEcho(page).locator("svg")).toBeHidden();
+  const pose = () => homeEcho(page).locator("svg > g").getAttribute("transform");
+  const first = await pose();
+  await expect.poll(pose).not.toBe(first);
+  // The page's opening (its field of light rising, the 3D stage loading) rebuilds them for a second or two.
+  await page.waitForTimeout(2500);
+
+  const cdp = await page.context().newCDPSession(page);
+  let rebuilt = 0;
+  cdp.on("Tracing.dataCollected", (d) => {
+    for (const e of d.value as { name: string; ph: string }[]) if (e.name === "PaintArtifactCompositor::Update" && e.ph === "X") rebuilt += 1;
+  });
+  const done = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+  await cdp.send("Tracing.start", { traceConfig: { includedCategories: ["blink", "cc", "devtools.timeline"] }, transferMode: "ReportEvents" });
+  await page.waitForTimeout(1000);
+  await cdp.send("Tracing.end");
+  await done;
+  // The SVG itself, moved every frame, had them rebuilt every frame: some 60 times in that second.
+  expect(rebuilt).toBeLessThan(6);
+});
+
+test("Echo on the hero's screen is painted as its drawing has it: in the page's colour, in one picked in another tab, and drawn", async ({ page, context }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const screen = page.locator(".hero4 .brand-device__screen");
+  /** The share of the screen's pixels the canvas paints more than a shade away from the drawing, in the same pose and the same layers. */
+  const off = async () => {
+    await expect(homeEcho(page).locator("svg")).toBeHidden();
+    const painted = await screen.screenshot({ animations: "disabled" });
+    // The drawing shown in the canvas's place: the screen's overlays then blend a shade or two apart, never more.
+    await homeEcho(page).evaluate((el) => {
+      el.querySelector("svg")!.style.display = "";
+      el.querySelector("canvas")!.style.visibility = "hidden";
+    });
+    const drawing = await screen.screenshot({ animations: "disabled" });
+    await homeEcho(page).evaluate((el) => {
+      el.querySelector("svg")!.style.display = "none";
+      el.querySelector("canvas")!.style.visibility = "";
+    });
+    return page.evaluate(
+      async ([a, b]) => {
+        const pixels = async (png: string) => {
+          const bmp = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob());
+          const c = document.createElement("canvas");
+          c.width = bmp.width;
+          c.height = bmp.height;
+          const g = c.getContext("2d")!;
+          g.drawImage(bmp, 0, 0);
+          return g.getImageData(0, 0, bmp.width, bmp.height).data;
+        };
+        const [x, y] = await Promise.all([pixels(a), pixels(b)]);
+        let off = 0;
+        for (let i = 0; i < x.length; i += 4) {
+          if (Math.max(Math.abs(x[i]! - y[i]!), Math.abs(x[i + 1]! - y[i + 1]!), Math.abs(x[i + 2]! - y[i + 2]!)) > 8) off += 1;
+        }
+        return off / (x.length / 4);
+      },
+      [painted.toString("base64"), drawing.toString("base64")],
+    );
+  };
+  await page.goto("/");
+  // A few edge pixels are smoothed a little differently; a wrong colour or a missing part is a fifth of the screen.
+  expect(await off()).toBeLessThan(0.03);
+
+  // A colour picked in another tab: this one follows it, and so does Echo's canvas.
+  const other = await context.newPage();
+  await other.goto("/generator");
+  const coral = other.getByRole("button", { name: "Coral", exact: true });
+  await hydrated(coral);
+  await coral.click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute("data-seed-chosen"))).toBe(true);
+  await expect.poll(off).toBeLessThan(0.03);
+
+  // A drawn look: paper with an ink line round it, its pupils ink.
+  await other.goto("/generator?style=drafting-index");
+  await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute("data-drawn"))).toBe(true);
+  await expect.poll(off).toBeLessThan(0.03);
+});
+
+test("while Echo is out on the page, the canvas on the hero's screen isn't painted", async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __screenPaints: number };
+    w.__screenPaints = 0;
+    const real = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (this: CanvasRenderingContext2D, ...a: Parameters<typeof real>) {
+      if (this.canvas instanceof HTMLCanvasElement && this.canvas.closest(".brand-device__home")) w.__screenPaints += 1;
+      return real.apply(this, a);
+    };
+  });
+  await page.goto("/");
+  const paints = () => page.evaluate(() => (window as unknown as { __screenPaints: number }).__screenPaints);
+  // Home, breathing: painted as it moves.
+  await expect.poll(paints).toBeGreaterThan(10);
+  // Out on the page, with the device still in the window: nothing.
+  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 0.6));
+  await expect(device(page)).toHaveAttribute("data-away", "");
+  await expect(device(page)).toBeInViewport();
+  await page.waitForTimeout(300);
+  const out = await paints();
+  await page.waitForTimeout(1000);
+  expect(await paints()).toBe(out);
 });

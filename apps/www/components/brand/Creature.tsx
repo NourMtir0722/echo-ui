@@ -19,9 +19,19 @@
  * - reduced motion is one composed frame: eyes at their mood, nothing looping,
  *   no cursor chase;
  * - it is decorative by default (aria-hidden). Where it carries meaning — the
- *   device screen's state — the text beside it says so.
+ *   device screen's state — the text beside it says so;
+ * - once the script runs it's painted on a canvas (creature-canvas.ts), from
+ *   its own SVG: the rig moves the SVG's groups, now hidden, and the canvas
+ *   paints them, in the colours the page's CSS gives them. A moved SVG group
+ *   made the browser rebuild the whole page's layers every frame Echo
+ *   breathed; a painted canvas costs the page nothing past its own pixels.
+ *   Before the script, and without a canvas, the SVG is what you see.
  */
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import gsap from "gsap";
+import { RELIGHT_EVENT } from "@/components/home/journey/wear";
+import { useSiteSeed } from "@/components/site/theme-store";
+import { creatureCanvas, type CreatureCanvas } from "./creature-canvas";
 import { creature } from "./tokens";
 import { BODY, EYE_CATCH, EYE_CY, EYE_WHITE_L, EYE_WHITE_R, PUPIL_L, PUPIL_R, VIEWBOX } from "./paths";
 import { createRig, stillPose, type Rig, type RigMood } from "./rig";
@@ -29,6 +39,8 @@ import { createRig, stillPose, type Rig, type RigMood } from "./rig";
 /** Sway / breath pivot, near the body's low centre. */
 const ORIGIN = [129, 38] as const;
 const EYE = [129, EYE_CY] as const;
+/** How far past its box the canvas reaches, as a share of its size: the widest wander, lean and jolt, a hop, and a drawn look's line. */
+const REACH = 0.15;
 
 export type Mood = "watching" | "resting";
 
@@ -81,6 +93,7 @@ export function Creature({
   interactive = true,
   breathe = true,
   gloss = true,
+  paused = false,
   className,
 }: {
   size?: number;
@@ -89,6 +102,8 @@ export function Creature({
   interactive?: boolean;
   breathe?: boolean;
   gloss?: boolean;
+  /** Out of sight (the device's screen says Echo is away): nothing is painted till it's back. */
+  paused?: boolean;
   className?: string;
 }) {
   const uid = useId().replace(/:/g, "");
@@ -98,6 +113,11 @@ export function Creature({
   const lids = useRef<SVGGElement>(null);
   const pupils = useRef<SVGGElement>(null);
   const rig = useRef<Rig | null>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const svg = useRef<SVGSVGElement>(null);
+  const painter = useRef<CreatureCanvas | null>(null);
+  const pausedNow = useRef(paused);
+  const [seed] = useSiteSeed();
 
   // The rig lives as long as the creature does.
   useEffect(
@@ -119,6 +139,7 @@ export function Creature({
     if (!els.wrap || !els.drift || !els.breath || !els.lids || !els.pupils) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       stillPose({ drift: els.drift, breath: els.breath, lids: els.lids, pupils: els.pupils }, { eye: EYE, mood: next });
+      painter.current?.paint();
       return;
     }
     rig.current = createRig(
@@ -127,9 +148,58 @@ export function Creature({
     );
   }, [mood, interactive, breathe]);
 
+  // After the rig's, so each frame the canvas paints where the rig has just put Echo.
+  useEffect(() => {
+    const c = canvas.current;
+    const s = svg.current;
+    if (!c || !s) return;
+    const p = creatureCanvas(c, s, size, Math.ceil(size * REACH));
+    if (!p) return;
+    painter.current = p;
+    const frame = () => {
+      if (!pausedNow.current) p.paint();
+    };
+    // The first paint waits for a frame, where the rig measures the page anyway; under reduced motion, only it.
+    const first = requestAnimationFrame(() => p.paint(true));
+    if (rig.current) gsap.ticker.add(frame);
+    const relight = () => p.relight();
+    // The page put a style on for a while, or took it off (journey/wear.ts).
+    window.addEventListener(RELIGHT_EVENT, relight);
+    return () => {
+      cancelAnimationFrame(first);
+      gsap.ticker.remove(frame);
+      window.removeEventListener(RELIGHT_EVENT, relight);
+      painter.current = null;
+      // A new canvas measures the SVG again, which it can only do while it's drawn.
+      s.style.display = "";
+    };
+  }, [size]);
+
+  // The site's colour changed: the parts have new ones.
+  useEffect(() => {
+    painter.current?.relight();
+  }, [seed]);
+
+  // Back in sight: painted where the rig has it now, before the screen shows the last pose it painted.
+  useLayoutEffect(() => {
+    pausedNow.current = paused;
+    if (!paused) painter.current?.paint();
+  }, [paused]);
+
+  const reach = Math.ceil(size * REACH);
   return (
-    <div ref={wrap} className={className} style={{ width: size, height: size, position: "relative" }} aria-hidden="true">
-      <svg viewBox={VIEWBOX} width={size} height={size} style={{ overflow: "visible", display: "block" }}>
+    <div
+      ref={wrap}
+      className={className}
+      // The canvas hangs past the box on purpose, for whatever holds Echo to clip.
+      style={{ width: size, height: size, position: "relative", ["--echo-clip" as string]: "decorative" }}
+      aria-hidden="true"
+    >
+      <canvas
+        ref={canvas}
+        style={{ position: "absolute", left: -reach, top: -reach, width: size + reach * 2, height: size + reach * 2, pointerEvents: "none" }}
+      />
+      <svg ref={svg} viewBox={VIEWBOX} width={size} height={size} style={{ overflow: "visible", display: "block" }}>
         <defs>
           <radialGradient id={`${uid}-body`} cx="38%" cy="30%" r="80%">
             <stop offset="0%" style={{ stopColor: creature.bodyLight }} />

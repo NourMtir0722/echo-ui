@@ -143,13 +143,17 @@ test("changing mood carries on from where the creature is, it never jumps", asyn
   const stage = page.locator(".brand-stage").first();
   // Where the body's centre is now, and how far that is from where it rests:
   // its own geometry mapped through the svg alone, without the motion's groups.
+  // Echo is painted on a canvas from that svg, hidden: it's shown for the moment it's measured, never painted so.
   const where = () =>
     stage.evaluate((el) => {
       const svg = el.querySelector("svg")!;
       const body = svg.querySelector("path")!;
+      const hidden = svg.style.display;
+      svg.style.display = "";
       const r = body.getBoundingClientRect();
       const b = body.getBBox();
       const rest = new DOMPoint(b.x + b.width / 2, b.y + b.height / 2).matrixTransform(svg.getScreenCTM()!);
+      svg.style.display = hidden;
       const now = [r.x + r.width / 2, r.y + r.height / 2] as const;
       return { now, off: Math.hypot(now[0] - rest.x, now[1] - rest.y) };
     });
@@ -158,7 +162,11 @@ test("changing mood carries on from where the creature is, it never jumps", asyn
 
   const jump = await stage.evaluate(async (el) => {
     const centre = () => {
-      const r = el.querySelector("svg path")!.getBoundingClientRect();
+      const svg = el.querySelector("svg")!;
+      const hidden = svg.style.display;
+      svg.style.display = "";
+      const r = svg.querySelector("path")!.getBoundingClientRect();
+      svg.style.display = hidden;
       return [r.x + r.width / 2, r.y + r.height / 2] as const;
     };
     const frame = () => new Promise((done) => requestAnimationFrame(() => done(null)));

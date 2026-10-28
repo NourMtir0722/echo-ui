@@ -70,7 +70,7 @@ export function BrandDevice({ away = false }: { away?: boolean }) {
           <div className="brand-device__creature">
             {/* Home: where the guide leaves from, and lands when it comes back. */}
             <span className="brand-device__home" data-guide-stop="" data-guide-home="" aria-hidden="true">
-              <Creature size={188} mood={running ? "watching" : "resting"} />
+              <Creature size={188} mood={running ? "watching" : "resting"} paused={away} />
             </span>
           </div>
           <div className="brand-device__brb" aria-hidden="true">

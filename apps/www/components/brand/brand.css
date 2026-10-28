@@ -237,6 +237,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Echo's canvas reaches past its box for a hop or a lean; the screen clips it. */
+  --echo-clip: decorative;
 }
 
 .brand-device__home {
