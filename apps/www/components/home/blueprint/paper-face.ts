@@ -29,10 +29,16 @@ function luminance(hex: string) {
 }
 const onWhite = (hex: string) => 1.05 / (luminance(hex) + 0.05);
 
-/** The seed's hue as blueprint blue: a deep and a lighter shade, the lighter one as light as white text allows. */
+/** Below this chroma a colour reads as grey, and its hue is noise. */
+const GREY = 0.04;
+
+/**
+ * The seed's hue as blueprint blue: a deep and a lighter shade, the lighter one as light as white text
+ * allows. A seed with no hue has no blue to give: its sheet is graphite.
+ */
 export function blueprintBlues(accent: string): { deep: string; light: string; back: string } {
   const [, C, h] = hexToOklch(accent);
-  const chroma = Math.min(0.2, Math.max(0.12, C));
+  const chroma = C < GREY ? 0 : Math.min(0.2, Math.max(0.12, C));
   let L = 0.6;
   let light = oklchToHex([L, chroma, h]);
   while (onWhite(light) < NEED && L > 0.3) {

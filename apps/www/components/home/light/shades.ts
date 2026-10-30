@@ -37,9 +37,18 @@ const ON_LIGHT: readonly [number, number, number][] = [
   [0.53, 0.2, -0.4],
 ];
 
-/** Six shades of the seed, from the ground's side to the light's core: deep to glow on a dark device, pale to vivid on a light one. */
+/** Below this chroma a colour reads as grey, and its hue is noise. */
+const GREY = 0.04;
+
+/**
+ * Six shades of the seed, from the ground's side to the light's core: deep to glow on a dark device, pale
+ * to vivid on a light one. A colour with no hue lights in greys, the ink thinned: the shades' own chroma
+ * on its noise would be a colour nobody chose.
+ */
 export function shades(accent: string, hueDrift: number, light = false): string[] {
-  const { H } = hexToOklch(accent);
-  const hue = Number.isNaN(H) ? 290 : H;
-  return (light ? ON_LIGHT : ON_DARK).map(([L, C, share]) => oklchToHex(clampToGamut({ L, C, H: (((hue + share * hueDrift) % 360) + 360) % 360 })));
+  const { C: chroma, H: hue } = hexToOklch(accent);
+  const grey = chroma < GREY || Number.isNaN(hue);
+  return (light ? ON_LIGHT : ON_DARK).map(([L, C, share]) =>
+    oklchToHex(clampToGamut(grey ? { L, C: 0, H: 0 } : { L, C, H: (((hue + share * hueDrift) % 360) + 360) % 360 })),
+  );
 }
