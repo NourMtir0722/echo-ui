@@ -40,29 +40,29 @@ test("a colour picked on the light device stays on the light device, and one pic
 });
 
 test("a style opens on its own device, whichever device Echo was on", () => {
-  const drafting = STYLE_PRESETS.find((p) => p.seed.style === "drafting-index")!.seed;
+  const ink = STYLE_PRESETS.find((p) => p.seed.style === "ink-instrument")!.seed;
   const nawwara = SEED_PRESETS[0]!.seed;
-  assert.ok(isLightSeed(drafting), "Drafting Index is a light device");
-  assert.deepEqual(onDevice(drafting, nawwara), drafting);
-  assert.deepEqual(onDevice(drafting, lightSeedOf(nawwara)), drafting);
+  assert.ok(isLightSeed(ink), "Ink Instrument is a light device");
+  assert.deepEqual(onDevice(ink, nawwara), ink);
+  assert.deepEqual(onDevice(ink, lightSeedOf(nawwara)), ink);
   // A colour picked while it's worn is Echo's colour, on the light device the style was on.
-  assert.deepEqual(onDevice(SEED_PRESETS[2]!.seed, drafting), lightSeedOf(SEED_PRESETS[2]!.seed));
+  assert.deepEqual(onDevice(SEED_PRESETS[2]!.seed, ink), lightSeedOf(SEED_PRESETS[2]!.seed));
 });
 
 test("the key turns a style over and leaves it that style: the ink and the paper change places, and back", () => {
-  const drafting = STYLE_PRESETS.find((p) => p.seed.style === "drafting-index")!.seed;
-  const turned = otherDevice(drafting);
-  assert.equal(turned.style, "drafting-index");
+  const ink = STYLE_PRESETS.find((p) => p.seed.style === "ink-instrument")!.seed;
+  const turned = otherDevice(ink);
+  assert.equal(turned.style, "ink-instrument");
   assert.equal(isLightSeed(turned), false);
-  assert.equal(turned.chassis, drafting.paper);
-  assert.equal(turned.paper, drafting.chassis);
-  assert.equal(turned.accent, drafting.chassis, "one ink: its accent is the ink, so it turns too");
-  assert.deepEqual(otherDevice(turned), drafting);
+  assert.equal(turned.chassis, ink.paper);
+  assert.equal(turned.paper, ink.chassis);
+  assert.equal(turned.accent, ink.chassis, "one ink: its accent is the ink, so it turns too");
+  assert.deepEqual(otherDevice(turned), ink);
 });
 
 test("a style with a colour of its own keeps that colour when the key turns it over", () => {
-  const own = { accent: "#3D8EF0", chassis: "#F2EEE6", paper: "#1A1A1A", style: "drafting-index" };
-  assert.deepEqual(otherDevice(own), { accent: "#3D8EF0", chassis: "#1A1A1A", paper: "#F2EEE6", style: "drafting-index" });
+  const own = { accent: "#3D8EF0", chassis: "#F2EEE6", paper: "#1A1A1A", style: "ink-instrument" };
+  assert.deepEqual(otherDevice(own), { accent: "#3D8EF0", chassis: "#1A1A1A", paper: "#F2EEE6", style: "ink-instrument" });
 });
 
 test("a style turned over reads as well as the style itself: nothing the theme can't make legible", () => {

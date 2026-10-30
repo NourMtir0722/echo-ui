@@ -35,19 +35,19 @@ surfaces and colour.
 Nobody makes a clean board, so before it writes anything it asks you what the boards can't settle,
 in one message, with the answer it suggests:
 
-> Seven of ten tiles are black ink on white paper; the acid yellow is on two, the blue on one. Black
-> and white? The blue prints don't share the board's logic: leave them out? And the main action is
-> the white key on its ink slab, not the underlined link?
+> Seven of ten tiles are pale technical sheets in one ink; the acid yellow is on two, the blue on
+> one. Neutral controls, with colour left to the images? The blue prints don't share the board's
+> logic: leave them out? And the main action is the outlined key on its ink edge, not the underlined link?
 
-Your answers go into the style. Say your boards are spec sheets and patent drawings, where every
-part is drawn in one black line and stays hollow until it's on. Echo draws that too: the style sets
+Your answers go into the style. Say your boards are technical sheets and diagrams, where every part
+is drawn in one precise ink line and solid ink marks what's selected. Echo draws that too: the style sets
 `render: drawn`, so Echo's parts are outlined in the ink instead of molded and lit, and they still
-press. It's **Drafting Index**, and it goes into your library, `~/Documents/styles`, which is private
+press. It's **Ink Instrument**, and it goes into your library, `~/Documents/styles`, which is private
 and yours, and reused for every product you make. `style check` says Echo can apply it, and that it
 makes a light device. Where a board asks for something Echo doesn't do, like glass, the style says
 what it refused and what it got instead.
 
-Drafting Index is also in Echo's own library, beside Echo's style, so you can wear it without a
+Ink Instrument is also in Echo's own library, beside Echo's style, so you can wear it without a
 board. [Styles](/docs/styles#from-a-moodboard) has the files a style is made of.
 
 ## 2 · A new app picks its style
@@ -76,29 +76,29 @@ npx echo-ui-cli style fit --profile "W2 V2 D3 F4 E3 C5 O2"
 ```text
 The product  W2 V2 D3 F4 E3 C5 O2  tolerance W1 V1 D1 F1 E1 C1 O1
 
-   1  drafting-index (yours)  W2 V2 D3 F4 E2 C4 O2  inside every tolerance
+   1  ink-instrument (yours)  W2 V2 D3 F4 E3 C5 O2  inside every tolerance
    2  echo (Echo's)  W4 V3 D3 F2 E3 C5 O3  2 past tolerance: W+2 F-2
 
 It orders; it doesn't decide. Read the best of them: npx echo-ui-cli style show <name>.
 ```
 
-The agent reads the best of them and argues for one, here Drafting Index: why it wins, why Echo's
-own style loses (too warm and too playful for a spec sheet), what it adapted for the tool and what
+The agent reads the best of them and argues for one, here Ink Instrument: why it wins, why Echo's
+own style loses (too warm and too playful for a technical sheet), what it adapted for the tool and what
 it refused.
 
-Drafting Index passes the [slop police](/docs/styles#the-slop-police): nothing in it is a pairing
+Ink Instrument passes the [slop police](/docs/styles#the-slop-police): nothing in it is a pairing
 that reads as made by AI. A style that didn't pass would be marked on the list, and your agent would
 ask you before wearing it. The agent saves the decision to your library and wears the pick:
 
 ```sh
-npx echo-ui-cli style use drafting-index
+npx echo-ui-cli style use ink-instrument
 ```
 
 ```text
-· This project now wears Drafting Index, from your library (~/Documents/styles/drafting-index/style.json).
+· This project now wears Ink Instrument, from your library (~/Documents/styles/ink-instrument/style.json).
 · components/echo/echo-theme.css written from its seed; echo.json records it.
-  Font: Inter Tight (sans), from Google Fonts: https://fonts.google.com/specimen/Inter+Tight
-  Font: IBM Plex Mono (machine), from Google Fonts: https://fonts.google.com/specimen/IBM+Plex+Mono
+  Font: Arial (sans), from system
+  Font: Arial Narrow (machine), from system
   Font: IBM Plex Mono (mono), from Google Fonts: https://fonts.google.com/specimen/IBM+Plex+Mono
   Font: IBM Plex Mono (lcd), from Google Fonts: https://fonts.google.com/specimen/IBM+Plex+Mono
 · DESIGN.md carries its rules for your agent.
@@ -160,15 +160,15 @@ npx echo-ui-cli style set radius 0.6 density comfortable
 ```
 
 ```text
-radius    0.3 → 0.6
+radius    0.1 → 0.6
 density   default → comfortable
 · components/echo/echo-theme.css written from the new seed; echo.json records it.
 · DESIGN.md carries the new values for your agent.
-  Still wearing Drafting Index, changed: radius, density. `npx echo-ui-cli style use drafting-index` puts it back whole.
-  Put it back: npx echo-ui-cli style set radius 0.3 density default
+  Still wearing Ink Instrument, changed: radius, density. `npx echo-ui-cli style use ink-instrument` puts it back whole.
+  Put it back: npx echo-ui-cli style set radius 0.1 density default
 ```
 
-Every component in the tool changes at once. The keys stay pills, because Drafting Index sets
+Every component in the tool changes at once. The keys stay pills, because Ink Instrument sets
 `pills`: `radius` moves the boxes and leaves the keys alone. Nothing is restyled by hand, contrast
 still holds, and the last line undoes it. `style set` on its own lists where each setting is, and
 the Echo skill tells the agent which setting a word like "rounder" or "denser" means. More in
@@ -245,7 +245,7 @@ drawn parts; one made of glass is translated, or refused out loud.
 | `style check` | Whether Echo can apply a style, which device it makes, and what contrast corrects. | 1 | [CLI](/docs/cli#style) |
 | The slop police | Stops a style whose own settings make a pairing that reads as made by AI, until you keep it or change it. | 1–2 | [Styles](/docs/styles#the-slop-police) |
 | Your style library | `~/Documents/styles`: private, and reused across every product. | 1, 5 | [Styles](/docs/styles#where-styles-come-from) |
-| Echo's library | Echo's own style and Drafting Index, to wear without a board. | 2, 5 | [Styles](/docs/styles#where-styles-come-from) |
+| Echo's library | Echo's own style and Ink Instrument, to wear without a board. | 2, 5 | [Styles](/docs/styles#where-styles-come-from) |
 | `init` | Sets the project up and writes what your agent reads. | 2 | [Installation](/docs/installation#set-the-project-up) |
 | The Echo block | A short section in `CLAUDE.md` or `AGENTS.md` that every agent reads first. | 2–4 | [For AI agents](/docs/ai#what-the-agent-reads) |
 | `DESIGN.md` | This project's look, and its style's rules, in Echo's terms. | 2–3 | [What Echo puts in your project](/docs/in-your-project) |

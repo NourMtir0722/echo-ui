@@ -31,8 +31,8 @@ test("the link Echo's MCP server hands a builder opens the site on that style's 
 });
 
 test("the link Echo's MCP server hands a builder for a style Echo publishes opens the site on the style, whole", () => {
-  const { seed } = STYLE_PRESETS.find((p) => p.seed.style === "drafting-index")!;
-  const link = new URL(styleLink("drafting-index"));
+  const { seed } = STYLE_PRESETS.find((p) => p.seed.style === "ink-instrument")!;
+  const link = new URL(styleLink("ink-instrument"));
   assert.equal(link.pathname, "/styles");
   assert.deepEqual(seedFromSearch(link.search), seed);
 });

@@ -98,7 +98,7 @@ export function seedFamily(accent: string = defaultSeed.accent): Family {
 }
 
 /**
- * A drawn look in one ink (Drafting Index) has no colours to make a family
+ * A drawn look in one ink (Ink Instrument) has no colours to make a family
  * from, and a purple one would be the only colour on the page. Its family is
  * the ink and three greys between the ink and the paper, each with the text
  * that reads on it.

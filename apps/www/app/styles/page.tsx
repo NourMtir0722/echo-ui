@@ -10,7 +10,7 @@
  *
  * The list is PUBLISHED_STYLES, the same files the CLI and the MCP server read,
  * so a style can't be in one and missing from another, and a new one shows here
- * by itself. A style also travels as a link, `/styles?style=drafting-index`,
+ * by itself. A style also travels as a link, `/styles?style=ink-instrument`,
  * which is what the MCP server hands a builder (seed-link.ts).
  */
 import { useEffect } from "react";

@@ -304,7 +304,7 @@ test("style use refuses what it can't apply, and says why", { skip: !built }, as
 
       const unknown = await cli(root, ["style", "use", "flux-capacitor", "--registry", registry.url]);
       assert.equal(unknown.code, 1);
-      assert.match(unknown.text, /There's no style called flux-capacitor\. There's: drafting-index, echo, porcelain-window\./);
+      assert.match(unknown.text, /There's no style called flux-capacitor\. There's: echo, ink-instrument, porcelain-window\./);
     });
   } finally {
     await Promise.all([registry.dir, dir, root].map((d) => rm(d, { recursive: true, force: true })));
@@ -317,10 +317,10 @@ test("style fit measures both libraries against a product's profile, and a profi
   const root = await app();
   try {
     await withLibrary(dir, async () => {
-      // Porcelain Window is W3 V2 D3 F2 E4 C4 O2; Echo's own style is W4 V3 D3 F2 E3 C5 O3; Drafting Index is W2 V2 D3 F4 E2 C4 O2.
+      // Porcelain Window is W3 V2 D3 F2 E4 C4 O2; Echo's own style is W4 V3 D3 F2 E3 C5 O3; Ink Instrument is W2 V2 D3 F4 E2 C4 O2.
       const { code, json, text } = await cli(root, ["style", "fit", "--profile", "W3 V2 D3 F2 E4 C4 O2", "--json", "--registry", registry.url]);
       assert.equal(code, 0, text);
-      assert.deepEqual(json.results.map((r: { name: string; from: string }) => `${r.name}:${r.from}`), ["porcelain-window:yours", "echo:echo", "drafting-index:echo"]);
+      assert.deepEqual(json.results.map((r: { name: string; from: string }) => `${r.name}:${r.from}`), ["porcelain-window:yours", "echo:echo", "ink-instrument:echo"]);
       assert.equal(json.results[0].total, 0);
       // Locking an axis Echo's own style misses puts it out, below everything that's in.
       const locked = await cli(root, ["style", "fit", "--profile", "W3 V2 D3 F2 E4 C4 O2", "--tolerance", "W1 V1 D1 F1 E1 C0 O1", "--json", "--registry", registry.url]);
@@ -538,7 +538,7 @@ test("style set: alone, it lists the settings; with no echo.json, it says to run
  * `style use` and printed what it says. Once the slop police came in, the
  * guide's style was one the police stopped, and the guide still showed it
  * applying on the first try, without the readability line either. The guide
- * now wears Drafting Index, the style Echo publishes beside its own, which the
+ * now wears Ink Instrument, the style Echo publishes beside its own, which the
  * police lets through. Its transcripts are run here as the guide tells them,
  * and must be what the CLI prints.
  */
@@ -555,14 +555,14 @@ test("the Workflow guide's style fit, style use and style set print what the gui
   const dir = await mkdtemp(join(tmpdir(), "echo-styles-"));
   const root = await app();
   try {
-    // In the guide, the builder's boards became Drafting Index, so it's in their own library.
-    await mkdir(join(dir, "drafting-index"));
-    await writeFile(join(dir, "drafting-index", "style.json"), await readFile(resolve(repoRoot, "registry/styles/drafting-index.json"), "utf8"));
+    // In the guide, the builder's boards became Ink Instrument, so it's in their own library.
+    await mkdir(join(dir, "ink-instrument"));
+    await writeFile(join(dir, "ink-instrument", "style.json"), await readFile(resolve(repoRoot, "registry/styles/ink-instrument.json"), "utf8"));
     await withLibrary(dir, async () => {
       await cli(root, ["init", "--yes", "--registry", registry.url]);
       const said = async (args: string[]) => (await cli(root, [...args, "--registry", registry.url])).text.replaceAll(dir, "~/Documents/styles").split("\n");
       assert.deepEqual(await said(["style", "fit", "--profile", "W2 V2 D3 F4 E3 C5 O2"]), transcript('style fit --profile "W2 V2 D3 F4 E3 C5 O2"'));
-      assert.deepEqual(await said(["style", "use", "drafting-index"]), transcript("style use drafting-index"));
+      assert.deepEqual(await said(["style", "use", "ink-instrument"]), transcript("style use ink-instrument"));
       assert.deepEqual(await said(["style", "set", "radius", "0.6", "density", "comfortable"]), transcript("style set radius 0.6 density comfortable"));
     });
   } finally {

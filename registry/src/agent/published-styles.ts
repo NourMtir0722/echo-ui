@@ -5,7 +5,7 @@
  * Echo's own comes first; the test keeps this list equal to the folder.
  */
 import echo from "../../styles/echo.json";
-import draftingIndex from "../../styles/drafting-index.json";
+import inkInstrument from "../../styles/ink-instrument.json";
 import type { EchoStyle } from "./style-schema";
 
-export const PUBLISHED_STYLES: readonly EchoStyle[] = [echo, draftingIndex] as EchoStyle[];
+export const PUBLISHED_STYLES: readonly EchoStyle[] = [echo, inkInstrument] as EchoStyle[];

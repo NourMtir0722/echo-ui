@@ -34,7 +34,7 @@ test("the landing doesn't show the styles: not in the hero's nav, the bar past i
   await page.goto("/");
   await expect(page.locator(".hero4__nav").getByRole("link", { name: "Themes" })).toBeVisible();
   await expect(page.locator(".hero4__nav").getByText("Styles")).toHaveCount(0);
-  await expect(page.locator(".hero4__nav").getByText("Drafting Index")).toHaveCount(0);
+  await expect(page.locator(".hero4__nav").getByText("Ink Instrument")).toHaveCount(0);
   await expect(page.getByRole("banner").locator('a[href="/styles"]')).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -42,14 +42,14 @@ test("the landing doesn't show the styles: not in the hero's nav, the bar past i
   const sheet = page.getByRole("dialog");
   await expect(sheet.getByRole("link", { name: "Themes" })).toBeVisible();
   await expect(sheet.locator('a[href="/styles"]')).toHaveCount(0);
-  await expect(sheet.getByText("Drafting Index")).toHaveCount(0);
+  await expect(sheet.getByText("Ink Instrument")).toHaveCount(0);
 });
 
 test("the Themes page is colours: it offers Echo's four, and no style", async ({ page }) => {
   await page.goto("/generator");
   const main = page.getByRole("main");
   await expect(main.getByRole("button", { name: "Coral", exact: true })).toBeVisible();
-  await expect(main.getByText("Drafting Index")).toHaveCount(0);
+  await expect(main.getByText("Ink Instrument")).toHaveCount(0);
   await expect(main.getByText("Styles", { exact: true })).toHaveCount(0);
 });
 
@@ -61,8 +61,8 @@ test("a bunch of real components wear the choice, and the command says how to we
   await expect(main.getByRole("table")).toBeVisible();
   await expect(main.getByRole("code").or(main.locator("code"))).toContainText("style use echo");
 
-  await style(page, "Drafting Index").click();
-  await expect(main.locator("code")).toContainText("style use drafting-index");
+  await style(page, "Ink Instrument").click();
+  await expect(main.locator("code")).toContainText("style use ink-instrument");
   // The line reaches the parts themselves, not just :root.
   const key = main.getByRole("button", { name: "Save take" });
   await expect.poll(() => key.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue("--echo-line-width")))).toBeGreaterThan(0);
@@ -75,13 +75,13 @@ test("a style goes with the visitor, and Echo brings back the colour and device 
   await expect(page.getByText(/Start from · Coral/)).toBeVisible();
 
   await page.goto("/styles");
-  await style(page, "Drafting Index").click();
+  await style(page, "Ink Instrument").click();
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   await page.goto("/docs/cli");
   expect(await lineWidth(page)).toBeGreaterThan(0);
 
   await page.goto("/styles");
-  await expect(style(page, "Drafting Index")).toBeChecked();
+  await expect(style(page, "Ink Instrument")).toBeChecked();
   await style(page, "Echo").click();
   await expect.poll(() => lineWidth(page)).toBe(0);
   await expect(lightKey(page)).toHaveAttribute("aria-pressed", "true");
@@ -91,29 +91,29 @@ test("a style goes with the visitor, and Echo brings back the colour and device 
 
 test("the light key turns a style over and leaves it that style, through a reload and back", async ({ page }) => {
   await page.goto("/styles");
-  await style(page, "Drafting Index").click();
+  await style(page, "Ink Instrument").click();
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   await expect(lightKey(page)).toHaveAttribute("aria-pressed", "true");
 
   await lightKey(page).click();
   await expect(lightKey(page)).toHaveAttribute("aria-pressed", "false");
-  await expect.poll(() => rootVar(page, "--echo-surface")).toBe("#050505");
-  await expect(style(page, "Drafting Index")).toBeChecked();
+  await expect.poll(() => rootVar(page, "--echo-surface")).toBe("#1C1C1C");
+  await expect(style(page, "Ink Instrument")).toBeChecked();
 
   await page.reload();
-  await expect(style(page, "Drafting Index")).toBeChecked();
+  await expect(style(page, "Ink Instrument")).toBeChecked();
   await expect(lightKey(page)).toHaveAttribute("aria-pressed", "false");
 
   await lightKey(page).click();
-  await expect.poll(() => rootVar(page, "--echo-surface")).toBe("#FDFDFD");
-  await expect(style(page, "Drafting Index")).toBeChecked();
+  await expect.poll(() => rootVar(page, "--echo-surface")).toBe("#F3F3F3");
+  await expect(style(page, "Ink Instrument")).toBeChecked();
 });
 
 test("with no colour picked, Echo goes back to the page's own opening and leaves nothing saved", async ({ page }) => {
   await page.goto("/styles");
   const chosen = () => page.evaluate(() => document.documentElement.hasAttribute("data-seed-chosen"));
   expect(await chosen()).toBe(false);
-  await style(page, "Drafting Index").click();
+  await style(page, "Ink Instrument").click();
   await expect.poll(chosen).toBe(true);
   await style(page, "Echo").click();
   await expect.poll(chosen).toBe(false);
@@ -124,12 +124,12 @@ test("the styles are switched from the keyboard alone", async ({ page }) => {
   await page.goto("/styles");
   await style(page, "Echo").focus();
   await page.keyboard.press("ArrowRight");
-  await expect(style(page, "Drafting Index")).toBeChecked();
+  await expect(style(page, "Ink Instrument")).toBeChecked();
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
-  await expect(style(page, "Drafting Index")).toBeFocused();
+  await expect(style(page, "Ink Instrument")).toBeFocused();
 });
 
-test("the page passes axe in Echo's own, in Drafting Index, and in Drafting Index turned over", async ({ page }) => {
+test("the page passes axe in Echo's own, in Ink Instrument, and in Ink Instrument turned over", async ({ page }) => {
   const clean = async () => {
     // The chrome's colours ease to the new look; measured halfway, a link is neither look's.
     await page.waitForTimeout(600);
@@ -138,10 +138,10 @@ test("the page passes axe in Echo's own, in Drafting Index, and in Drafting Inde
   };
   await page.goto("/styles");
   await clean();
-  await style(page, "Drafting Index").click();
+  await style(page, "Ink Instrument").click();
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   await clean();
   await lightKey(page).click();
-  await expect.poll(() => rootVar(page, "--echo-surface")).toBe("#050505");
+  await expect.poll(() => rootVar(page, "--echo-surface")).toBe("#1C1C1C");
   await clean();
 });

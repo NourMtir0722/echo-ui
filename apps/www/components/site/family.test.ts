@@ -99,7 +99,7 @@ test("a drawn look in one ink has an ink family: the ink and greys, each with te
     assert.ok(hexToOklch(c.hex).C < 0.01, `${c.hex} is a grey`);
     assert.ok(contrastRatio(c.hex, c.on) >= 4.5, `${c.on} reads on ${c.hex}`);
   }
-  // Wearing Drafting Index, the page's family is that one, not a purple one invented for a hueless seed.
-  const drafting = STYLE_PRESETS.find((p) => p.seed.style === "drafting-index")!.seed;
-  assert.match(siteTheme(lookOf(drafting)).css, /--family-seed: #050505;/);
+  // Wearing Ink Instrument, the page's family is that one, not a purple one invented for a hueless seed.
+  const ink = STYLE_PRESETS.find((p) => p.seed.style === "ink-instrument")!.seed;
+  assert.match(siteTheme(lookOf(ink)).css, /--family-seed: #1c1c1c;/i);
 });

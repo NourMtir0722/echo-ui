@@ -4,7 +4,7 @@
  *
  *   pnpm bench defaults
  *   pnpm bench run --setup echo --task all --runs 3 --label 2026-09-27-baseline
- *   pnpm bench run --setup echo-local+echo,echo-local+drafting-index --task pricing --runs 3 --label 2026-09-28-styles
+ *   pnpm bench run --setup echo-local+echo,echo-local+ink-instrument --task pricing --runs 3 --label 2026-09-28-styles
  *   pnpm bench report --label 2026-09-27-baseline
  *   pnpm bench rescore --label 2026-09-27-baseline [--cli path/to/echo-ui]
  *

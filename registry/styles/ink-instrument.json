@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "name": "ink-instrument",
+  "title": "Ink Instrument",
+  "essence": "Pale technical sheets, precise ink outlines and editorial scale changes; colour belongs to the specimen.",
+  "fingerprint": {
+    "warmth": 2,
+    "volume": 2,
+    "density": 3,
+    "formality": 4,
+    "era": 3,
+    "craft": 5,
+    "ornament": 2
+  },
+  "seed": {
+    "accent": "#1C1C1C",
+    "chassis": "#F3F3F3",
+    "paper": "#1C1C1C",
+    "render": "drawn",
+    "radius": 0.1,
+    "pills": true,
+    "density": "default",
+    "fontSans": "\"Arial\", sans-serif",
+    "fontMachine": "\"Arial Narrow\", \"Arial\", sans-serif",
+    "fontMono": "\"IBM Plex Mono\", ui-monospace, monospace",
+    "fontLcd": "\"IBM Plex Mono\", ui-monospace, monospace"
+  },
+  "fonts": [
+    {
+      "role": "sans",
+      "family": "Arial",
+      "source": "system"
+    },
+    {
+      "role": "machine",
+      "family": "Arial Narrow",
+      "source": "system"
+    },
+    {
+      "role": "mono",
+      "family": "IBM Plex Mono",
+      "source": "Google Fonts",
+      "url": "https://fonts.google.com/specimen/IBM+Plex+Mono"
+    },
+    {
+      "role": "lcd",
+      "family": "IBM Plex Mono",
+      "source": "Google Fonts",
+      "url": "https://fonts.google.com/specimen/IBM+Plex+Mono"
+    }
+  ],
+  "rules": [
+    "Separate groups with whitespace and precise ink rules.",
+    "Keep controls neutral; colour lives inside photographs and diagrams.",
+    "Use one large editorial statement beside small structured labels.",
+    "Keep reading text readable; miniature reference captions are not a UI size specification.",
+    "Use outlined pressable controls, with solid ink identifying the selected segment."
+  ],
+  "decisions": {
+    "emphasis": "One oversized heading or isolated specimen surrounded by air.",
+    "primaryAction": "The pale key on a solid ink edge: an outlined pill in condensed capitals that travels down onto its edge when pressed. One a screen.",
+    "secondaryAction": "The same outlined pill on a thin ink edge, beside the main action and never competing with it.",
+    "destructiveAction": "An outlined key that names what it removes, in words, and asks once before it happens. Never a colour.",
+    "currentPlace": "Solid ink selected segment beside a hollow outlined segment.",
+    "status": "A short word in condensed capitals beside a filled or hollow mark: filled is on, hollow is off. Never a colour alone.",
+    "typeRoles": "Grotesque for body and headings; condensed capitals for short legends; monospaced figures for data.",
+    "layout": "Technical sheet: stable grid, specimen area and aligned annotation bands.",
+    "surfaces": "Pale sheets separated by ink outlines and whitespace.",
+    "colourJobs": "Neutral ink for controls; specimen colour for identity and illustration.",
+    "iconography": "Line icons in the ink at the outline's weight, hollow unless on, with a word beside any whose meaning isn't plain.",
+    "imagery": "Sharp isolated objects, exploded views and technical diagrams.",
+    "copyVoice": "Plain and exact, like a note on a technical sheet: short nouns for labels, and a key says its action in two or three words. Long sentences stay out of condensed capitals.",
+    "emptyStates": "A pale sheet with one line saying what belongs there and one outlined key to add it. No illustration stands in for the words."
+  },
+  "refusals": [],
+  "motion": {
+    "character": "Short, damped presses and exact transitions; no decorative overshoot. Reduced motion removes travel.",
+    "inferred": true
+  },
+  "sound": {
+    "voice": "Dry quiet ticks, muted until enabled.",
+    "inferred": true
+  }
+}

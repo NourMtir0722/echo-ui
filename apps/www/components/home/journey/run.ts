@@ -8,11 +8,14 @@
  * public domain). The replies were written about the run's own board.
  *
  * Nothing here is written to look like a reply. Every string is the reply, or
- * the tool's output, as it came, and it's only ever trimmed where it says
- * "…". The two style files are the run's own `style.json`, cut to what the
- * page shows.
+ * the tool's output, as it came, and it's only ever trimmed: where it says
+ * "…", and where the run weighed a style Echo no longer publishes, which is
+ * left out, with what it said about it. The two style files are the run's own
+ * `style.json`, cut to what the page shows; Ink Instrument's settings are the
+ * ones Echo publishes under its name, so the page wears what a project gets.
  */
 import { REGISTRY_HOMEPAGE } from "@registry/agent/guidance";
+import { PUBLISHED_STYLES } from "@registry/agent/published-styles";
 
 /** Where the run happened, said in plain text: no other product's interface or logo. */
 export const WHERE = "In Codex, with Echo's plugin";
@@ -133,19 +136,7 @@ export const INK = {
     "Keep reading text readable; miniature reference captions are not a UI size specification.",
     "Use outlined pressable controls, with solid ink identifying the selected segment.",
   ],
-  seed: {
-    accent: "#1C1C1C",
-    chassis: "#F3F3F3",
-    paper: "#1C1C1C",
-    render: "drawn",
-    radius: 0.1,
-    pills: true,
-    density: "default",
-    fontSans: '"Arial", sans-serif',
-    fontMachine: '"Arial Narrow", "Arial", sans-serif',
-    fontMono: '"Courier New", monospace',
-    fontLcd: '"Courier New", monospace',
-  },
+  seed: PUBLISHED_STYLES.find((s) => s.name === "ink-instrument")!.seed,
 } as const;
 
 export const PIGMENT = {
@@ -180,20 +171,16 @@ export const FIT = {
   tolerance: "W1 V1 D1 F1 E2 C1 O1",
   /** fit_styles' answer. */
   ranking: [
-    "1. `drafting-index` (Echo's): W2 V2 D3 F4 E2 C4 O2, inside every tolerance",
-    "2. `ink-instrument` (yours): W2 V2 D3 F4 E3 C5 O2, inside every tolerance",
-    "3. `echo` (Echo's): W4 V3 D3 F2 E3 C5 O3, inside every tolerance",
-    "4. `pigment-window` (yours): W4 V3 D2 F3 E3 C3 O3, inside every tolerance",
+    "1. `ink-instrument` (yours): W2 V2 D3 F4 E3 C5 O2, inside every tolerance",
+    "2. `echo` (Echo's): W4 V3 D3 F2 E3 C5 O3, inside every tolerance",
+    "3. `pigment-window` (yours): W4 V3 D2 F3 E3 C3 O3, inside every tolerance",
   ],
   orders: "It orders; it doesn't decide.",
   pick: "I’d choose Ink Instrument for the app",
   pickRest:
     ", with friendlier language and the available budget as its main visual focus. It preserves your neutral, drawn direction while giving amounts and transactions a clear hierarchy.",
-  differs:
-    "My pick differs because your established visual preferences and room for a warmer voice matter beyond the numerical ranking.",
   table: [
     { style: "Ink Instrument — ours", fit: "Calm, precise and flexible enough to feel approachable", drawback: "Can become clinical" },
-    { style: "Drafting Index — Echo’s", fit: "Strongest ready-made ledger system, with clear selection and action rules", drawback: "Its spec-sheet voice can feel bureaucratic" },
     { style: "Original Echo", fit: "Tactile controls make everyday interaction inviting", drawback: "Dark surfaces, glow and molded controls depart from your chosen direction" },
     { style: "Pigment Window — ours", fit: "Good for welcome screens and savings-goal imagery", drawback: "Too atmospheric for the working dashboard" },
   ],
@@ -209,7 +196,6 @@ export const FIT = {
 
 /** The fingerprints fit_styles ranked, for the live ranking (the same arithmetic, in the page). */
 export const CANDIDATES = [
-  { name: "drafting-index", title: "Drafting Index", from: "echo", fingerprint: "W2 V2 D3 F4 E2 C4 O2" },
   { name: "ink-instrument", title: "Ink Instrument", from: "yours", fingerprint: INK.fingerprint },
   { name: "echo", title: "Echo", from: "echo", fingerprint: "W4 V3 D3 F2 E3 C5 O3" },
   { name: "pigment-window", title: "Pigment Window", from: "yours", fingerprint: PIGMENT.fingerprint },

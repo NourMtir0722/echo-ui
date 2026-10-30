@@ -8,8 +8,8 @@ import { shades } from "./shades";
 const chromaOf = (hex: string) => hexToOklch(hex).C;
 
 test("a colour with no hue lights the page in greys, on either device", () => {
-  // Drafting Index's ink on its white paper, and turned over; and a plain grey a visitor can pick.
-  for (const accent of ["#050505", "#FDFDFD", "#808080"]) {
+  // Pure ink on white paper, and turned over; and a plain grey a visitor can pick.
+  for (const accent of ["#1C1C1C", "#F3F3F3", "#050505", "#FDFDFD", "#808080"]) {
     for (const light of [false, true]) {
       for (const shade of shades(accent, GRADIENT.hueDrift, light)) {
         assert.ok(chromaOf(shade) < 0.01, `${accent} on ${light ? "light" : "dark"} gave ${shade}, a colour`);

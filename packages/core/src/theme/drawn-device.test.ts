@@ -22,8 +22,8 @@ const DRAWN_SEEDS = {
   "echo, drawn": {},
   // A deep accent the ink can't read on: the label turns to the body.
   "navy ink": { accent: "#0A33E3", chassis: "#FCFCFC", paper: "#030529" },
-  // Drafting Index, the style Echo publishes (registry/styles/drafting-index.json): one black ink.
-  "drafting index": { accent: "#050505", chassis: "#FDFDFD", paper: "#050505", radius: 0.3, pills: true },
+  // Ink Instrument, the style Echo publishes (registry/styles/ink-instrument.json): one ink on a pale sheet.
+  "ink instrument": { accent: "#1C1C1C", chassis: "#F3F3F3", paper: "#1C1C1C", radius: 0.1, pills: true },
 } as const;
 
 const vars = (css: string) =>

@@ -10,8 +10,8 @@
  * - any other setup is read from `setups.json` in the results folder, as the
  *   steps that install it. The comparison setup lives there, with the notes.
  *
- * An Echo setup can wear a style: `echo-local+drafting-index` is the
- * echo-local app after `style use drafting-index`, the style taken from
+ * An Echo setup can wear a style: `echo-local+ink-instrument` is the
+ * echo-local app after `style use ink-instrument`, the style taken from
  * Echo's library or the builder's own (`ECHO_STYLES_DIR`, or
  * ~/Documents/styles). The same prompt in two of them is the style task: each
  * app's pages are scored against the look it wears (score/look.ts).
@@ -57,7 +57,7 @@ export interface AppFacts {
 export function parseSetup(setup: string): { base: string; style?: string } {
   const [base, style, ...rest] = setup.split("+");
   if (!base || style === "" || rest.length) {
-    throw new Error(`"${setup}" isn't a setup. A setup is a name, or a name and a style joined by +: echo-local+drafting-index.`);
+    throw new Error(`"${setup}" isn't a setup. A setup is a name, or a name and a style joined by +: echo-local+ink-instrument.`);
   }
   return style ? { base, style } : { base };
 }

@@ -758,7 +758,7 @@
   rx: 3px;
 }
 .jy-swatch__hex {
-  font-family: "Courier New", monospace;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: clamp(0.68rem, 0.85vw, 0.78rem);
   white-space: nowrap;
 }

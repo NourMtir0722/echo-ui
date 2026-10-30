@@ -130,11 +130,11 @@ test("wear_style on one of Echo's: the link, the command, the theme and DESIGN.m
 });
 
 test("wear_style on a style Echo publishes opens the site on the style, whole; on the builder's own, on its colours", async () => {
-  const drafting = PUBLISHED_STYLES.find((s) => s.name === "drafting-index")!;
+  const ink = PUBLISHED_STYLES.find((s) => s.name === "ink-instrument")!;
   const fetcher: typeof sampleRegistry.fetcher = async (url) =>
-    url.endsWith("/styles/drafting-index.json") ? JSON.stringify(drafting) : sampleRegistry.fetcher(url);
-  const text = body(await tools(fetcher).wear_style({ name: "drafting-index", files: false }));
-  assert.ok(text.includes(styleLink("drafting-index")), "the link names the style");
+    url.endsWith("/styles/ink-instrument.json") ? JSON.stringify(ink) : sampleRegistry.fetcher(url);
+  const text = body(await tools(fetcher).wear_style({ name: "ink-instrument", files: false }));
+  assert.ok(text.includes(styleLink("ink-instrument")), "the link names the style");
   assert.doesNotMatch(text, /Only the colours travel/);
 
   // Echo's own is the site's default, and the builder's own isn't on the site: neither has a style to name.

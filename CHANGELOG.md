@@ -34,6 +34,15 @@ different things to a reader, and they will produce different numbers the day Ec
 
 ## [Unreleased]
 
+### Changed
+
+<!-- bump: minor; items: none -->
+- **Ink Instrument replaces Drafting Index as the style Echo publishes beside its own.** It's drawn
+  in a precise ink line on a pale sheet, with solid ink for what's selected, and `style list`,
+  `style fit`, `init --style` and the MCP server all offer it. A project already wearing Drafting
+  Index keeps it, since its settings and rules are in that project's `echo.json`; `style use
+  drafting-index` now says there's no such style.
+
 ### Fixed
 
 <!-- bump: patch; items: none -->

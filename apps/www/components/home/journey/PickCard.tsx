@@ -147,7 +147,7 @@ function Panes() {
             {FIT.prompt} <Mention />
           </Mine>
           <Theirs shown={asked} used={["style-fit", "fit_styles"]}>
-            {/* What Echo's fit tool ranked first, so "differs from the ranking" points at something you can see. */}
+            {/* What Echo's fit tool ranked first, so the pick under it reads as a judgement on something you can see. */}
             <div className="jy-rank">
               <p className="jy-rank__label">Echo&rsquo;s ranking</p>
               <ol>
@@ -167,7 +167,6 @@ function Panes() {
               <strong className="jy-key">{FIT.pick}</strong>
               {FIT.pickRest}
             </p>
-            <p className="jy-pull">{FIT.differs}</p>
             <Files files={FIT.files} />
           </Theirs>
         </Chat>

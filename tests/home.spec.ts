@@ -731,7 +731,7 @@ test("the homepage opens on Sky until a colour is chosen, and one chosen anywher
 
 test("a reseeded homepage is still axe-clean, the hard colour included", { tag: "@mobile" }, async ({ page }) => {
   // Two presets, and a hard yellow by link, the way the plugin's link brings a colour: fixed up to AA.
-  const links = ["/generator?style=drafting-index", "/generator?accent=e0457b", "/generator?accent=f2e66b"];
+  const links = ["/generator?style=ink-instrument", "/generator?accent=e0457b", "/generator?accent=f2e66b"];
   // Each link is a generator page, the whole homepage and axe over all of it: about 4s on two cores, and
   // more than twice that on a busy CI runner, where three of them outran the default 30s.
   budgetPages(links.length, 15_000);
@@ -2613,7 +2613,7 @@ test("Echo on the hero's screen is painted as its drawing has it: in the page's 
   await expect.poll(off).toBeLessThan(0.03);
 
   // A drawn look: paper with an ink line round it, its pupils ink.
-  await other.goto("/generator?style=drafting-index");
+  await other.goto("/generator?style=ink-instrument");
   await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute("data-drawn"))).toBe(true);
   await expect.poll(off).toBeLessThan(0.03);
 });

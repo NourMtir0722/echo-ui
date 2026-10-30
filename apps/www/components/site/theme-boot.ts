@@ -12,7 +12,7 @@ export const THEME_STYLE_ID = "echo-site-theme";
  */
 export const SEED_CHOSEN_ATTR = "data-seed-chosen";
 /**
- * On <html> while the site wears a drawn look (Drafting Index): the site's own
+ * On <html> while the site wears a drawn look (Ink Instrument): the site's own
  * pieces that aren't Echo components (the hero's device, the 2D and 3D Echo,
  * the road, the cards) draw themselves in the ink under it. Echo's components
  * draw themselves from the theme alone.
