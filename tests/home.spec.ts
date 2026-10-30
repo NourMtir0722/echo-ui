@@ -510,6 +510,31 @@ test("a press of your own while a demo plays is yours: the demo stops where you 
   expect(await phase(page, "pick")).toBe("paused");
 });
 
+test("a page that moves under a reader at rest on Pick keeps Try it on: only scrolling takes the paper back", async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 860 });
+  await page.goto("/");
+  await frame(page, "pick");
+  const toggle = page.locator("#pick").getByRole("switch", { name: "Wear Ink Instrument on this page" });
+  await hydrated(toggle);
+  // The paper has landed: the road has arrived at Pick, and only now is there something to keep.
+  await expect(page.locator("#pick .try")).toHaveAttribute("data-merged", "", { timeout: 15_000 });
+  await expect(toggle).toBeVisible();
+
+  // What wearing a style does to the cards above, in a browser with no scroll anchoring (WebKit's way):
+  // Pick's resting place moves, and the scroll stays where it was.
+  await page.evaluate(() => {
+    document.documentElement.style.overflowAnchor = "none";
+    document.body.style.overflowAnchor = "none";
+    document.getElementById("make")!.style.marginBottom = "60px";
+  });
+  await page.waitForTimeout(600);
+  await expect(toggle).toBeVisible();
+
+  // Scrolling back up is the reader leaving, and the paper goes back with them.
+  await page.evaluate(() => window.scrollBy({ top: -200, behavior: "instant" }));
+  await expect(toggle).toBeHidden();
+});
+
 test("On-brand and WCAG 2.2 AA, checked: you ask Echo to check, the button is selected and numbered as the findings are, and the fix puts Echo's in its place", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 860 });
   await page.goto("/");

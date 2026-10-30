@@ -105,6 +105,8 @@ export function PaperRoad() {
   const drawn = useRef(false);
   /** How far the flight has got: it follows `progress` at its own pace. */
   const flown = useRef(0);
+  /** Where the reader's scroll stood at Pick. A ref, because the paper pictured anew restarts the road's frames. */
+  const rested = useRef(NaN);
 
   // Where it can run, and what it works between.
   useEffect(() => {
@@ -313,7 +315,12 @@ export function PaperRoad() {
       if (!el) return;
       const dt = lastAt ? (now - lastAt) / 1000 : 0;
       lastAt = now;
-      const scrolled = progress();
+      let scrolled = progress();
+      // Arrived, the road stays arrived until the reader scrolls. Wearing a style moves the cards above Pick, and
+      // where no scroll anchor makes that up, Pick's resting place moves under a reader who hasn't: that isn't leaving.
+      if (scrolled >= 1) rested.current = window.scrollY;
+      else if (Math.abs(window.scrollY - rested.current) < 1) scrolled = 1;
+      else rested.current = NaN;
       // Leaving Make before it handed its styles back: it's at its end, so there is paper to carry.
       if (scrolled > LEFT && left <= LEFT && prev !== -1) el.make.dispatchEvent(new Event(FINISH_EVENT));
       left = scrolled;
