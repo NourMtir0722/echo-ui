@@ -2,13 +2,13 @@ import { test, expect, type Page } from "@playwright/test";
 import { axe } from "./axe";
 
 /**
- * The styles Echo publishes, on its own site: the Themes page switches the
+ * The styles Echo publishes, on its own site: the Styles page switches the
  * whole site from Echo's own look to Drafting Index, drawn in one black ink,
  * and the choice goes with the visitor from page to page.
  */
 const rootVar = (page: Page, name: string) => page.evaluate((v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), name);
 const lineWidth = async (page: Page) => parseFloat((await rootVar(page, "--echo-line-width")) || "0");
-const drafting = (page: Page) => page.getByRole("button", { name: "Drafting Index", exact: true });
+const drafting = (page: Page) => page.getByRole("radio", { name: /^Drafting Index/ });
 
 /** The families the page has really loaded, not just declared. */
 const loadedFamilies = (page: Page) =>
@@ -18,11 +18,10 @@ const loadedFamilies = (page: Page) =>
   });
 
 test("Drafting Index relights every page: drawn in the ink, in its own faces, and it stays through a reload", async ({ page }) => {
-  await page.goto("/generator");
+  await page.goto("/styles");
   expect(await lineWidth(page)).toBe(0);
   await drafting(page).click();
-  await expect(drafting(page)).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("heading", { name: "Start from · Drafting Index" })).toBeVisible();
+  await expect(drafting(page)).toBeChecked();
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   expect(await rootVar(page, "--echo-font-sans")).toContain("Inter Tight");
 
@@ -44,35 +43,38 @@ test("Drafting Index relights every page: drawn in the ink, in its own faces, an
 });
 
 test("a style's link opens it whole, and one Echo doesn't publish changes nothing", async ({ page }) => {
-  await page.goto("/generator?style=drafting-index");
-  await expect(drafting(page)).toHaveAttribute("aria-pressed", "true");
+  await page.goto("/styles?style=drafting-index");
+  await expect(drafting(page)).toBeChecked();
   expect(await lineWidth(page)).toBeGreaterThan(0);
-  await expect(page.getByRole("status")).toContainText("You're wearing a shared seed");
+  await expect(page).toHaveURL(/\/styles$/);
 
-  await page.goto("/generator?style=cobalt-ticket");
-  await expect(drafting(page)).toHaveAttribute("aria-pressed", "true");
+  await page.goto("/styles?style=cobalt-ticket");
+  await expect(drafting(page)).toBeChecked();
 });
 
-test("the light key leaves a style for Echo's own on the other device", async ({ page }) => {
-  await page.goto("/generator");
+test("the light key turns a style over: the Styles page still has it chosen, and the Themes page still names it", async ({ page }) => {
+  await page.goto("/styles");
   await drafting(page).click();
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   const light = page.getByRole("button", { name: "Light", exact: true }).first();
   // Drafting Index is a light device, so the key is lit.
   await expect(light).toHaveAttribute("aria-pressed", "true");
   await light.click();
-  await expect.poll(() => lineWidth(page)).toBe(0);
-  await expect(page.getByRole("button", { name: "Nawwara", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(light).toHaveAttribute("aria-pressed", "false");
+  expect(await lineWidth(page)).toBeGreaterThan(0);
+  await expect(drafting(page)).toBeChecked();
+  await page.goto("/generator");
+  await expect(page.getByRole("heading", { name: "Start from · Drafting Index" })).toBeVisible();
 });
 
-test("Drafting Index passes axe on the Themes page and a docs page", async ({ page }) => {
+test("Drafting Index passes axe on the Styles page and a docs page", async ({ page }) => {
   const clean = async () => {
     // The chrome's colours ease to the new look; measured halfway, a link is neither look's.
     await page.waitForTimeout(600);
     const { violations } = await axe(page).analyze();
     expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
   };
-  await page.goto("/generator?style=drafting-index");
+  await page.goto("/styles?style=drafting-index");
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   await clean();
   await page.goto("/docs/switch");
@@ -80,7 +82,7 @@ test("Drafting Index passes axe on the Themes page and a docs page", async ({ pa
 });
 
 test("in Drafting Index the landing's own pieces are drawn in the ink, and Echo's own takes them back", async ({ page }) => {
-  await page.goto("/generator?style=drafting-index");
+  await page.goto("/styles?style=drafting-index");
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   await page.goto("/");
   const drawn = () => page.evaluate(() => document.documentElement.hasAttribute("data-drawn"));
@@ -108,7 +110,7 @@ test("in Drafting Index the landing's own pieces are drawn in the ink, and Echo'
 
 test("visual: the controls gallery, in Drafting Index", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/generator?style=drafting-index");
+  await page.goto("/styles?style=drafting-index");
   await expect.poll(() => lineWidth(page)).toBeGreaterThan(0);
   await page.goto("/gallery/controls");
   await page.evaluate(() => document.fonts.ready);

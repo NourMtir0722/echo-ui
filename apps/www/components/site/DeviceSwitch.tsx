@@ -2,9 +2,9 @@
 
 /**
  * The site on a light device or a dark one, at a press: the same accent,
- * molded in light plastic or dark. It's a preview of Echo's two devices, kept
- * with the rest of the visitor's theme; a product built with Echo is one
- * device, and its chassis decides which.
+ * molded in light plastic or dark, or the same style turned over. It's a
+ * preview of Echo's two devices, kept with the rest of the visitor's theme; a
+ * product built with Echo is one device, and its chassis decides which.
  */
 import { LedKey } from "@registry/echo/led-key";
 import { useSiteSeed, type Seed } from "@/components/site/theme-store";

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { generatorLink } from "@registry/agent/generator-link";
+import { generatorLink, styleLink } from "@registry/agent/generator-link";
 
 import { seedFromSearch, seedLink } from "./seed-link";
 import { DEFAULT_SEED, SEED_PRESETS, STYLE_PRESETS } from "./seeds";
@@ -32,7 +32,9 @@ test("the link Echo's MCP server hands a builder opens the site on that style's 
 
 test("the link Echo's MCP server hands a builder for a style Echo publishes opens the site on the style, whole", () => {
   const { seed } = STYLE_PRESETS.find((p) => p.seed.style === "drafting-index")!;
-  assert.deepEqual(seedFromSearch(new URL(generatorLink(seed, seed.style)).search), seed);
+  const link = new URL(styleLink("drafting-index"));
+  assert.equal(link.pathname, "/styles");
+  assert.deepEqual(seedFromSearch(link.search), seed);
 });
 
 test("the link carries no '#', so pasting it can't turn the colours into a fragment", () => {

@@ -45,22 +45,28 @@ export const TOP_NAV: readonly NavLink[] = [
   { href: "/motion", label: "Motion" },
   { href: "/templates", label: "Templates" },
   { href: "/generator", label: "Themes" },
+  { href: "/styles", label: "Styles" },
   { href: "/audition", label: "Sound" },
   { href: "/tactile", label: "Tactile" },
   // Not Support: the bar ends in its key, Support Echo (SiteTopBar.tsx), on every page.
 ];
 
+/** The bar on the landing: a first visit meets Echo's own look, and the other styles wait in the docs. */
+export const LANDING_NAV: readonly NavLink[] = TOP_NAV.filter((link) => link.href !== "/styles");
+
 /**
  * The interactive tools, pinned above the component groups in the sidebar.
  *
- * They are the same three destinations as the top bar's Themes / Sound /
- * Tactile, listed again because the sidebar is where people look for
+ * They are the same four destinations as the top bar's Themes / Styles /
+ * Sound / Tactile, listed again because the sidebar is where people look for
  * everything else — Themes being reachable only from the rail read as Themes
  * not existing. They are not registry items, so they cannot come from the docs
- * manifest; this is the one hand-kept list, and it is three entries long.
+ * manifest; this is the one hand-kept list, and it is four entries long.
  */
 export const TOOLS: readonly NavLink[] = [
   { href: "/generator", label: "Theme generator" },
+  // Not "Styles": that's the guide, a few lines above it in the same sidebar.
+  { href: "/styles", label: "Style switcher" },
   { href: "/audition", label: "Sound audition" },
   { href: "/tactile", label: "Tactile bench" },
 ];

@@ -20,9 +20,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HardwareButton } from "@registry/echo/hardware-button";
 import { Sheet } from "@registry/echo/sheet";
-import { TOP_NAV } from "@/components/site/site-nav";
+import { TOP_NAV, type NavLink } from "@/components/site/site-nav";
 
-export function SiteMenu({ tools }: { tools?: ReactNode }) {
+export function SiteMenu({ links = TOP_NAV, tools }: { links?: readonly NavLink[]; tools?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const current = (link: { href: string; covers?: readonly string[] }) =>
@@ -38,7 +38,7 @@ export function SiteMenu({ tools }: { tools?: ReactNode }) {
       <Sheet.Content title="Menu" className="echo-sitemenu">
         <nav aria-label="Site">
           <ul className="echo-sitemenu__list">
-            {TOP_NAV.map((link) => (
+            {links.map((link) => (
               <li key={link.href}>
                 <Link className="echo-sitemenu__link" href={link.href} aria-current={current(link)} onClick={() => setOpen(false)}>
                   {link.label}

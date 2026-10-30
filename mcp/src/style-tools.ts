@@ -18,7 +18,7 @@ import type { EStyleSummary } from "@echo-ui/client";
 import { createEchoTheme, devicePolarity, SEED_DEFAULTS, type EchoSeedInput } from "echo-ui-core/theme";
 
 import { designMd } from "@registry/agent/design-md";
-import { generatorLink } from "@registry/agent/generator-link";
+import { generatorLink, styleLink } from "@registry/agent/generator-link";
 import { STYLE_LIBRARY, runCommand } from "@registry/agent/guidance";
 import { policeStyle } from "@registry/agent/slop";
 import { AXIS_LETTERS, fingerprintText, fitStyles, parseProfile, parseTolerance, type FitCandidate } from "@registry/agent/style-fit";
@@ -218,7 +218,7 @@ export function createStyleHandlers(registrySource?: RegistrySource) {
           `# ${chosen.title}, worn (${from === "echo" ? "Echo's library" : "the builder's own"}, a ${device} device)`,
           "",
           published
-            ? `**Feel it:** ${generatorLink(chosen.seed, chosen.name)} makes the whole Echo site wear this style, its corners and its type included, every component pressing, sounding and moving in it.`
+            ? `**Feel it:** ${styleLink(chosen.name)} makes the whole Echo site wear this style, its corners and its type included, every component pressing, sounding and moving in it.`
             : `**Feel it:** ${generatorLink(chosen.seed)} makes the whole Echo site wear this style's colours, every component pressing, sounding and moving in them. Only the colours travel in a link: the radius, density and finish show once a project wears the style.`,
           "",
           "## Into a project",

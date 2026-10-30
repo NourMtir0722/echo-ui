@@ -6,7 +6,7 @@
  * in its own hue.
  */
 import { clampToGamut, devicePolarity, hexToOklch, oklchToHex } from "echo-ui-core/theme";
-import { DEFAULT_SEED, SEED_PRESETS, sameSeed, type Seed } from "./seeds";
+import { SEED_PRESETS, sameSeed, type Seed } from "./seeds";
 
 const hex = (L: number, C: number, H: number) => oklchToHex(clampToGamut({ L, C, H }));
 
@@ -35,12 +35,24 @@ export function darkSeedOf(seed: Seed): Seed {
 export const isLightSeed = (seed: Seed) => devicePolarity(seed.chassis) === "light";
 
 /**
- * The same seed on the device it isn't on. A style Echo publishes carries its
- * own device (its chassis decides), and half of it on the other one isn't the
- * style, so the key leaves it for Echo's own style on the other device.
+ * A style on the device it isn't on: its body and its paper change places, so
+ * it's the same drawing on the other ground. An accent that is the style's ink
+ * turns with the ink; a colour of the style's own stays.
+ */
+const turnedOver = (seed: Seed): Seed => ({
+  ...seed,
+  accent: seed.accent.toLowerCase() === seed.paper.toLowerCase() ? seed.chassis : seed.accent,
+  chassis: seed.paper,
+  paper: seed.chassis,
+});
+
+/**
+ * The same seed on the device it isn't on. The key is about the device and
+ * nothing else: a style stays that style, turned over, and only the Styles
+ * page leaves it.
  */
 export const otherDevice = (seed: Seed): Seed => {
-  if (seed.style) return isLightSeed(seed) ? DEFAULT_SEED : lightSeedOf(DEFAULT_SEED);
+  if (seed.style) return turnedOver(seed);
   return isLightSeed(seed) ? darkSeedOf(seed) : lightSeedOf(seed);
 };
 
@@ -48,7 +60,7 @@ export const otherDevice = (seed: Seed): Seed => {
  * A colour picked while the site is on a device: the same pick, on that
  * device. The key chose the device, so a swatch changes the colour and
  * leaves the plastic alone. A pick that is already light, or a style (which
- * carries its own device), is worn as it is.
+ * opens on its own device), is worn as it is.
  */
 export const onDevice = (pick: Seed, current: Seed): Seed =>
   !pick.style && isLightSeed(current) && !isLightSeed(pick) ? lightSeedOf(pick) : pick;

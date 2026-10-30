@@ -31,20 +31,6 @@
   gap: var(--echo-space-7);
 }
 
-/* Start from: Echo's colours, then the styles Echo publishes, each row named in a machine label. */
-.gen__starts {
-  display: grid;
-  gap: var(--echo-space-4);
-}
-
-.gen__starts-label {
-  margin: 0;
-  font: var(--echo-type-machine-label);
-  letter-spacing: var(--echo-type-machine-label-tracking);
-  text-transform: var(--echo-type-machine-label-case);
-  color: var(--echo-text-dim);
-}
-
 /* The seed is ruled rows: no card under it. */
 .gen__rows {
   margin: 0;

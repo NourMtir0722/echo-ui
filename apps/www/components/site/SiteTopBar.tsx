@@ -19,7 +19,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HardwareButton } from "@registry/echo/hardware-button";
-import { TOP_NAV } from "@/components/site/site-nav";
+import { TOP_NAV, type NavLink } from "@/components/site/site-nav";
 import { Flower } from "@/components/brand/Logo";
 import { DeviceSwitch } from "@/components/site/DeviceSwitch";
 import type { Seed } from "@/components/site/seeds";
@@ -44,9 +44,12 @@ export function Wordmark() {
 }
 
 export function TopNavLinks({
+  links = TOP_NAV,
   opening,
   tools,
 }: {
+  /** The destinations: every one but on the landing, which has a list of its own. */
+  links?: readonly NavLink[];
   /** The page's opening colour, for the light key. */
   opening?: Seed;
   /** In the light key's place: the landing's own (GitHub, X). */
@@ -62,7 +65,7 @@ export function TopNavLinks({
 
   return (
     <>
-      {TOP_NAV.map((link) => (
+      {links.map((link) => (
         <Link key={link.href} className="echo-topnav__link" href={link.href} aria-current={current(link)}>
           {link.label}
         </Link>

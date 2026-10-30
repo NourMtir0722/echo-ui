@@ -1,6 +1,6 @@
 /**
  * A seed as a link: `/generator?accent=8b6fe8&chassis=232130&paper=efebfa`,
- * or a style Echo publishes, `/generator?style=drafting-index`.
+ * or a style Echo publishes, `/styles?style=drafting-index` (either page reads both).
  *
  * Plain hex without the "#", which would start the URL's fragment, so a link
  * survives being pasted anywhere and reads as what it is. A link that names

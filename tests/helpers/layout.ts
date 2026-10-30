@@ -142,6 +142,7 @@ export const APP_ROUTES = [
   "/supporters/welcome",
   "/docs",
   "/generator",
+  "/styles",
   "/tactile",
   "/audition",
   "/gallery/hardware-button",

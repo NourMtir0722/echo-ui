@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { createEchoTheme, type EchoSeedInput } from "echo-ui-core/theme";
-import { generatorLink } from "@registry/agent/generator-link";
+import { generatorLink, styleLink } from "@registry/agent/generator-link";
 import { PUBLISHED_STYLES } from "@registry/agent/published-styles";
 import { fitStyles, parseProfile, parseTolerance } from "@registry/agent/style-fit";
 import { policeNotes, themeNotes } from "@registry/agent/style-notes";
@@ -134,8 +134,7 @@ test("wear_style on a style Echo publishes opens the site on the style, whole; o
   const fetcher: typeof sampleRegistry.fetcher = async (url) =>
     url.endsWith("/styles/drafting-index.json") ? JSON.stringify(drafting) : sampleRegistry.fetcher(url);
   const text = body(await tools(fetcher).wear_style({ name: "drafting-index", files: false }));
-  assert.ok(text.includes(generatorLink(drafting.seed as Record<string, string>, "drafting-index")), "the link names the style");
-  assert.match(text, /[?&]style=drafting-index/);
+  assert.ok(text.includes(styleLink("drafting-index")), "the link names the style");
   assert.doesNotMatch(text, /Only the colours travel/);
 
   // Echo's own is the site's default, and the builder's own isn't on the site: neither has a style to name.

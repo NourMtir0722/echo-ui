@@ -43,6 +43,7 @@ import { SoundProvider } from "echo-ui-core/sound";
 import { AppShell } from "@registry/echo/app-shell";
 import { TopNavLinks, Wordmark } from "@/components/site/SiteTopBar";
 import { SiteMenu } from "@/components/site/SiteMenu";
+import { LANDING_NAV } from "@/components/site/site-nav";
 import { HomeHero } from "@/components/home/HomeHero";
 import { Echo3D } from "@/components/home/echo3d/Echo3D";
 import { Keychain } from "@/components/home/Keychain";
@@ -93,9 +94,9 @@ export function HomePage({ counts }: { counts: HomeCounts }) {
       */}
       <AppShell bare className="home-shell">
         <AppShell.Rail label="Site" brand={<Wordmark />}>
-          <TopNavLinks opening={LANDING_SEED} tools={<NavTools />} />
+          <TopNavLinks links={LANDING_NAV} opening={LANDING_SEED} tools={<NavTools />} />
           {/* Under 56.25rem the destinations and the page's keys go into a menu (landing.css). */}
-          <SiteMenu tools={<NavTools />} />
+          <SiteMenu links={LANDING_NAV} tools={<NavTools />} />
         </AppShell.Rail>
         <AppShell.Content>
           {/* One layer for the page, so the light Echo carries lies over all of it and nothing past it. */}

@@ -35,17 +35,22 @@ const isSeed = (v: unknown): v is Seed =>
 
 /** The visitor's choice, or null until they make one. */
 let current: Seed | null = null;
+/** While a style is worn: the Echo the visitor left for it, if they had picked one. Coming back puts it on again. */
+let echo: Seed | null = null;
 let read = false;
 const listeners = new Set<() => void>();
 
-function readChoice(): Seed | null {
+function readChoice() {
+  current = echo = null;
   try {
-    const v = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as { seed?: unknown } | null;
-    if (v && isSeed(v.seed)) return v.seed;
+    const v = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as { seed?: unknown; echo?: unknown } | null;
+    if (v && isSeed(v.seed)) {
+      current = v.seed;
+      if (isSeed(v.echo)) echo = v.echo;
+    }
   } catch {
     /* storage blocked or corrupt — no choice, then */
   }
-  return null;
 }
 
 function paint(css: string | null) {
@@ -79,7 +84,7 @@ function apply(seed: Seed) {
   const css = sameSeed(seed, DEFAULT_SEED) ? "" : (document.getElementById(STYLE_ID)?.textContent ?? "");
   try {
     // Saved even when it's the default: picking purple on a page that opens on Sky is a choice.
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ seed, css }));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ seed, css, ...(echo ? { echo } : {}) }));
   } catch {
     /* storage blocked — the theme still applies until the tab closes */
   }
@@ -87,8 +92,34 @@ function apply(seed: Seed) {
 
 /** Relights the whole site and remembers it. */
 export function setSiteSeed(seed: Seed) {
+  const was = getSnapshot();
+  echo = !seed.style ? null : was?.style ? echo : was;
   current = seed;
   apply(seed);
+  listeners.forEach((l) => l());
+}
+
+/** Takes off everything the visitor chose: the page's own opening colour shows again. */
+function unwear() {
+  paint(null);
+  document.documentElement.removeAttribute(SEED_CHOSEN_ATTR);
+  document.documentElement.removeAttribute(DRAWN_ATTR);
+}
+
+/**
+ * Back on Echo's own style, as the visitor left it: their colour on their
+ * device, or, if they had picked nothing, the page's own opening.
+ */
+export function wearEchoStyle() {
+  getSnapshot();
+  if (echo) return setSiteSeed(echo);
+  current = null;
+  unwear();
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* storage blocked — nothing was saved */
+  }
   listeners.forEach((l) => l());
 }
 
@@ -102,13 +133,9 @@ let refreshed = false;
 // Another tab changed the theme: follow it, so two open tabs never disagree.
 function onStorage(e: StorageEvent) {
   if (e.key !== STORAGE_KEY) return;
-  current = readChoice();
+  readChoice();
   if (current) wear(current);
-  else {
-    paint(null);
-    document.documentElement.removeAttribute(SEED_CHOSEN_ATTR);
-    document.documentElement.removeAttribute(DRAWN_ATTR);
-  }
+  else unwear();
   listeners.forEach((l) => l());
 }
 
@@ -129,7 +156,7 @@ function subscribe(listener: () => void) {
 const getSnapshot = () => {
   if (!read) {
     read = true;
-    current = readChoice();
+    readChoice();
   }
   return current;
 };

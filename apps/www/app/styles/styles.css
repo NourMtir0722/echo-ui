@@ -1,0 +1,88 @@
+/*
+ * The Styles page: the choice, then the bench under it. Every part is a
+ * registry component and every value an --echo-* role: the page wears what it
+ * shows, so a colour of its own would be the one thing that didn't change.
+ */
+.styles__choice {
+  display: grid;
+  gap: var(--echo-space-7);
+  min-width: 0;
+}
+
+.style-bench {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--echo-space-10) var(--echo-space-9);
+}
+
+/* A bay's panel fills its row, so the bays beside it end on one line. */
+.style-bench__bay {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--echo-space-5);
+  min-width: 0;
+}
+.style-bench__bay[data-span="4"] {
+  grid-column: span 4;
+}
+.style-bench__bay[data-span="5"] {
+  grid-column: span 5;
+}
+.style-bench__bay[data-span="6"] {
+  grid-column: span 6;
+}
+.style-bench__bay[data-span="7"] {
+  grid-column: span 7;
+}
+.style-bench__bay[data-span="12"] {
+  grid-column: 1 / -1;
+}
+
+/* Parts spread down the panel: the row's height is the tallest bay's, and none of them ends on a gap. */
+.style-bench__panel {
+  display: grid;
+  gap: var(--echo-space-8);
+  align-content: space-between;
+  min-width: 0;
+}
+.style-bench__panel[data-centred] {
+  align-content: center;
+}
+/* As wide as their keys: stretched to the panel, the well runs on empty past the last one. */
+.style-bench__panel > .echo-toggle-group,
+.style-bench__panel > .echo-segmented {
+  justify-self: start;
+}
+
+.style-bench__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--echo-space-6);
+  min-width: 0;
+}
+.style-bench__row--apart {
+  justify-content: space-between;
+}
+
+.style-bench__labelled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--echo-space-4);
+  color: var(--echo-text);
+}
+
+/* Breakpoints in rem, so a reader's larger text reaches them too (WCAG 1.4.4). */
+@media (max-width: 68rem) {
+  .style-bench__bay[data-span] {
+    grid-column: span 6;
+  }
+  .style-bench__bay[data-span="12"] {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 42rem) {
+  .style-bench__bay[data-span] {
+    grid-column: 1 / -1;
+  }
+}

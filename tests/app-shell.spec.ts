@@ -135,7 +135,7 @@ test.describe("Site navigation", () => {
   }
 
   // The tools were bare pages: no rail, no sidebar, no way back.
-  for (const path of ["/generator", "/audition", "/tactile"]) {
+  for (const path of ["/generator", "/styles", "/audition", "/tactile"]) {
     test(`${path} renders inside the site shell with one main`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator("main")).toHaveCount(1);

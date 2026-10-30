@@ -66,7 +66,7 @@ const ROLES: { role: Role; name: string; hint: string }[] = [
 ];
 
 const HEX = /^#[0-9a-f]{6}$/i;
-/** A seed under "Start from": a preset, or (exact) a style, a shared seed or the visitor's own. */
+/** A seed under "Start from": a preset, or (exact) a shared seed or the visitor's own. */
 type Start = { name: string; seed: Seed; exact?: boolean };
 /** WCAG AA for text this size: what the readout is held to. */
 const AA = 4.5;
@@ -95,9 +95,7 @@ export default function GeneratorPage() {
     setShared({ seed: incoming, yours });
     window.history.replaceState(null, "", window.location.pathname + window.location.hash);
     // Name the cap that holds theirs: a preset (pressed on the device the link put the site on), or the "Yours" cap added below.
-    const back =
-      yours &&
-      ([...SEED_PRESETS, ...STYLE_PRESETS].find((p) => sameSeed(onDevice(p.seed, incoming), yours))?.name ?? "Yours");
+    const back = yours && (SEED_PRESETS.find((p) => sameSeed(onDevice(p.seed, incoming), yours))?.name ?? "Yours");
     say(
       back
         ? `You're wearing a shared seed. To go back to yours, press ${back} under Start from.`
@@ -154,22 +152,20 @@ export default function GeneratorPage() {
 
   // A preset is worn on the device the site is on (the light key chose it); a
   // shared seed, and yours, exactly as they were.
-  // A shared seed, or yours, gets a cap of its own only when no preset or style already is it.
-  const named = [...SEED_PRESETS, ...STYLE_PRESETS];
-  const colours: Start[] = [
+  // A shared seed, or yours, gets a cap of its own only when no preset already is it.
+  const starts: Start[] = [
     ...SEED_PRESETS,
-    ...(shared && !named.some((p) => sameSeed(onDevice(p.seed, shared.seed), shared.seed))
+    ...(shared && !SEED_PRESETS.some((p) => sameSeed(onDevice(p.seed, shared.seed), shared.seed))
       ? [{ name: "Shared", seed: shared.seed, exact: true }]
       : []),
-    ...(shared?.yours && !named.some((p) => sameSeed(onDevice(p.seed, shared.seed), shared.yours!))
+    ...(shared?.yours && !SEED_PRESETS.some((p) => sameSeed(onDevice(p.seed, shared.seed), shared.yours!))
       ? [{ name: "Yours", seed: shared.yours, exact: true }]
       : []),
   ];
-  // Echo's colours are worn on the device the site is on; a style is a whole look, worn as it is.
-  const styles: Start[] = STYLE_PRESETS.map((p) => ({ ...p, exact: true }));
-  const starts = [...colours, ...styles];
   const worn = (p: Start) => (p.exact ? p.seed : onDevice(p.seed, seed));
   const preset = starts.find((p) => sameSeed(worn(p), seed));
+  // A style chosen on the Styles page is what these colours start from, until one of them is pressed.
+  const style = STYLE_PRESETS.find((p) => p.seed.style === seed.style);
   const isDefault = sameSeed(seed, DEFAULT_SEED);
 
   return (
@@ -181,11 +177,9 @@ export default function GeneratorPage() {
           <p className="tool-lede">
             One colour in, the whole library relights. Every surface derives
             from a three-value seed in OKLCH — the plastic, the bevels, the
-            glow, the text — and stays legible at WCAG AA. Or start from a
-            style Echo publishes, like Drafting Index, drawn in one black ink:
-            its whole look, corners and type included. What you pick here is
-            worn by the whole site, so open any component and it is already in
-            it.
+            glow, the text — and stays legible at WCAG AA. What you pick here
+            is worn by the whole site, so open any component and it is already
+            in it.
           </p>
         </header>
 
@@ -193,38 +187,26 @@ export default function GeneratorPage() {
           <section className="gen__seed" aria-labelledby="gen-seed">
             <div className="gen__group">
               <h2 className="tool-label" id="gen-start">
-                Start from · {preset?.name ?? "Custom"}
+                Start from · {preset?.name ?? style?.name ?? "Custom"}
               </h2>
-              {(
-                [
-                  ["Echo", "gen-start-echo", colours],
-                  ["Styles", "gen-start-styles", styles],
-                ] as const
-              ).map(([label, id, list]) => (
-                <div key={id} className="gen__starts">
-                  <p className="gen__starts-label" id={id}>
-                    {label}
-                  </p>
-                  <div className="tool-presets" role="group" aria-labelledby={`gen-start ${id}`}>
-                    {list.map((p) => (
-                      <button
-                        key={p.name}
-                        type="button"
-                        className="tool-preset"
-                        aria-pressed={preset?.name === p.name}
-                        onClick={() => setSeed(worn(p))}
-                      >
-                        <span
-                          className="tool-preset__chip"
-                          style={{ background: p.seed.accent }}
-                          aria-hidden="true"
-                        />
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <div className="tool-presets" role="group" aria-labelledby="gen-start">
+                {starts.map((p) => (
+                  <button
+                    key={p.name}
+                    type="button"
+                    className="tool-preset"
+                    aria-pressed={preset?.name === p.name}
+                    onClick={() => setSeed(worn(p))}
+                  >
+                    <span
+                      className="tool-preset__chip"
+                      style={{ background: p.seed.accent }}
+                      aria-hidden="true"
+                    />
+                    {p.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="gen__group">

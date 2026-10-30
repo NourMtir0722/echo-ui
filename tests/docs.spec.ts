@@ -47,7 +47,7 @@ const GUIDE_PATHS = [
  * ground — under AA) survived on all four after being fixed across the docs
  * surface.
  */
-for (const path of ["/", "/generator", "/tactile", "/audition", "/support", "/supporters", "/supporters/welcome"]) {
+for (const path of ["/", "/generator", "/styles", "/tactile", "/audition", "/support", "/supporters", "/supporters/welcome"]) {
   test(`is axe-clean: ${path}`, { tag: "@mobile" }, async ({ page }) => {
     await page.goto(path);
     // The island writes its plot labels once it has drawn: check them too, every time, not only when it's quick.
