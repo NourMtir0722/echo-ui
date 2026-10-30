@@ -34,6 +34,14 @@ different things to a reader, and they will produce different numbers the day Ec
 
 ## [Unreleased]
 
+### Fixed
+
+<!-- bump: patch; items: none -->
+- **`wear_style`'s link wears a style Echo publishes, whole** (`echo-ui-mcp`). For Drafting Index it
+  carried only the three colours, so the site opened on Echo's molded parts in black and white. It
+  now names the style, and the site wears it drawn, in its own corners and type. A builder's own
+  style still travels as its colours.
+
 ## [0.3.3] — 2026-10-19
 
 ### Changed

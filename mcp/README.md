@@ -67,7 +67,7 @@ Codex and ChatGPT desktop.
 | `list_styles` | `name?` | Echo's own styles, each with its one line and fingerprint; with a name, that style in full. |
 | `fit_styles` | `profile`, `tolerance?`, `yours?` | Echo's styles and the builder's own (by fingerprint), ranked against where the product sits on the seven axes. The same arithmetic as `npx echo-ui-cli style fit`. |
 | `check_style` | `style` | Whether a `style.json` is one Echo can apply, as `npx echo-ui-cli style check` says it. |
-| `wear_style` | `name` or `style`, `files?` | A link that makes the Echo site wear the style's colours, the command that puts it in a project, and, for a project with no terminal, its theme CSS and `DESIGN.md`. |
+| `wear_style` | `name` or `style`, `files?` | A link that makes the Echo site wear the style (one of Echo's whole, your own in its colours), the command that puts it in a project, and, for a project with no terminal, its theme CSS and `DESIGN.md`. |
 
 When it connects, the server also sends instructions: how to set the project up, how to wire the
 theme and sound, and the corrections agents most often need (Base UI's package is

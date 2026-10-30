@@ -210,12 +210,16 @@ export function createStyleHandlers(registrySource?: RegistrySource) {
       const device = deviceOf(chosen.seed);
       const run = (c: string) => `\`${runCommand(c)}\``;
       const theme = themeNotes(report, applied.fonts);
+      // Echo's other styles are on its site by name; Echo's own is what the site wears unasked.
+      const published = from === "echo" && chosen.name !== "echo";
 
       return text(
         [
           `# ${chosen.title}, worn (${from === "echo" ? "Echo's library" : "the builder's own"}, a ${device} device)`,
           "",
-          `**Feel it:** ${generatorLink(chosen.seed)} makes the whole Echo site wear this style's colours, every component pressing, sounding and moving in them. Only the colours travel in a link: the radius, density and finish show once a project wears the style.`,
+          published
+            ? `**Feel it:** ${generatorLink(chosen.seed, chosen.name)} makes the whole Echo site wear this style, its corners and its type included, every component pressing, sounding and moving in it.`
+            : `**Feel it:** ${generatorLink(chosen.seed)} makes the whole Echo site wear this style's colours, every component pressing, sounding and moving in them. Only the colours travel in a link: the radius, density and finish show once a project wears the style.`,
           "",
           "## Into a project",
           "",

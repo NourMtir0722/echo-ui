@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { createEchoTheme, type EchoSeedInput } from "echo-ui-core/theme";
 import { generatorLink } from "@registry/agent/generator-link";
+import { PUBLISHED_STYLES } from "@registry/agent/published-styles";
 import { fitStyles, parseProfile, parseTolerance } from "@registry/agent/style-fit";
 import { policeNotes, themeNotes } from "@registry/agent/style-notes";
 import { parseStyle } from "@registry/agent/style-schema";
@@ -126,6 +127,22 @@ test("wear_style on one of Echo's: the link, the command, the theme and DESIGN.m
   // The CSS is the theme the CLI would write from this seed, whole.
   assert.ok(text.includes(createEchoTheme(echo.seed as EchoSeedInput, { quiet: true }).css.trimEnd()));
   assert.match(text, /### DESIGN\.md[\s\S]*from the Echo style[\s\S]*`npx echo-ui-cli init --style echo`/);
+});
+
+test("wear_style on a style Echo publishes opens the site on the style, whole; on the builder's own, on its colours", async () => {
+  const drafting = PUBLISHED_STYLES.find((s) => s.name === "drafting-index")!;
+  const fetcher: typeof sampleRegistry.fetcher = async (url) =>
+    url.endsWith("/styles/drafting-index.json") ? JSON.stringify(drafting) : sampleRegistry.fetcher(url);
+  const text = body(await tools(fetcher).wear_style({ name: "drafting-index", files: false }));
+  assert.ok(text.includes(generatorLink(drafting.seed as Record<string, string>, "drafting-index")), "the link names the style");
+  assert.match(text, /[?&]style=drafting-index/);
+  assert.doesNotMatch(text, /Only the colours travel/);
+
+  // Echo's own is the site's default, and the builder's own isn't on the site: neither has a style to name.
+  assert.doesNotMatch(body(await tools().wear_style({ name: "echo", files: false })), /[?&]style=/);
+  const own = body(await tools().wear_style({ style: paperlab, files: false }));
+  assert.doesNotMatch(own, /[?&]style=/);
+  assert.match(own, /Only the colours travel/);
 });
 
 test("wear_style on the builder's own: keep it in the library first, so init --style can find it", async () => {

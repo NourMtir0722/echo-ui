@@ -30,6 +30,11 @@ test("the link Echo's MCP server hands a builder opens the site on that style's 
   assert.deepEqual(seedFromSearch(new URL(generatorLink({ accent: "#3D8EF0" })).search), { ...DEFAULT_SEED, accent: "#3D8EF0" });
 });
 
+test("the link Echo's MCP server hands a builder for a style Echo publishes opens the site on the style, whole", () => {
+  const { seed } = STYLE_PRESETS.find((p) => p.seed.style === "drafting-index")!;
+  assert.deepEqual(seedFromSearch(new URL(generatorLink(seed, seed.style)).search), seed);
+});
+
 test("the link carries no '#', so pasting it can't turn the colours into a fragment", () => {
   assert.doesNotMatch(seedLink("https://example.com", DEFAULT_SEED), /#|%23/);
 });
