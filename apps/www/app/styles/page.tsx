@@ -40,8 +40,9 @@ export default function StylesPage() {
   // after switching must not put the link's style back.
   useEffect(() => {
     const incoming = seedFromSearch(window.location.search);
-    if (incoming?.style) setSiteSeed(incoming);
-    if (window.location.search) window.history.replaceState(null, "", window.location.pathname + window.location.hash);
+    if (!incoming?.style) return;
+    setSiteSeed(incoming);
+    window.history.replaceState(null, "", window.location.pathname + window.location.hash);
   }, []);
 
   const wear = (name: string) => {

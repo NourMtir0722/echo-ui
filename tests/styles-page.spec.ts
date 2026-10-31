@@ -129,6 +129,18 @@ test("the styles are switched from the keyboard alone", async ({ page }) => {
   await expect(style(page, "Ink Instrument")).toBeFocused();
 });
 
+test("a tagged link keeps its address: only a style's own link is taken out of it", async ({ page }) => {
+  await page.goto("/styles?utm_source=x");
+  await expect(style(page, "Echo")).toBeChecked();
+  await page.waitForTimeout(600);
+  // Rewriting the address reads as a second page view to anything counting visits.
+  await expect(page).toHaveURL(/\/styles\?utm_source=x$/);
+
+  await page.goto("/styles?style=ink-instrument");
+  await expect(style(page, "Ink Instrument")).toBeChecked();
+  await expect(page).toHaveURL(/\/styles$/);
+});
+
 test("the page passes axe in Echo's own, in Ink Instrument, and in Ink Instrument turned over", async ({ page }) => {
   const clean = async () => {
     // The chrome's colours ease to the new look; measured halfway, a link is neither look's.
