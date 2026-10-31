@@ -513,6 +513,8 @@ test("a press of your own while a demo plays is yours: the demo stops where you 
 test("a page that moves under a reader at rest on Pick keeps Try it on: only scrolling takes the paper back", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 860 });
   await page.goto("/");
+  const webgl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  test.skip(!webgl, "no WebGL here, so there's no paper: Try it on is simply there, and nothing can take it back");
   await frame(page, "pick");
   const toggle = page.locator("#pick").getByRole("switch", { name: "Wear Ink Instrument on this page" });
   await hydrated(toggle);
