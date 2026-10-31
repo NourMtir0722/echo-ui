@@ -55,6 +55,8 @@ const MERGED_CSS = siteTheme(INK.seed as Parameters<typeof siteTheme>[0], { sele
 const LAG = 0.1;
 /** Within this share of the way of either card, the page is resting on it: a glide's last pixels never count as flight. */
 const REST = 0.01;
+/** How far back from Pick, as a share of the road, is still at Pick: past any shift a style makes, short of a real scroll. */
+const HOLD = 0.08;
 /** Past this share of the way, the visitor has left Make. */
 const LEFT = 0.03;
 /** Pigment Window's turn as it lies behind (StyleSheets' 2.5°), radians. */
@@ -105,8 +107,8 @@ export function PaperRoad() {
   const drawn = useRef(false);
   /** How far the flight has got: it follows `progress` at its own pace. */
   const flown = useRef(0);
-  /** Where the reader's scroll stood at Pick. A ref, because the paper pictured anew restarts the road's frames. */
-  const rested = useRef(NaN);
+  /** Whether the road is at Pick. A ref, because the paper pictured anew restarts the road's frames. */
+  const arrived = useRef(false);
 
   // Where it can run, and what it works between.
   useEffect(() => {
@@ -315,12 +317,11 @@ export function PaperRoad() {
       if (!el) return;
       const dt = lastAt ? (now - lastAt) / 1000 : 0;
       lastAt = now;
-      let scrolled = progress();
-      // Arrived, the road stays arrived until the reader scrolls. Wearing a style moves the cards above Pick, and
-      // where no scroll anchor makes that up, Pick's resting place moves under a reader who hasn't: that isn't leaving.
-      if (scrolled >= 1) rested.current = window.scrollY;
-      else if (Math.abs(window.scrollY - rested.current) < 1) scrolled = 1;
-      else rested.current = NaN;
+      // Arrived, the road stays arrived until the reader has clearly left. Wearing a style moves the cards above Pick,
+      // and Pick's resting place with them, under a reader who hasn't moved. So does the first frame after a restart.
+      const road = progress();
+      arrived.current = road >= 1 || (road > 1 - HOLD && (arrived.current || prev === -1));
+      const scrolled = arrived.current ? 1 : road;
       // Leaving Make before it handed its styles back: it's at its end, so there is paper to carry.
       if (scrolled > LEFT && left <= LEFT && prev !== -1) el.make.dispatchEvent(new Event(FINISH_EVENT));
       left = scrolled;

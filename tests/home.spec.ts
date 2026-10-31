@@ -522,12 +522,13 @@ test("a page that moves under a reader at rest on Pick keeps Try it on: only scr
   await expect(page.locator("#pick .try")).toHaveAttribute("data-merged", "", { timeout: 15_000 });
   await expect(toggle).toBeVisible();
 
-  // What wearing a style does to the cards above, in a browser with no scroll anchoring (WebKit's way):
-  // Pick's resting place moves, and the scroll stays where it was.
+  // What wearing a style does to the cards above, as WebKit measured it: Pick's resting place moves
+  // about 30px, and the browser nudges the scroll a little of the way, on its own.
   await page.evaluate(() => {
     document.documentElement.style.overflowAnchor = "none";
     document.body.style.overflowAnchor = "none";
-    document.getElementById("make")!.style.marginBottom = "60px";
+    document.getElementById("make")!.style.marginBottom = "30px";
+    window.scrollBy({ top: -13, behavior: "instant" });
   });
   await page.waitForTimeout(600);
   await expect(toggle).toBeVisible();
