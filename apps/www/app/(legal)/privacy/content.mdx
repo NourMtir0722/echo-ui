@@ -2,7 +2,7 @@ import { Email, Host, McpHost } from "@/components/legal/live";
 
 # Privacy
 
-*Last updated October 19, 2026*
+*Last updated October 31, 2026*
 
 Echo UI is made by Nawwara Studio LLC, a company registered in Wyoming, USA. This page says what
 Echo's site, its command-line tool and its hosted MCP server collect, which is very little, and
@@ -10,12 +10,16 @@ why. Questions go to <Email />.
 
 ## The site
 
-- No analytics, no advertising, no tracking, and no cookies.
+- We count visits with Umami, on a server we run ourselves. It sets no cookies and doesn't follow
+  you across other sites. We see totals: pages viewed, the site you came from, and your country,
+  browser and device type. If your browser sends Do Not Track, you aren't counted.
+- No advertising.
 - Your browser keeps three things on your own device: the colours you chose for the site, whether
   you turned its sound on, and, until you close the tab, where the docs sidebar was scrolled. None
   of them leaves your device. Clearing your browser's site data removes them.
-- The site's fonts, scripts and images are served from <Host /> itself. It loads nothing from
-  anyone else.
+- The site's fonts, scripts and images are served from <Host /> itself, apart from the script that
+  counts visits, which comes from our own server, stats.nawwara.studio. It loads nothing from anyone
+  else.
 - The pages that show Echo's supporters (the island, and the Echos at the foot of some pages) ask
   Echo's own supporters server who's on the island. The request carries nothing about you, and that
   server's logs hold a request's path, status and timing, never more.

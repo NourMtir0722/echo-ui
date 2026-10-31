@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { analyticsScript } from "@/components/site/analytics";
 import { siteTheme } from "@/components/site/site-theme";
 import { THEME_BOOT_SCRIPT } from "@/components/site/theme-boot";
 import { siteFonts } from "@/components/brand/fonts";
@@ -60,6 +61,7 @@ const themeCss = siteTheme().css;
  */
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const analytics = analyticsScript();
   return (
     // The boot script marks <html> for a returning visitor's colour before React hydrates.
     // The faces of the styles Echo publishes are declared on every page, for the Themes switch,
@@ -69,6 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <style>{themeCss}</style>
         {/* The visitor's saved seed, before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {analytics && <script {...analytics} />}
       </head>
       <body
         style={{
