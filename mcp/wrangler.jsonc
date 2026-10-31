@@ -26,7 +26,7 @@
   "tsconfig": "tsconfig.json",
   // What an MCP client shows as the server's version. `worker-config.test.ts`
   // holds it to package.json's.
-  "define": { "__ECHO_MCP_VERSION__": "\"0.3.2\"" },
+  "define": { "__ECHO_MCP_VERSION__": "\"0.3.4\"" },
 
   // One public address, as on the site: no workers.dev copy, no preview URLs.
   "workers_dev": false,

@@ -1,6 +1,6 @@
 {
   "name": "echo-ui-mcp",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "type": "module",
   "description": "The design system that keeps your AI on-brand, as an MCP server: an agent searches Echo UI's components by the job, reads one, and gets its tokens and accessibility rules before writing code.",
   "keywords": [

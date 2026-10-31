@@ -34,6 +34,8 @@ different things to a reader, and they will produce different numbers the day Ec
 
 ## [Unreleased]
 
+## [0.3.4] — 2026-10-31
+
 ### Changed
 
 <!-- bump: minor; items: none -->
