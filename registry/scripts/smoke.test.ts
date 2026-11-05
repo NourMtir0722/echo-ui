@@ -18,22 +18,27 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { REGISTRY_HOMEPAGE } from "../src/agent/guidance";
-import { runSmoke, routesFromReadmes, type SmokeFetch, type SmokeTarget } from "./smoke";
+import { runSmoke, routesFromReadmes, type SmokeFetch, type SmokeResponse, type SmokeTarget } from "./smoke";
 
 const SITE = "https://site.test";
 const NPM = "https://npm.test";
 const MCP = "https://mcp.site.test/mcp";
+/** The site's host over plain http. */
+const PLAIN = "http://site.test/";
 const TOOLS = ["search_components", "check_code", "wear_style"];
 
 /** A JSON-RPC result, as the hosted server sends it. */
 const rpc = (result: unknown) => ({ status: 200, body: JSON.stringify({ jsonrpc: "2.0", id: 1, result }) });
+
+/** A URL and what it answers, as the fixture world serves it. */
+type World = Record<string, SmokeResponse>;
 
 const bin = { "echo-ui": "./dist/index.js" };
 /** The commands the fixture's docs teach, and its published CLI has. */
 const COMMANDS = ["init", "add", "which"];
 
 /** A world where everything Echo promises is true. */
-function healthyWorld(): Record<string, { status: number; body: string }> {
+function healthyWorld(): World {
   const json = (value: unknown) => ({ status: 200, body: JSON.stringify(value) });
   return {
     [`${SITE}/e/index.json`]: json({ schemaVersion: 1, version: "0.2.0", core: "0.1.0", items: [] }),
@@ -43,6 +48,7 @@ function healthyWorld(): Record<string, { status: number; body: string }> {
     [`${SITE}/`]: { status: 200, body: "<html>" },
     [`${SITE}/docs/installation`]: { status: 200, body: "<html>" },
     [`${SITE}/llms.txt`]: { status: 200, body: "Echo" },
+    [PLAIN]: { status: 301, body: "", location: `${SITE}/` },
     // The hosted MCP server, keyed by the call: it takes POSTs only.
     [`POST ${MCP} initialize`]: rpc({ protocolVersion: "2025-06-18", serverInfo: { name: "echo-ui", version: "0.1.0" }, capabilities: {} }),
     [`POST ${MCP} tools/list`]: rpc({ tools: TOOLS.map((name) => ({ name })) }),
@@ -52,7 +58,7 @@ function healthyWorld(): Record<string, { status: number; body: string }> {
   };
 }
 
-function worldFetch(world: Record<string, { status: number; body: string }>): SmokeFetch {
+function worldFetch(world: World): SmokeFetch {
   return async (url, post) => {
     const key = post ? `POST ${url} ${(JSON.parse(post.body) as { method: string }).method}` : url;
     const found = world[key];
@@ -61,7 +67,7 @@ function worldFetch(world: Record<string, { status: number; body: string }>): Sm
   };
 }
 
-function target(world: Record<string, { status: number; body: string }>): SmokeTarget {
+function target(world: World): SmokeTarget {
   return {
     site: SITE,
     npmRegistry: NPM,
@@ -78,7 +84,7 @@ function target(world: Record<string, { status: number; body: string }>): SmokeT
 }
 
 /** The assertions a world turns red, in report order. Blocked counts as not-passing. */
-async function redsFor(world: Record<string, { status: number; body: string }>): Promise<string[]> {
+async function redsFor(world: World): Promise<string[]> {
   const report = await runSmoke(target(world));
   return report.problems.map((problem) => `${problem.assertion}${problem.blocked ? " (blocked)" : ""}`);
 }
@@ -86,7 +92,7 @@ async function redsFor(world: Record<string, { status: number; body: string }>):
 test("a healthy production turns nothing red", async () => {
   const report = await runSmoke(target(healthyWorld()));
   assert.deepEqual(report.problems, [], "the check must be capable of passing, or it is noise");
-  assert.equal(report.passed.length, 5);
+  assert.equal(report.passed.length, 6);
 });
 
 test("the /e base URL is proven by the resource the CLI asks for, not by probing the base", async () => {
@@ -157,6 +163,17 @@ test("site-routes goes red alone when a documented route 404s", async () => {
   const world = healthyWorld();
   delete world[`${SITE}/docs/installation`];
   assert.deepEqual(await redsFor(world), ["site-routes"]);
+});
+
+test("https-only goes red alone unless plain http redirects to https for good", async () => {
+  // Plain http answering with the page: search engines see a second copy of the site.
+  const served = healthyWorld();
+  served[PLAIN] = { status: 200, body: "<html>" };
+  assert.deepEqual(await redsFor(served), ["https-only"]);
+  // A temporary redirect leaves the http address standing in search results.
+  const temporary = healthyWorld();
+  temporary[PLAIN] = { status: 307, body: "", location: `${SITE}/` };
+  assert.deepEqual(await redsFor(temporary), ["https-only"]);
 });
 
 /**

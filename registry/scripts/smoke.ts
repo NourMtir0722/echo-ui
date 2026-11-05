@@ -8,7 +8,7 @@
  * PUBLISHED — which is how the repository got six milestones better while the
  * artifact a user meets did not move, and nothing noticed.
  *
- * This asks. Five assertions, against the network:
+ * This asks. Six assertions, against the network:
  *
  *   registry-index  `/e/index.json` resolves, speaks this schema, and is the
  *                   release `main` would deploy.
@@ -18,6 +18,8 @@
  *                   ones that declare a `bin` have one where it counts, and
  *                   the CLI npm serves has every command the docs teach.
  *   site-routes     every site URL a published README sends someone to is 200.
+ *   https-only      plain http on the site's host redirects for good (301 or
+ *                   308) to the same address on https.
  *   hosted-mcp      the hosted MCP server answers, reports the release this
  *                   repo's server is at, and serves exactly the tools its
  *                   README lists: the Worker deploys apart from the site, so
@@ -52,12 +54,14 @@ import { fileURLToPath } from "node:url";
 import { HOSTED_MCP_URL, REGISTRY_HOMEPAGE } from "../src/agent/guidance";
 import { SCHEMA_VERSION, coreRange, rangeAdmits, type EIndex } from "../src/registry/e-format";
 
-export const ASSERTIONS = ["registry-index", "core-range", "npm-packages", "site-routes", "hosted-mcp"] as const;
+export const ASSERTIONS = ["registry-index", "core-range", "npm-packages", "site-routes", "https-only", "hosted-mcp"] as const;
 export type AssertionId = (typeof ASSERTIONS)[number];
 
 export interface SmokeResponse {
   status: number;
   body: string;
+  /** Where a redirect points, when the fetch was asked not to follow it. */
+  location?: string;
 }
 
 /** A JSON-RPC call, for the one assertion that has to POST: an MCP server takes nothing else. */
@@ -66,8 +70,13 @@ export interface SmokePost {
   body: string;
 }
 
+/** Asks for the redirect itself rather than wherever it leads. */
+export interface SmokeOptions {
+  follow: false;
+}
+
 /** Injected so fixtures can build a world without a network (point 2). */
-export type SmokeFetch = (url: string, post?: SmokePost) => Promise<SmokeResponse>;
+export type SmokeFetch = (url: string, post?: SmokePost, options?: SmokeOptions) => Promise<SmokeResponse>;
 
 export interface SmokeTarget {
   /** The site's origin, no trailing slash — `REGISTRY_HOMEPAGE` in production. */
@@ -115,9 +124,9 @@ function proveRoute(url: string, site: string): string {
   return trimmed === site ? `${site}/` : url;
 }
 
-async function get(target: SmokeTarget, url: string, post?: SmokePost): Promise<SmokeResponse | Error> {
+async function get(target: SmokeTarget, url: string, post?: SmokePost, options?: SmokeOptions): Promise<SmokeResponse | Error> {
   try {
-    return await target.fetch(url, post);
+    return await target.fetch(url, post, options);
   } catch (error) {
     return error instanceof Error ? error : new Error(String(error));
   }
@@ -305,6 +314,32 @@ async function checkRoutes(target: SmokeTarget, problems: SmokeProblem[]): Promi
 }
 
 /**
+ * Plain http on the site's host. Answering it with the page puts a second copy
+ * of the site in front of search engines, on an address with no encryption; a
+ * temporary redirect (302, 307) keeps that address standing in their results.
+ * Only a permanent one (301, 308) to the same page on https settles it.
+ */
+async function checkHttps(target: SmokeTarget, problems: SmokeProblem[]): Promise<void> {
+  const plain = `http://${new URL(target.site).host}/`;
+  const secure = `${target.site}/`;
+  const response = await get(target, plain, undefined, { follow: false });
+  if (response instanceof Error) {
+    problems.push({ assertion: "https-only", detail: `${plain} could not be fetched: ${response.message}`, blocked: true });
+    return;
+  }
+  if (response.status !== 301 && response.status !== 308) {
+    problems.push({
+      assertion: "https-only",
+      detail: `${plain} → ${response.status}; it should redirect for good (301) to ${secure}: turn Always Use HTTPS back on`,
+    });
+    return;
+  }
+  if (response.location !== secure) {
+    problems.push({ assertion: "https-only", detail: `${plain} redirects to ${response.location ?? "nowhere"}, not ${secure}` });
+  }
+}
+
+/**
  * The hosted MCP server, through the two calls a client makes first. It keeps
  * no sessions, so each POST stands alone. A host that doesn't answer is
  * blocked, as everywhere else here; one that answers wrong is the finding.
@@ -359,6 +394,7 @@ export async function runSmoke(target: SmokeTarget): Promise<SmokeReport> {
   await checkCoreRange(target, outcome, problems);
   await checkPackages(target, problems);
   await checkRoutes(target, problems);
+  await checkHttps(target, problems);
   await checkMcp(target, problems);
   const failed = new Set(problems.map((problem) => problem.assertion));
   return { problems, passed: ASSERTIONS.filter((id) => !failed.has(id)) };
@@ -399,16 +435,17 @@ export async function toolsFromReadme(file = "mcp/README.md"): Promise<string[]>
 
 /** The real fetcher: a status and a body, with a timeout so a hung host is not a hung page. */
 export function httpFetch(timeoutMs = 15_000): SmokeFetch {
-  return async (url, post) => {
+  return async (url, post, options) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         signal: controller.signal,
-        redirect: "follow",
+        redirect: options?.follow === false ? "manual" : "follow",
         ...(post ? { method: post.method, body: post.body, headers: { "content-type": "application/json", accept: "application/json, text/event-stream" } } : {}),
       });
-      return { status: response.status, body: await response.text() };
+      const location = response.headers.get("location");
+      return { status: response.status, body: await response.text(), ...(location ? { location } : {}) };
     } finally {
       clearTimeout(timer);
     }
@@ -460,6 +497,7 @@ const LABEL: Record<AssertionId, string> = {
   "core-range": "core-range   ",
   "npm-packages": "npm-packages ",
   "site-routes": "site-routes  ",
+  "https-only": "https-only   ",
   "hosted-mcp": "hosted-mcp   ",
 };
 
