@@ -34,6 +34,15 @@ different things to a reader, and they will produce different numbers the day Ec
 
 ## [Unreleased]
 
+### Changed
+
+<!-- bump: patch; items: none -->
+- **Echo says what it is in one sentence, and says it first.** "Echo UI is a tactile React component
+  library, and the design system that keeps your AI agent on-brand." It opens the README, the
+  descriptions of `echo-ui-core`, `echo-ui-cli` and `echo-ui-mcp`, the docs introduction and the
+  homepage's description, and the three packages carry the words people search with: tactile,
+  skeuomorphic, react-components, component-library.
+
 ## [0.4.0] — 2026-10-31
 
 ### Changed

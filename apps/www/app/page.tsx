@@ -6,6 +6,7 @@ import { SEED_CHOSEN_ATTR } from "@/components/site/theme-boot";
 import { LANDING_SEED } from "@/components/home/landing-seed";
 import { roadStyles } from "@/components/home/road-css";
 import { REPO_PUBLIC } from "@/components/site/repo";
+import { SENTENCE } from "@registry/agent/guidance";
 
 /*
  * The homepage opens on Sky until the visitor picks a colour. Rendered here,
@@ -17,8 +18,9 @@ const OPENING_CSS = siteTheme(LANDING_SEED, { selector: `:root:not([${SEED_CHOSE
 
 export const metadata: Metadata = {
   title: "Echo UI — Tactile design system for React",
+  // Echo's sentence first: a result shows about 155 characters, and those are the words people search with.
   // "Open source" only once the repository can be opened (REPO_PUBLIC, components/site/repo.ts).
-  description: `A tactile design system for React: components that press, click and move, with your own style on top and an AI agent that keeps to it. Accessible (WCAG 2.2 AA), free ${REPO_PUBLIC ? "and open source " : ""}under the MIT licence, and copied into your project with npx echo-ui-cli.`,
+  description: `${SENTENCE} Components that press, click and move, in your own style. Accessible (WCAG 2.2 AA), free ${REPO_PUBLIC ? "and open source " : ""}under the MIT licence.`,
 };
 
 export default function Page() {

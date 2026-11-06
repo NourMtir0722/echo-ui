@@ -1,6 +1,6 @@
 # Echo UI
 
-> Tactile components you can feel. The design system that keeps your AI on-brand.
+> Echo UI is a tactile React component library, and the design system that keeps your AI agent on-brand.
 
 [![Echo UI: the design system your AI agent builds with. Echo, a blue creature, on the screen of a small tactile device with skip, pause and snooze keys.](.github/readme/hero.jpg)](https://echo-ui.com)
 

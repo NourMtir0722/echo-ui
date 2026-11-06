@@ -433,9 +433,14 @@ export function skillFile(dir: string): string {
 
 /* --------------------------------------------------------------- the claims */
 
-/** Echo's one idea, in two sentences: what it is today, and what it promises. */
-export const HEADLINE = "Tactile components you can feel.";
-export const PROMISE = "The design system that keeps your AI on-brand.";
+/**
+ * Echo's one idea, in one sentence: what it is, and what it promises. It names
+ * what Echo is the way people ask for one, "a tactile React component library",
+ * so a search engine or an AI tool can tell this Echo UI from others of the name.
+ * It opens the README, the npm packages, the docs and the homepage's description.
+ */
+export const SENTENCE =
+  "Echo UI is a tactile React component library, and the design system that keeps your AI agent on-brand.";
 
 /**
  * What Echo already does that people have long asked of a UI library, said

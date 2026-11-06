@@ -2,7 +2,7 @@
   "name": "echo-ui-core",
   "version": "0.3.0",
   "private": true,
-  "description": "The design system that keeps your AI on-brand: Echo UI's grammar, the theme engine, tokens, material, sound, motion and tactile feedback that every Echo component is made from.",
+  "description": "Echo UI is a tactile React component library, and the design system that keeps your AI agent on-brand. echo-ui-core is its grammar: the theme engine, tokens, material, sound, motion and tactile feedback that every Echo component is made from.",
   "keywords": [
     "echo-ui",
     "react",
@@ -10,7 +10,13 @@
     "design-tokens",
     "theme",
     "sound",
-    "motion"
+    "motion",
+    "tactile",
+    "skeuomorphic",
+    "react-components",
+    "component-library",
+    "ui-library",
+    "ui-components"
   ],
   "homepage": "https://echo-ui.com",
   "funding": "https://echo-ui.com/support",
