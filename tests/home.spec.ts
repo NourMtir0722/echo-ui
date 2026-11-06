@@ -21,7 +21,7 @@ import { findHorizontalOverflow, formatOverflow } from "./helpers/layout";
 /** Where the flat guide (the fallback without WebGL) is drawn: the creature's box, in the viewport. */
 const guide = (page: Page) =>
   page.evaluate(() => {
-    const g = document.querySelector<HTMLElement>(".guide")!;
+    const g = document.querySelector<HTMLElement>(".home-guide")!;
     const r = g.querySelector(".echo-creature")!.getBoundingClientRect();
     const shown = getComputedStyle(g).display !== "none" && getComputedStyle(g).visibility === "visible";
     return { visible: shown, x: r.left + r.width / 2, y: r.top + r.height / 2, left: r.left, right: r.right };
@@ -173,6 +173,31 @@ test("on a desktop, the site's own bar stands down while the hero's card (with i
   await expect(rail.getByRole("link", { name: "Docs", exact: true })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(rail).toBeHidden();
+});
+
+/**
+ * The bar's links move on without a reload, and the homepage's stylesheets stay in the document when
+ * they do: a rule of the homepage's that a docs page also matches would restyle that page as well. So
+ * the guides are opened here the way a reader opens them, from the bar, and each one must show its
+ * words. The window keeps a mark from the homepage, so a reload can't pass this by accident.
+ */
+test("a guide opened from the homepage's bar shows its words, and so does the next one", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 2));
+  const docs = page.locator(".home-shell > .echo-shell__rail").getByRole("link", { name: "Docs", exact: true });
+  await expect(docs).toBeVisible();
+  await hydrated(docs);
+  await page.evaluate(() => ((window as unknown as { __home: boolean }).__home = true));
+
+  await docs.click();
+  await expect(page).toHaveURL(/\/docs$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Introduction" })).toBeVisible();
+
+  await page.getByRole("navigation", { name: "Components" }).getByRole("link", { name: "The workflow", exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/workflow$/);
+  await expect(page.getByRole("heading", { level: 1, name: "The workflow" })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __home?: boolean }).__home)).toBe(true);
 });
 
 /**
@@ -1981,7 +2006,7 @@ test("at the foot of the page Echo drops into a heap with its crowd, and the dra
 test("without WebGL, the drawing makes the journey instead", async ({ page }) => {
   await page.addInitScript(withoutWebGL);
   await page.goto("/");
-  await expect(page.locator(".guide")).toBeAttached();
+  await expect(page.locator(".home-guide")).toBeAttached();
   await expect(page.locator("canvas.echo3d")).toHaveCount(0);
   await expect(device(page)).not.toHaveAttribute("data-away", "");
 
@@ -2002,10 +2027,10 @@ test("without WebGL, the drawing waiting out of sight while Echo is home keeps s
   await page.addInitScript(withoutWebGL);
   await page.goto("/");
   await hydrated(page.locator(".hero4").getByRole("button", { name: "Pause", exact: true }));
-  await expect(page.locator(".guide")).toBeAttached();
+  await expect(page.locator(".home-guide")).toBeAttached();
   /** Every change made to the drawing in a second: moved while hidden, it still had the page's layers rebuilt, every frame. */
   const changes = () =>
-    page.locator(".guide").evaluate(
+    page.locator(".home-guide").evaluate(
       (el) =>
         new Promise<number>((done) => {
           let n = 0;

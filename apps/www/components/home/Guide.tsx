@@ -276,8 +276,8 @@ export function Guide({ onAwayChange }: { onAwayChange?: (away: boolean) => void
   }, []);
 
   return (
-    <div ref={outer} className="guide" aria-hidden="true">
-      <div ref={inner} className="guide__lean">
+    <div ref={outer} className="home-guide" aria-hidden="true">
+      <div ref={inner} className="home-guide__lean">
         <Creature mood={mood} size={SIZE} />
       </div>
     </div>
