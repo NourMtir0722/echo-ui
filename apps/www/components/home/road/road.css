@@ -23,6 +23,11 @@
 /*
  * The perch Echo sits on: it travels the cable (Workflow.tsx moves it), and
  * the 3D Echo, or the drawing without WebGL, sits on it wherever it is.
+ *
+ * It moves by a transform every frame, so it is never the page's scroll anchor:
+ * a browser anchored to it (WebKit chose it, Echo being in view) scrolls the page
+ * after Echo whenever the layout changes, away from the card being read. The
+ * tag Echo carries (below) moves the same way.
  */
 .hiw__way .hiw__perch {
   --guide-size: 64px;
@@ -31,6 +36,7 @@
   left: 0;
   z-index: 4;
   will-change: transform;
+  overflow-anchor: none;
 }
 
 /*
@@ -44,6 +50,7 @@
   top: 0;
   left: 0;
   z-index: 5;
+  overflow-anchor: none;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;

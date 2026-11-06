@@ -471,6 +471,37 @@ test("Pick it, and try it on: the page wears Ink Instrument while the card is re
 });
 
 /*
+ * Echo's perch travels the road by a transform every frame. A browser that anchors the scroll
+ * (WebKit does now) could take the perch for its anchor, and when Echo moved and the page's layout
+ * changed under Pick's worn style, it scrolled the page after Echo, 400px and more, out from under
+ * the card being read, which then never finished.
+ */
+test("framed on a playing card, the page stays where it was put while Echo moves about", async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 860 });
+  await page.goto("/");
+  await frame(page, "pick");
+  // Echo has come down the cable and sits in view: a pixel's scroll and back has the browser choose its anchor now.
+  await expect
+    .poll(() => page.locator(".hiw__perch").evaluate((el) => { const r = el.getBoundingClientRect(); return r.top > 60 && r.bottom < window.innerHeight; }))
+    .toBe(true);
+  await page.evaluate(() => {
+    window.scrollBy(0, 1);
+    window.scrollBy(0, -1);
+  });
+  const at = await page.evaluate(() => window.scrollY);
+  const moved = await page.evaluate(async (at) => {
+    let worst = 0;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 7_000) {
+      worst = Math.max(worst, Math.abs(window.scrollY - at));
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return Math.round(worst);
+  }, at);
+  expect(moved).toBeLessThan(40);
+});
+
+/*
  * The hand wins over a motion. On the road, a press of the visitor's own while a demo plays is
  * theirs: the demo stops where they took it, and nothing moves it back.
  */
