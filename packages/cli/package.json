@@ -1,6 +1,6 @@
 {
   "name": "echo-ui-cli",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "Echo UI is a tactile React component library, and the design system that keeps your AI agent on-brand. The CLI installs its components into your project with init and add, and gives your agent which, docs and check.",
   "keywords": [
