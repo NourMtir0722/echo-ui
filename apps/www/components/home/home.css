@@ -722,8 +722,8 @@
   color: var(--echo-text-dim);
 }
 /*
- * Where it works, in a sentence: each name a link in the text's colour, underlined faintly, as the credits
- * are, and never broken across lines ("Claude / Code"). The fine print's links stay as quiet as the fine
+ * Where it works, in a sentence: each name a link in the text's colour, underlined faintly, as the fine
+ * print's are, and never broken across lines ("Claude / Code"). The fine print's links stay as quiet as the fine
  * print, the underline saying they're links; the maker's name is in the text's colour, as the names above.
  */
 .foot__works a,
@@ -811,15 +811,14 @@
 }
 /* A link pointed at keeps its colour and takes the accent as an underline: on the panel the accent isn't
    text-grade on every ground a seed can make; the text colour always is. */
-.foot__col-links a:hover,
-.foot__credits a:hover {
+.foot__col-links a:hover {
   color: var(--echo-text);
   text-decoration: underline;
   text-decoration-color: var(--echo-accent);
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 }
-/* Who it's from on the left; the fine print's pages, the credits and the light key together on the right. */
+/* Who it's from on the left; the fine print's pages and the light key together on the right. */
 .foot__legal {
   display: flex;
   flex-wrap: wrap;
@@ -842,38 +841,7 @@
   align-items: center;
   min-height: 24px;
 }
-/* The mood board's credits: one more line of the foot, its list a row of its own once opened. */
-.foot__credits[open] {
-  flex-basis: 100%;
-  order: 3;
-}
-.foot__credits summary {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
-  text-underline-offset: 3px;
-  list-style: none;
-}
-.foot__credits summary::-webkit-details-marker {
-  display: none;
-}
-.foot__credits ul {
-  columns: 2 22rem;
-  column-gap: 2rem;
-  margin: var(--echo-space-4) 0 0;
-  padding: 0;
-  list-style: none;
-  line-height: 1.7;
-}
-.foot__credits a {
-  color: var(--echo-text);
-  text-underline-offset: 2px;
-}
 @media (pointer: coarse) {
-  .foot__credits summary,
   .foot__legal-link {
     min-height: 44px;
   }

@@ -218,7 +218,7 @@ function Board({ gathered, named, distilled = false }: { gathered: boolean; name
         })}
       </ul>
       <figcaption className="jy-board__caption">
-        A mood board, 16 images. Credits at the foot of the page.
+        A mood board, 16 images.
       </figcaption>
     </figure>
   );

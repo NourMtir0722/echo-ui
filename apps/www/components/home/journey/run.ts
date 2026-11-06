@@ -3,9 +3,9 @@
  * board, word for word.
  *
  * The run's own board held other people's work (campaigns, product shots), so
- * the page shows a board of the same two looks instead, every image free to
- * use and credited (BOARD_CREDITS: photos from Unsplash, drawings in the
- * public domain). The replies were written about the run's own board.
+ * the page shows a board of the same two looks instead, its images made for
+ * this page, so it shows nobody else's work. The replies were written about
+ * the run's own board.
  *
  * Nothing here is written to look like a reply. Every string is the reply, or
  * the tool's output, as it came, and it's only ever trimmed: where it says
@@ -21,50 +21,32 @@ import { PUBLISHED_STYLES } from "@registry/agent/published-styles";
 export const WHERE = "In Codex, with Echo's plugin";
 
 /**
- * The board: a stand-in for the run's, in its two looks and in its order (see
- * above). `group`: the run's style each tile stands in for, as the run's own
- * sampling grouped the tile it replaces.
+ * The board: a stand-in for the run's, in its two looks (see above), ten
+ * technical sheets and interface parts and six of soft colour. `group`: the
+ * run's style each tile belongs to. The order is where each lies on the desk
+ * (MakeCard.tsx `DESK`), the two looks mixed; the first eight are the prompt's
+ * thumbnails.
  */
 export const BOARD: readonly { src: string; alt: string; group: "ink" | "pigment"; w: number; h: number }[] = [
-  { src: "objects-grid", alt: "Small metal parts laid out in rows on white", group: "ink", w: 640, h: 480 },
-  { src: "grass-blur", alt: "Blades of grass, sharp at the front, the trees behind out of focus", group: "pigment", w: 640, h: 480 },
-  { src: "geometry-plate", alt: "A plate of geometric line drawings: cubes, ellipses and concentric rings", group: "ink", w: 458, h: 640 },
-  { src: "bokeh", alt: "Out-of-focus lights in blue, pink and gold", group: "pigment", w: 640, h: 480 },
-  { src: "shuttle-elevations", alt: "Line elevations of the Space Shuttle launch stack, side by side", group: "ink", w: 486, h: 333 },
-  { src: "camera", alt: "A silver film camera, close up", group: "ink", w: 640, h: 480 },
-  { src: "leaf-drop", alt: "A leaf with a drop of water at its tip, on blurred green", group: "pigment", w: 640, h: 480 },
-  { src: "bridge-isometric", alt: "Isometric drawings of a covered bridge's framing", group: "ink", w: 499, h: 392 },
-  { src: "faders", alt: "A finger on the faders of a mixing desk", group: "ink", w: 640, h: 480 },
-  { src: "horizon", alt: "A soft horizon, pink cloud fading into blue", group: "pigment", w: 640, h: 480 },
-  { src: "clock-dial", alt: "A black and white clock face, close up", group: "ink", w: 640, h: 480 },
-  { src: "wheat", alt: "Green wheat in shallow focus", group: "pigment", w: 640, h: 480 },
-  { src: "shuttle-isometric", alt: "An isometric line drawing of the Space Shuttle launch stack", group: "ink", w: 486, h: 333 },
-  { src: "pink-forest", alt: "A path between trees in a pale pink mist", group: "pigment", w: 640, h: 480 },
-  { src: "lunar-module", alt: "A labelled line drawing of the lunar module", group: "ink", w: 472, h: 640 },
-  { src: "isometric-section", alt: "Isometric and section drawings of an aqueduct", group: "ink", w: 482, h: 630 },
+  { src: "green-bokeh", alt: "Sunlit leaves out of focus, in lime and deep green", group: "pigment", w: 640, h: 480 },
+  { src: "mixer", alt: "An equaliser panel: a curve over a grid, and nine sliders", group: "ink", w: 640, h: 480 },
+  { src: "blue-spec", alt: "A spec sheet: a parts list on blue beside an exploded drawing of a small module", group: "ink", w: 640, h: 640 },
+  { src: "desk-instrument", alt: "A small charcoal instrument with a metal dial, a blue button and a green one", group: "ink", w: 640, h: 480 },
+  { src: "sky-leaves", alt: "Blue sky through a ring of blurred green leaves", group: "pigment", w: 640, h: 429 },
+  { src: "iso-stack", alt: "An isometric drawing of three stacked slabs, the middle one blue", group: "ink", w: 640, h: 478 },
+  { src: "glass-tubes", alt: "Green glass tubes bent into loops and coils", group: "ink", w: 640, h: 478 },
+  { src: "switch", alt: "A two-part switch, Live selected in black, Draft in white", group: "ink", w: 640, h: 512 },
+  { src: "pigment-drops", alt: "Twelve drops of watercolour on paper, in greens, blues, violet and one orange", group: "pigment", w: 640, h: 480 },
+  { src: "lime-sheet", alt: "A lime spec sheet with line drawings of stacking drawer blocks", group: "ink", w: 640, h: 480 },
+  { src: "layer-chip", alt: "A small outlined tag reading Layers, a blue count of 12 beside it, and a pointer", group: "ink", w: 640, h: 480 },
+  { src: "watercolour-edge", alt: "The torn edge of paper soaked in blue, lime and violet watercolour", group: "pigment", w: 640, h: 480 },
+  { src: "raised-button", alt: "A raised pill button, black on white, reading Start a style", group: "ink", w: 640, h: 427 },
+  { src: "green-horizon", alt: "A soft gradient from deep green through lime to pale mint", group: "pigment", w: 640, h: 480 },
+  { src: "card-drawer", alt: "A pen drawing of an open card-index drawer, its parts labelled", group: "ink", w: 640, h: 640 },
+  { src: "blurred-poster", alt: "A poster of blurred green foliage titled Late Spring", group: "pigment", w: 482, h: 640 },
 ];
 
 export const boardSrc = (name: string) => `/journey-board/${name}.jpg`;
-
-/** Whose each image is, and on what terms: shown under the board. */
-export const BOARD_CREDITS: readonly { image: string; by: string; href: string; terms: string }[] = [
-  { image: "Small parts in rows", by: "Florian Klauer", href: "https://unsplash.com/photos/-K6JMRMj4x4", terms: "Unsplash" },
-  { image: "Grass", by: "Vectorbeast", href: "https://unsplash.com/photos/rsJtMXn3p_c", terms: "Unsplash" },
-  { image: "Geometry plate", by: "William Farish, 1822", href: "https://commons.wikimedia.org/wiki/File:Transactions01camb_0057.jpg", terms: "public domain" },
-  { image: "Lights", by: "Sebastian Muller", href: "https://unsplash.com/photos/VLdaxYyXJvw", terms: "Unsplash" },
-  { image: "Shuttle elevations", by: "Joseph Klimek, Historic American Engineering Record", href: "https://commons.wikimedia.org/wiki/File:Elevations_of_the_Space_Shuttle_Launch_Stack_Assembly_-_Space_Transportation_System,_Lyndon_B._Johnson_Space_Center,_2101_NASA_Parkway,_Houston,_Harris_County,_TX_HAER_TX-116_(sheet_3_of_6).tif", terms: "public domain" },
-  { image: "Camera", by: "Nicola Perantoni", href: "https://unsplash.com/photos/irUQaBK3ydI", terms: "Unsplash" },
-  { image: "Leaf", by: "Shyamanta Baruah", href: "https://unsplash.com/photos/kxqvE41_07k", terms: "Unsplash" },
-  { image: "Bridge framing", by: "John C. Fletcher, Historic American Buildings Survey", href: "https://commons.wikimedia.org/wiki/File:Elevation,_Roof_Plan,_Isometric_of_Lower_Stringer_Framing,_Isometric_of_Upper_Stringer_Framing_-_Covered_Bridge,_Spanning_Connecticut_River,_Orford,_Grafton_County,_NH_HABS_NH,5-ORF,2-_(sheet_1_of_5).png", terms: "public domain" },
-  { image: "Faders", by: "Drew Patrick Miller", href: "https://unsplash.com/photos/_o6AAx9dl_Y", terms: "Unsplash" },
-  { image: "Horizon", by: "Kelly Sikkema", href: "https://unsplash.com/photos/X7dy114KWs4", terms: "Unsplash" },
-  { image: "Clock", by: "petradr", href: "https://unsplash.com/photos/8hgm6mKK04U", terms: "Unsplash" },
-  { image: "Wheat", by: "Lukas Schweizer", href: "https://unsplash.com/photos/9VWOr22LhVI", terms: "Unsplash" },
-  { image: "Shuttle isometric", by: "John Wachtel, Historic American Engineering Record", href: "https://commons.wikimedia.org/wiki/File:Full_isometric_view_of_the_Space_Shuttle_Launch_Stack_Assembly_-_Space_Transportation_System,_Lyndon_B._Johnson_Space_Center,_2101_NASA_Parkway,_Houston,_Harris_County,_TX_HAER_TX-116_(sheet_2_of_6).tif", terms: "public domain" },
-  { image: "Misty path", by: "Simon Pape", href: "https://unsplash.com/photos/2kc8bigeqEI", terms: "Unsplash" },
-  { image: "Lunar module", by: "NASA", href: "https://commons.wikimedia.org/wiki/File:LEM-linedrawing.png", terms: "public domain" },
-  { image: "Aqueduct", by: "Historic American Engineering Record", href: "https://commons.wikimedia.org/wiki/File:Photocopied_December_1977,_from_loose,_original_drawings,_Jervis_Library._AQUEDUCT_NEAR_SAW_MILL_RIVER,_SECTIONS_AND_ISOMETRIC._-_Old_Croton_Aqueduct,_New_York,_New_York_County,_HAER_NY,31-NEYO,87-30.tif", terms: "public domain" },
-];
 
 /* --- 1 · Make a style ------------------------------------------------------- */
 

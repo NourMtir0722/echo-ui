@@ -29,7 +29,6 @@ import { REPO_PUBLIC, REPO_URL } from "@/components/site/repo";
 import { SEED_PRESETS } from "@/components/site/theme-store";
 import { DeviceSwitch } from "@/components/site/DeviceSwitch";
 import { LANDING_SEED } from "@/components/home/landing-seed";
-import { BOARD_CREDITS } from "@/components/home/journey/run";
 import { FootLight } from "@/components/home/light/FootLight";
 import { BRAND_PAGES } from "@/components/brand/brand-manifest";
 import { HeapLine } from "@/components/supporters/HeapLine";
@@ -189,8 +188,8 @@ export function HomeFooter() {
             </nav>
           </div>
           {/*
-            The foot row: who it's from and on what terms, on the left; the fine print's pages, the image
-            credits and the light key (where Cursor keeps its theme switch) on the right.
+            The foot row: who it's from and on what terms, on the left; the fine print's pages and the
+            light key (where Cursor keeps its theme switch) on the right.
           */}
           <div className="foot__legal">
             <p className="foot__legal-lines">
@@ -205,17 +204,6 @@ export function HomeFooter() {
                 {label}
               </a>
             ))}
-            {/* The road's mood board is other people's photos and public-domain drawings: whose, and on what terms. */}
-            <details className="foot__credits">
-              <summary>Image credits</summary>
-              <ul>
-                {BOARD_CREDITS.map((c) => (
-                  <li key={c.image}>
-                    {c.image}: <a href={c.href}>{c.by}</a>, {c.terms === "Unsplash" ? "on Unsplash" : "public domain"}
-                  </li>
-                ))}
-              </ul>
-            </details>
             <DeviceSwitch opening={LANDING_SEED} />
           </div>
         </div>

@@ -190,7 +190,7 @@ export function StyleSheets({ shown, after = 0, entrance = "pour" }: { shown: bo
         <Paper />
         <p className="jy-sheet__name jy-print">{PIGMENT.title}</p>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="jy-sheet__window" src={boardSrc("horizon")} alt="" width={640} height={480} loading="lazy" decoding="async" />
+        <img className="jy-sheet__window" src={boardSrc("green-horizon")} alt="" width={640} height={480} loading="lazy" decoding="async" />
       </div>
       <div className="jy-sheet jy-sheet--ink">
         <Paper />
