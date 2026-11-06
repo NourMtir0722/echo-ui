@@ -1008,31 +1008,32 @@ button.pz__piece .pz__body {
 :root[data-drawn] .keychain__keys i:nth-child(2) {
   background: var(--echo-text);
 }
-/* Echo's drawing (the registry's Creature: on the keychain, and the journey without WebGL), hollow until it's on. */
-:root[data-drawn] .echo-creature__light,
-:root[data-drawn] .echo-creature__mid,
-:root[data-drawn] .echo-creature__deep {
+/*
+ * Echo's drawing (the registry's Creature: on the keychain, and the journey without WebGL), hollow until it's on.
+ * Held to the homepage's own roots (the page, the travelling Echo, the keychain): this stylesheet stays loaded
+ * after a link moves on without a reload, and a Creature on another page draws itself from the theme alone.
+ */
+:root[data-drawn] :is(.home-shell, .home-guide, .keychain) :is(.echo-creature__light, .echo-creature__mid, .echo-creature__deep) {
   stop-color: var(--echo-surface);
 }
-:root[data-drawn] .echo-creature__gloss-in,
-:root[data-drawn] .echo-creature__gloss-out {
+:root[data-drawn] :is(.home-shell, .home-guide, .keychain) :is(.echo-creature__gloss-in, .echo-creature__gloss-out) {
   stop-opacity: 0;
 }
-:root[data-drawn] .echo-creature__rim {
+:root[data-drawn] :is(.home-shell, .home-guide, .keychain) .echo-creature__rim {
   stroke: var(--echo-text);
   stroke-width: 2px;
   stroke-opacity: 1;
   vector-effect: non-scaling-stroke;
 }
-:root[data-drawn] .echo-creature__eye {
+:root[data-drawn] :is(.home-shell, .home-guide, .keychain) .echo-creature__eye {
   fill: var(--echo-surface);
   stroke: var(--echo-text);
   stroke-width: 1.5px;
   vector-effect: non-scaling-stroke;
 }
-:root[data-drawn] .echo-creature__pupil {
+:root[data-drawn] :is(.home-shell, .home-guide, .keychain) .echo-creature__pupil {
   fill: var(--echo-text);
 }
-:root[data-drawn] .echo-creature__catch {
+:root[data-drawn] :is(.home-shell, .home-guide, .keychain) .echo-creature__catch {
   display: none;
 }
