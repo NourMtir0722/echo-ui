@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { REGISTRY_HOMEPAGE } from "../src/agent/guidance";
+import { HOSTED_MCP_URL, REGISTRY_HOMEPAGE, SENTENCE } from "../src/agent/guidance";
 
 /**
  * What npm sees, for each of the three packages `release.yml` publishes.
@@ -76,6 +76,37 @@ test("npm stores every published command as written, with nothing to correct", (
       assert.equal(command, posix.basename(command), `${pkg.name}: npm renames the command "${command}"`);
       assert.equal(path, stored(path), `${pkg.name}: npm rewrites "${command}" → "${path}" as "${stored(path)}"`);
     }
+  }
+});
+
+/**
+ * `mcp/server.json` is Echo's listing in the official MCP registry
+ * (registry.modelcontextprotocol.io), which MCP clients and directories read
+ * from. The registry takes the npm package only if the package's `mcpName` is
+ * the listing's name, and the name's namespace only from whoever holds the
+ * domain it reverses (`com.example` is example.com). Its description holds 100
+ * characters, so it's Echo's sentence with the name moved into the title.
+ */
+test("the MCP registry listing is under the site's own domain, is the one echo-ui-mcp claims, and says Echo's sentence", () => {
+  const listing = JSON.parse(read("mcp/server.json")) as {
+    name: string;
+    title: string;
+    description: string;
+    version: string;
+    remotes: { type: string; url: string }[];
+    packages?: { registryType: string; identifier: string; version: string; transport: { type: string } }[];
+  };
+  const pkg = JSON.parse(read("mcp/package.json")) as { name: string; version: string; mcpName?: string };
+  const namespace = listing.name.split("/")[0] ?? "";
+  assert.equal(namespace.split(".").reverse().join("."), new URL(REGISTRY_HOMEPAGE).host, "the namespace is the site's domain");
+  assert.equal(pkg.mcpName, listing.name, "npm's echo-ui-mcp claims the listing, or the registry refuses the package");
+  assert.equal(`${listing.title} is ${listing.description.replace(/^A /, "a ")}`, SENTENCE);
+  assert.ok(listing.description.length <= 100, "the registry refuses a description over 100 characters");
+  assert.equal(listing.version, pkg.version, "the listing's version is the server's");
+  assert.deepEqual(listing.remotes, [{ type: "streamable-http", url: HOSTED_MCP_URL }]);
+  // The npm package joins the listing from the first release whose package.json carries `mcpName`.
+  for (const entry of listing.packages ?? []) {
+    assert.deepEqual(entry, { registryType: "npm", identifier: pkg.name, version: pkg.version, transport: { type: "stdio" } });
   }
 });
 

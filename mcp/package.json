@@ -1,6 +1,7 @@
 {
   "name": "echo-ui-mcp",
   "version": "0.3.4",
+  "mcpName": "com.echo-ui/mcp",
   "type": "module",
   "description": "Echo UI is a tactile React component library, and the design system that keeps your AI agent on-brand. As an MCP server, it lets an agent search Echo UI's components by the job, read one, and get its tokens and accessibility rules before writing code.",
   "keywords": [

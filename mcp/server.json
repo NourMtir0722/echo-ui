@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.echo-ui/mcp",
+  "title": "Echo UI",
+  "description": "A tactile React component library, and the design system that keeps your AI agent on-brand.",
+  "version": "0.3.4",
+  "websiteUrl": "https://echo-ui.com/docs/mcp",
+  "repository": {
+    "url": "https://github.com/NourMtir0722/echo-ui",
+    "source": "github",
+    "id": "1425879538",
+    "subfolder": "mcp"
+  },
+  "icons": [{ "src": "https://echo-ui.com/icon.svg", "mimeType": "image/svg+xml", "sizes": ["any"] }],
+  "remotes": [{ "type": "streamable-http", "url": "https://mcp.echo-ui.com/mcp" }]
+}

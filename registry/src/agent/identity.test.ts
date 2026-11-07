@@ -76,6 +76,11 @@ const IDENTITY_FILES: { path: string; must: () => string[] }[] = [
   { path: "apps/www/wrangler.jsonc", must: () => [new URL(REGISTRY_HOMEPAGE).host] },
   // The same for the hosted MCP server: its route is what makes HOSTED_MCP_URL's host answer.
   { path: "mcp/wrangler.jsonc", must: () => [new URL(HOSTED_MCP_URL).host] },
+  /*
+   * The server's listing in the official MCP registry, which reads JSON and nothing else. Its name's
+   * namespace is the host reversed; published-manifests.test.ts holds that to REGISTRY_HOMEPAGE.
+   */
+  { path: "mcp/server.json", must: () => [HOSTED_MCP_URL, `${REGISTRY_HOMEPAGE}/docs/mcp`, `${REGISTRY_HOMEPAGE}/icon.svg`] },
   // And for the supporters server: its route, and the one site allowed to call it.
   { path: "apps/supporters-api/wrangler.jsonc", must: () => [`api.${new URL(REGISTRY_HOMEPAGE).host}`, REGISTRY_HOMEPAGE] },
   // The docs link GitHub shows on the "new issue" chooser.

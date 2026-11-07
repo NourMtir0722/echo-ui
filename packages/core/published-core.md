@@ -19,7 +19,7 @@ the two records here say what npm holds. 0.3.0 was released by hand, in this ord
 repository is public, `release.yml` runs steps 4, 7 and 8 itself, with the smoke check.
 
 1. **Bump** `packages/core`, `packages/cli` (and its `src/version.ts`) and `mcp` (and the
-   `__ECHO_MCP_VERSION__` define in `mcp/wrangler.jsonc`) to the new version. Leave
+   `__ECHO_MCP_VERSION__` define in `mcp/wrangler.jsonc`, and `mcp/server.json`'s versions) to the new version. Leave
    `published-core.json` and `packages/cli/published-cli.json` alone: they record what npm holds, and
    npm doesn't hold it yet. (`release.yml` refuses to run if the core record already says it.)
 2. **Release the registry, in this order.** With every entry still under `[Unreleased]`:
@@ -48,7 +48,8 @@ repository is public, `release.yml` runs steps 4, 7 and 8 itself, with the smoke
 6. **Merge** by pull request. The changelog check counts the new release heading as the change
    being recorded.
 7. **Deploy** the site (`pnpm deploy:site`) right after the publish, then the MCP server (`pnpm
-   --filter echo-ui-mcp deploy:worker`). `deploy:site` refuses while any item is at a version no
+   --filter echo-ui-mcp deploy:worker`), then its listing in the official MCP registry (`mcp-publisher publish` in
+   `mcp/`, after `mcp-publisher login dns` for the site's domain). `deploy:site` refuses while any item is at a version no
    release has frozen, so between releases a component change waits for the next release. The new core is npm's `latest` the moment it's published, and
    until the site serves the registry release, `add` refuses every item for a new user. Then
    `pnpm smoke`: 5/5.
