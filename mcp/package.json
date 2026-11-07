@@ -36,7 +36,7 @@
     "README.md"
   ],
   "bin": {
-    "echo-ui-mcp": "./dist/index.js"
+    "echo-ui-mcp": "dist/index.js"
   },
   "engines": {
     "node": ">=20"

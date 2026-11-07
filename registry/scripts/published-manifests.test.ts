@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { REGISTRY_HOMEPAGE } from "../src/agent/guidance";
 
@@ -24,6 +24,7 @@ const REPOSITORY = "https://github.com/NourMtir0722/echo-ui";
 
 type Manifest = {
   name: string;
+  bin?: Record<string, string>;
   author?: string;
   funding?: string;
   repository?: { type: string; url: string; directory: string };
@@ -57,6 +58,24 @@ test("every published manifest names its repository, so --provenance can sign it
       `${pkg.name}: npm refuses provenance without a repository that matches the workflow's`,
     );
     assert.deepEqual(pkg.bugs, { url: `${REPOSITORY}/issues` }, `${pkg.name}: the "Report an issue" link`);
+  }
+});
+
+/**
+ * npm stores a command's path in one form: relative, with no leading "./".
+ * It rewrites any other form as it publishes and warns that the command "was
+ * invalid and removed", though it keeps it. That's the same rewrite
+ * `@npmcli/package-json` applies (`secureAndUnixifyPath`), done here, so what
+ * npm receives is what it stores and a release prints no false alarm.
+ */
+test("npm stores every published command as written, with nothing to correct", () => {
+  const stored = (path: string) => posix.join(".", posix.join("/", path.replaceAll("\\", "/")));
+  for (const { manifest } of PUBLISHED) {
+    const pkg = manifest();
+    for (const [command, path] of Object.entries(pkg.bin ?? {})) {
+      assert.equal(command, posix.basename(command), `${pkg.name}: npm renames the command "${command}"`);
+      assert.equal(path, stored(path), `${pkg.name}: npm rewrites "${command}" → "${path}" as "${stored(path)}"`);
+    }
   }
 });
 

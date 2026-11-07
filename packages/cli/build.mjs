@@ -75,7 +75,7 @@ const published = {
   repository: pkg.repository,
   bugs: pkg.bugs,
   type: "module",
-  bin: { "echo-ui": "./index.js" },
+  bin: { "echo-ui": "index.js" },
   engines: pkg.engines,
   dependencies: { "axe-core": pkg.dependencies["axe-core"], "echo-ui-core": `^${core.version}` },
   // What the production smoke check reads off npm to see the published CLI has every command the
